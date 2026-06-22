@@ -17,10 +17,20 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController passwordController =
       TextEditingController();
 
+  bool ocultarPassword = true;
+
+  @override
+  void dispose() {
+    nombreController.dispose();
+    correoController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
   void registrarUsuario() {
-    String nombre = nombreController.text.trim();
-    String correo = correoController.text.trim();
-    String password = passwordController.text.trim();
+    final nombre = nombreController.text.trim();
+    final correo = correoController.text.trim();
+    final password = passwordController.text.trim();
 
     if (nombre.isEmpty ||
         correo.isEmpty ||
@@ -69,6 +79,7 @@ class _RegisterPageState extends State<RegisterPage> {
     Future.delayed(
       const Duration(seconds: 1),
       () {
+        if (!mounted) return;
         Navigator.pop(context);
       },
     );
@@ -87,17 +98,17 @@ class _RegisterPageState extends State<RegisterPage> {
       body: Center(
         child: SingleChildScrollView(
           child: Container(
-            width: 450,
-            padding: const EdgeInsets.all(30),
+            width: 500,
+            padding: const EdgeInsets.all(35),
 
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: const [
                 BoxShadow(
                   color: Colors.black12,
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+                  blurRadius: 15,
+                  offset: Offset(0, 5),
                 ),
               ],
             ),
@@ -107,29 +118,39 @@ class _RegisterPageState extends State<RegisterPage> {
               children: [
 
                 const Icon(
-                  Icons.person_add,
-                  size: 80,
+                  Icons.person_add_alt_1,
+                  size: 90,
                   color: Colors.green,
                 ),
 
-                const SizedBox(height: 15),
+                const SizedBox(height: 20),
 
                 const Text(
                   "Crear Cuenta",
                   style: TextStyle(
-                    fontSize: 24,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
 
-                const SizedBox(height: 25),
+                const SizedBox(height: 8),
+
+                const Text(
+                  "Regístrate para comenzar a utilizar ErgoVida",
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 30),
 
                 TextField(
                   controller: nombreController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: "Nombre completo",
-                    prefixIcon: Icon(Icons.person),
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.person),
+                    border: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(12),
+                    ),
                   ),
                 ),
 
@@ -137,10 +158,13 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 TextField(
                   controller: correoController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: "Correo electrónico",
-                    prefixIcon: Icon(Icons.email),
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.email),
+                    border: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(12),
+                    ),
                   ),
                 ),
 
@@ -148,11 +172,27 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 TextField(
                   controller: passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
+                  obscureText: ocultarPassword,
+                  decoration: InputDecoration(
                     labelText: "Contraseña",
-                    prefixIcon: Icon(Icons.lock),
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        ocultarPassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          ocultarPassword =
+                              !ocultarPassword;
+                        });
+                      },
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(12),
+                    ),
                   ),
                 ),
 
@@ -160,15 +200,25 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 SizedBox(
                   width: double.infinity,
-                  height: 50,
+                  height: 55,
 
                   child: ElevatedButton(
                     onPressed: registrarUsuario,
 
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                            BorderRadius.circular(12),
+                      ),
+                    ),
+
                     child: const Text(
                       "Registrarse",
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 18,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
@@ -183,6 +233,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
                   child: const Text(
                     "Ya tengo una cuenta",
+                    style: TextStyle(
+                      fontSize: 16,
+                    ),
                   ),
                 ),
               ],
