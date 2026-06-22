@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../data/services/auth_service.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -66,6 +67,13 @@ class _RegisterPageState extends State<RegisterPage> {
       );
       return;
     }
+
+    // Guardar usuario en AuthService
+    AuthService.registrar(
+      nombre,
+      correo,
+      password,
+    );
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -158,6 +166,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
                 TextField(
                   controller: correoController,
+                  keyboardType:
+                      TextInputType.emailAddress,
                   decoration: InputDecoration(
                     labelText: "Correo electrónico",
                     prefixIcon: const Icon(Icons.email),
@@ -201,7 +211,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 SizedBox(
                   width: double.infinity,
                   height: 55,
-
                   child: ElevatedButton(
                     onPressed: registrarUsuario,
 
@@ -230,7 +239,6 @@ class _RegisterPageState extends State<RegisterPage> {
                   onPressed: () {
                     Navigator.pop(context);
                   },
-
                   child: const Text(
                     "Ya tengo una cuenta",
                     style: TextStyle(

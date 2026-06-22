@@ -1,9 +1,23 @@
 class AuthService {
-  bool login(String correo, String password) {
-    if (correo.isNotEmpty && password.isNotEmpty) {
-      return true;
-    }
+  static String nombreGuardado = "";
+  static String correoGuardado = "";
+  static String passwordGuardada = "";
 
-    return false;
+  static void registrar(
+    String nombre,
+    String correo,
+    String password,
+  ) {
+    nombreGuardado = nombre;
+    correoGuardado = correo;
+    passwordGuardada = password;
+  }
+
+  bool login(
+    String correo,
+    String password,
+  ) {
+    return correo == correoGuardado &&
+        password == passwordGuardada;
   }
 }

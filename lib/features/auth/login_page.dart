@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../home/home_page.dart';
 import 'register_page.dart';
+import '../../data/services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,6 +16,15 @@ class _LoginPageState extends State<LoginPage> {
 
   final TextEditingController passwordController =
       TextEditingController();
+
+  bool ocultarPassword = true;
+
+  @override
+  void dispose() {
+    correoController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
 
   void iniciarSesion() {
     String correo = correoController.text.trim();
@@ -31,12 +41,30 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const HomePage(),
-      ),
+    final auth = AuthService();
+
+    bool acceso = auth.login(
+      correo,
+      password,
     );
+
+    if (acceso) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const HomePage(),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.red,
+          content: Text(
+            "Correo o contraseña incorrectos",
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -58,12 +86,11 @@ class _LoginPageState extends State<LoginPage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(15),
-
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
                   color: Colors.black12,
                   blurRadius: 10,
-                  offset: const Offset(0, 5),
+                  offset: Offset(0, 5),
                 ),
               ],
             ),
@@ -71,6 +98,7 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+
                 const Icon(
                   Icons.accessibility_new,
                   size: 80,
@@ -111,11 +139,24 @@ class _LoginPageState extends State<LoginPage> {
 
                 TextField(
                   controller: passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
+                  obscureText: ocultarPassword,
+                  decoration: InputDecoration(
                     labelText: "Contraseña",
-                    prefixIcon: Icon(Icons.lock),
-                    border: OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.lock),
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        ocultarPassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          ocultarPassword =
+                              !ocultarPassword;
+                        });
+                      },
+                    ),
                   ),
                 ),
 
@@ -126,7 +167,6 @@ class _LoginPageState extends State<LoginPage> {
                   height: 50,
                   child: ElevatedButton(
                     onPressed: iniciarSesion,
-
                     child: const Text(
                       "Iniciar Sesión",
                       style: TextStyle(
@@ -148,7 +188,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     );
                   },
-
                   child: const Text(
                     "¿No tienes cuenta? Regístrate",
                   ),
