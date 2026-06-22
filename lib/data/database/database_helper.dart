@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
+
 class DatabaseHelper {
   void initializeDatabase() {
-    print("Base de datos iniciada");
+    debugPrint("Base de datos iniciada");
   }
 }

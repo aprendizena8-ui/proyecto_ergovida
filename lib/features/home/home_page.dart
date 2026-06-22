@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../auth/login_page.dart';
+import '../exercises/exercises_page.dart';
+import '../routines/routine_page.dart';
+import '../settings/settings_page.dart';
+import '../statistics/statistics_page.dart';
+
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -11,10 +17,11 @@ class HomePage extends StatelessWidget {
       body: Row(
         children: [
 
-          // MENU LATERAL
+          // MENÚ LATERAL
           Container(
             width: 250,
             color: const Color(0xFF1E293B),
+
             child: Column(
               children: [
 
@@ -39,25 +46,102 @@ class HomePage extends StatelessWidget {
 
                 const SizedBox(height: 40),
 
-                _menuItem(Icons.dashboard, "Dashboard"),
-                _menuItem(Icons.fitness_center, "Ejercicios"),
-                _menuItem(Icons.bar_chart, "Estadísticas"),
-                _menuItem(Icons.settings, "Configuración"),
+                _menuItem(
+                  context,
+                  Icons.dashboard,
+                  "Dashboard",
+                  () {},
+                ),
+
+                _menuItem(
+                  context,
+                  Icons.fitness_center,
+                  "Ejercicios",
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const ExercisesPage(),
+                      ),
+                    );
+                  },
+                ),
+
+                _menuItem(
+                  context,
+                  Icons.repeat,
+                  "Rutinas",
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const RoutinePage(),
+                      ),
+                    );
+                  },
+                ),
+
+                _menuItem(
+                  context,
+                  Icons.bar_chart,
+                  "Estadísticas",
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const StatisticsPage(),
+                      ),
+                    );
+                  },
+                ),
+
+                _menuItem(
+                  context,
+                  Icons.settings,
+                  "Configuración",
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const SettingsPage(),
+                      ),
+                    );
+                  },
+                ),
 
                 const Spacer(),
 
-                const Divider(color: Colors.white24),
+                const Divider(
+                  color: Colors.white24,
+                ),
 
                 ListTile(
                   leading: const Icon(
                     Icons.logout,
                     color: Colors.red,
                   ),
+
                   title: const Text(
                     "Cerrar Sesión",
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
                   ),
-                  onTap: () {},
+
+                  onTap: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const LoginPage(),
+                      ),
+                      (route) => false,
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 20),
@@ -95,7 +179,6 @@ class HomePage extends StatelessWidget {
 
                   const SizedBox(height: 30),
 
-                  // TARJETAS
                   Row(
                     children: [
 
@@ -151,27 +234,67 @@ class HomePage extends StatelessWidget {
                     children: [
 
                       _actionButton(
+                        context,
                         "Iniciar Pausa Activa",
                         Icons.play_circle_fill,
                         Colors.green,
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const RoutinePage(),
+                            ),
+                          );
+                        },
                       ),
 
                       _actionButton(
+                        context,
                         "Ver Ejercicios",
                         Icons.fitness_center,
                         Colors.blue,
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const ExercisesPage(),
+                            ),
+                          );
+                        },
                       ),
 
                       _actionButton(
+                        context,
                         "Consultar Estadísticas",
                         Icons.bar_chart,
                         Colors.orange,
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const StatisticsPage(),
+                            ),
+                          );
+                        },
                       ),
 
                       _actionButton(
+                        context,
                         "Configuración",
                         Icons.settings,
                         Colors.purple,
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const SettingsPage(),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -185,27 +308,32 @@ class HomePage extends StatelessWidget {
   }
 
   static Widget _menuItem(
-      IconData icon,
-      String title,
-      ) {
+    BuildContext context,
+    IconData icon,
+    String title,
+    VoidCallback onTap,
+  ) {
     return ListTile(
-      leading: Icon(icon, color: Colors.white),
+      leading: Icon(
+        icon,
+        color: Colors.white,
+      ),
       title: Text(
         title,
         style: const TextStyle(
           color: Colors.white,
         ),
       ),
-      onTap: () {},
+      onTap: onTap,
     );
   }
 
   static Widget _statCard(
-      String title,
-      String value,
-      IconData icon,
-      Color color,
-      ) {
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Card(
       elevation: 4,
 
@@ -241,10 +369,12 @@ class HomePage extends StatelessWidget {
   }
 
   static Widget _actionButton(
-      String text,
-      IconData icon,
-      Color color,
-      ) {
+    BuildContext context,
+    String text,
+    IconData icon,
+    Color color,
+    VoidCallback onPressed,
+  ) {
     return SizedBox(
       width: 220,
       height: 100,
@@ -254,7 +384,7 @@ class HomePage extends StatelessWidget {
           backgroundColor: color,
         ),
 
-        onPressed: () {},
+        onPressed: onPressed,
 
         icon: Icon(icon),
 
