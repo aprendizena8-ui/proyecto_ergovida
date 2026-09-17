@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../data/services/auth_service.dart';
+
 import '../auth/login_page.dart';
 import '../exercises/exercises_page.dart';
 import '../routines/routine_page.dart';
@@ -7,7 +9,14 @@ import '../settings/settings_page.dart';
 import '../statistics/statistics_page.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+
+  final LoginUser usuario;
+
+  // const HomePage({super.key});
+  const HomePage({
+    super.key,
+    required this.usuario,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -160,9 +169,12 @@ class HomePage extends StatelessWidget {
 
                 children: [
 
-                  const Text(
-                    "Bienvenido a ErgoVida",
-                    style: TextStyle(
+                  // const Text(
+                  //   "Bienvenido a ErgoVida",
+                  Text(
+                    " Hola, ${usuario.nombre}",
+                    // style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
                     ),
@@ -171,8 +183,23 @@ class HomePage extends StatelessWidget {
                   const SizedBox(height: 10),
 
                   const Text(
+                    // "Gestiona tus pausas activas y mejora tu bienestar laboral.",
+                    "Bienvenido a ErgoVida",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                      // color: Colors.grey,
+                      color: Colors.black87,
+                      // fontSize: 18,
+                    ),
+                  ),
+
+                  SizedBox(height: 6),
+
+                  const Text(
                     "Gestiona tus pausas activas y mejora tu bienestar laboral.",
                     style: TextStyle(
+                      fontSize: 16,
                       color: Colors.grey,
                     ),
                   ),
