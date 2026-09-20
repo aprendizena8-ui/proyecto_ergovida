@@ -5,6 +5,8 @@ import java.lang.management.RuntimeMXBean;
 import java.util.HashMap;
 import java.util.Map;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,13 +26,16 @@ public class HealthController {
     }
 
     @GetMapping("/health")
-    public ResponseEntity<Map<String, Object>> health() {
+    public ResponseEntity<Map<String, Object>> health(
+        HttpServletRequest httpRequest) {
 
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
 
         long uptime = runtimeMXBean.getUptime();
 
-        boolean databaseUp = healthCheckService.comprobarBaseDatos();
+        String origenIp = httpRequest.getRemoteAddr();
+
+        boolean databaseUp = healthCheckService.comprobarBaseDatos(origenIp);
 
         Map<String, Object> response = new HashMap<>();
 
