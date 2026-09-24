@@ -1,0 +1,74 @@
+{
+	"info": {
+		"name": "ErgoVida API - Coleccion CRUD",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. POST - Registrar Usuario (Create)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nombre\": \"Aprendiz SENA\",\n  \"correo\": \"aprendiz.sena@ergovida.com\",\n  \"password\": \"Sena1234!\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/auth/register",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "auth", "register"]
+				}
+			}
+		},
+		{
+			"name": "2. GET - Listar Usuarios (Read)",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:8080/api/users",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "users"]
+				}
+			}
+		},
+		{
+			"name": "3. PUT - Actualizar Usuario (Update)",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nombre\": \"Aprendiz SENA Actualizado\",\n  \"fotoPerfil\": \"avatar1.png\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/users/1",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "users", "1"]
+				}
+			}
+		},
+		{
+			"name": "4. DELETE - Eliminar Usuario (Delete)",
+			"request": {
+				"method": "DELETE",
+				"url": {
+					"raw": "http://localhost:8080/api/users/1",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "users", "1"]
+				}
+			}
+		}
+	]
+}
