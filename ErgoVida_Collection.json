@@ -13,7 +13,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"nombre\": \"Aprendiz SENA\",\n  \"correo\": \"aprendiz.sena@ergovida.com\",\n  \"password\": \"Sena1234!\"\n}"
+					"raw": "{\n  \"nombre\": \"Laura Pulido\",\n  \"correo\": \"laura.test@ergovida.com\",\n  \"password\": \"Sena1234!\"\n}"
 				},
 				"url": {
 					"raw": "http://localhost:8080/api/auth/register",
@@ -46,7 +46,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"nombre\": \"Aprendiz SENA Actualizado\",\n  \"fotoPerfil\": \"avatar1.png\"\n}"
+					"raw": "{\n  \"nombre\": \"Laura Pulido Actualizado\",\n  \"fotoPerfil\": \"avatar_nuevo.png\"\n}"
 				},
 				"url": {
 					"raw": "http://localhost:8080/api/users/1",
@@ -67,6 +67,138 @@
 					"host": ["localhost"],
 					"port": "8080",
 					"path": ["api", "users", "1"]
+				}
+			}
+		},
+		{
+			"name": "5. Ejercicios - POST Crear Ejercicio",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nombre\": \"Estiramiento de Cuello\",\n  \"descripcion\": \"Girar la cabeza suavemente durante 15 segundos\",\n  \"duracion\": 15,\n  \"categoria\": \"Cuello\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/ejercicios",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "ejercicios"]
+				}
+			}
+		},
+		{
+			"name": "6. Ejercicios - GET Listar Ejercicios",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:8080/api/ejercicios",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "ejercicios"]
+				}
+			}
+		},
+		{
+			"name": "7. Ejercicios - PUT Actualizar",
+      		"request": {
+				"method": "PUT",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+        		],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nombre\": \"Estiramiento de Cuello Avanzado\",\n  \"descripcion\": \"Girar la cabeza suavemente durante 30 segundos\",\n  \"duracion\": 30,\n  \"categoria\": \"Cervical\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/ejercicios/1",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "ejercicios", "1"]
+       			}
+      		}
+    	},
+    	{
+			"name": "8. Ejercicios - DELETE Eliminar",
+			"request": {
+				"method": "DELETE",
+				"url": {
+					"raw": "http://localhost:8080/api/ejercicios/1",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "ejercicios", "1"]
+				}
+      		}
+    	},
+		{
+			"name": "9. Rutinas - POST Crear Rutina",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nombre\": \"Pausa Activa Mañana\",\n  \"descripcion\": \"Rutina de descompresión para columna y muñecas\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/rutinas",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "rutinas"]
+				}
+			}
+		},
+		{
+			"name": "10. Rutinas - GET Listar Rutinas",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:8080/api/rutinas",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "rutinas"]
+				}
+			}
+		},
+		{
+			"name": "11. Rutinas - PUT Actualizar",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+				],
+				"body": {
+				"mode": "raw",
+				"raw": "{\n  \"nombre\": \"Pausa Activa Tarde\",\n  \"descripcion\": \"Rutina intensiva de estiramiento lumbar\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/rutinas/1",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "rutinas", "1"]
+				}
+      		}
+    	},
+		{
+			"name": "12. Rutinas - DELETE Eliminar",
+			"request": {
+				"method": "DELETE",
+				"url": {
+					"raw": "http://localhost:8080/api/rutinas/1",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "rutinas", "1"]
 				}
 			}
 		}
