@@ -36,8 +36,12 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
         return userRepository.findById(id).map(user -> {
-            user.setNombre(userDetails.getNombre());
-            user.setFotoPerfil(userDetails.getFotoPerfil());
+            if (userDetails.getNombre() != null) user.setNombre(userDetails.getNombre());
+            if (userDetails.getCorreo() != null) user.setCorreo(userDetails.getCorreo());
+            if (userDetails.getRol() != null) user.setRol(userDetails.getRol());
+            if (userDetails.getFotoPerfil() != null) user.setFotoPerfil(userDetails.getFotoPerfil());
+            if (userDetails.getActivo() != null) user.setActivo(userDetails.getActivo());
+            
             User updatedUser = userRepository.save(user);
             return ResponseEntity.ok(updatedUser);
         }).orElse(ResponseEntity.notFound().build());
