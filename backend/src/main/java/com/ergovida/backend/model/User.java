@@ -81,5 +81,4 @@ public class User {
     public void setActivo(Boolean activo) {
         this.activo=activo;
     }
-
 }

@@ -201,6 +201,73 @@
 					"path": ["api", "rutinas", "1"]
 				}
 			}
+		},
+		{
+			"name": "13. Horarios - POST Crear Horario",
+      		"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"usuarioId\": 1,\n  \"hora\": \"10:30:00\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/horarios",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "horarios"]
+				}
+			}
+		},
+    	{
+      		"name": "14. Horarios - GET Por Usuario",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:8080/api/horarios/usuario/1",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "horarios", "usuario", "1"]
+				}
+      		}
+    	},
+    	{
+			"name": "15. Estadisticas - POST Guardar Estadistica",
+				"request": {
+					"method": "POST",
+					"header": [{ "key": "Content-Type", "value": "application/json" }],
+					"body": {
+						"mode": "raw",
+						"raw": "{\n  \"usuarioId\": 1,\n  \"pausasRealizadas\": 4,\n  \"minutosActivos\": 20,\n  \"fecha\": \"2026-09-29\"\n}"
+					},
+					"url": {
+						"raw": "http://localhost:8080/api/estadisticas",
+						"protocol": "http",
+						"host": ["localhost"],
+						"port": "8080",
+						"path": ["api", "estadisticas"]
+					}
+				}
+    		},
+    	{
+			"name": "16. Pausas Realizadas - POST Registrar Pausa",
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"usuarioId\": 1,\n  \"ejercicioId\": 1,\n  \"fecha\": \"2026-09-29T10:30:00\",\n  \"completada\": true\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/pausas-realizadas",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "pausas-realizadas"]
+				}
+			}
 		}
 	]
 }
