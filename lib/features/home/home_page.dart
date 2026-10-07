@@ -9,10 +9,9 @@ import '../settings/settings_page.dart';
 import '../statistics/statistics_page.dart';
 
 class HomePage extends StatelessWidget {
-
+  
   final LoginUser usuario;
 
-  // const HomePage({super.key});
   const HomePage({
     super.key,
     required this.usuario,
@@ -27,134 +26,138 @@ class HomePage extends StatelessWidget {
         children: [
 
           // MENÚ LATERAL
-          Container(
-            width: 250,
+          ColoredBox(
             color: const Color(0xFF1E293B),
 
-            child: Column(
-              children: [
+            child: SizedBox(
+              width: 250,
+              child: Column(
+                children: [
 
-                const SizedBox(height: 30),
+                  const SizedBox(height: 30),
 
-                const Icon(
-                  Icons.accessibility_new,
-                  color: Colors.green,
-                  size: 70,
-                ),
-
-                const SizedBox(height: 10),
-
-                const Text(
-                  "ErgoVida",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 40),
-
-                _menuItem(
-                  context,
-                  Icons.dashboard,
-                  "Dashboard",
-                  () {},
-                ),
-
-                _menuItem(
-                  context,
-                  Icons.fitness_center,
-                  "Ejercicios",
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            const ExercisesPage(),
-                      ),
-                    );
-                  },
-                ),
-
-                _menuItem(
-                  context,
-                  Icons.repeat,
-                  "Rutinas",
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            const RoutinePage(),
-                      ),
-                    );
-                  },
-                ),
-
-                _menuItem(
-                  context,
-                  Icons.bar_chart,
-                  "Estadísticas",
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            const StatisticsPage(),
-                      ),
-                    );
-                  },
-                ),
-
-                _menuItem(
-                  context,
-                  Icons.settings,
-                  "Configuración",
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            const SettingsPage(),
-                      ),
-                    );
-                  },
-                ),
-
-                const Spacer(),
-
-                const Divider(
-                  color: Colors.white24,
-                ),
-
-                ListTile(
-                  leading: const Icon(
-                    Icons.logout,
-                    color: Colors.red,
+                  const Icon(
+                    Icons.accessibility_new,
+                    color: Colors.green,
+                    size: 70,
                   ),
 
-                  title: const Text(
-                    "Cerrar Sesión",
+                  const SizedBox(height: 10),
+
+                  const Text(
+                    "ErgoVida",
                     style: TextStyle(
                       color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
 
-                  onTap: () {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            const LoginPage(),
-                      ),
-                      (route) => false,
-                    );
-                  },
-                ),
+                  const SizedBox(height: 40),
 
-                const SizedBox(height: 20),
-              ],
+                  _menuItem(
+                    context,
+                    Icons.dashboard,
+                    "Dashboard",
+                    () {},
+                  ),
+
+                  _menuItem(
+                    context,
+                    Icons.fitness_center,
+                    "Ejercicios",
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ExercisesPage(
+                            usuario: usuario,
+                            usuarioId: usuario.id, // <-- Pasa el usuarioId aquí
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                  _menuItem(
+                    context,
+                    Icons.repeat,
+                    "Rutinas",
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const RoutinePage(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  _menuItem(
+                    context,
+                    Icons.bar_chart,
+                    "Estadísticas",
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const StatisticsPage(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  _menuItem(
+                    context,
+                    Icons.settings,
+                    "Configuración",
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const SettingsPage(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  const Spacer(),
+
+                  const Divider(
+                    color: Colors.white24,
+                  ),
+
+                  ListTile(
+                    leading: const Icon(
+                      Icons.logout,
+                      color: Colors.red,
+                    ),
+
+                    title: const Text(
+                      "Cerrar Sesión",
+                      style: TextStyle(
+                        color: Colors.white,
+                      ),
+                    ),
+
+                    onTap: () {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const LoginPage(),
+                        ),
+                        (route) => false,
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
 
@@ -169,11 +172,8 @@ class HomePage extends StatelessWidget {
 
                 children: [
 
-                  // const Text(
-                  //   "Bienvenido a ErgoVida",
                   Text(
                     " Hola, ${usuario.nombre}",
-                    // style: TextStyle(
                     style: const TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
@@ -183,14 +183,11 @@ class HomePage extends StatelessWidget {
                   const SizedBox(height: 10),
 
                   const Text(
-                    // "Gestiona tus pausas activas y mejora tu bienestar laboral.",
                     "Bienvenido a ErgoVida",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w500,
-                      // color: Colors.grey,
                       color: Colors.black87,
-                      // fontSize: 18,
                     ),
                   ),
 
@@ -285,8 +282,10 @@ class HomePage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  const ExercisesPage(),
+                              builder: (_) => ExercisesPage(
+                                usuario: usuario,
+                                usuarioId: usuario.id,
+                              ),
                             ),
                           );
                         },

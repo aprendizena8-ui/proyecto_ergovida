@@ -4,6 +4,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:pose_detection/pose_detection.dart';
+import '../../data/services/pausa_service.dart';
+import '../../data/services/ejercicio_service.dart';
 
 // ============================================================
 //  AJUSTES (cambia estos valores si algo se siente muy fácil/difícil)
@@ -154,12 +156,16 @@ class ExerciseCameraPage extends StatefulWidget {
   final String nombre;
   final String duracion;
   final IconData icono;
+  final int usuarioId;
+  final int ejercicioId;
 
   const ExerciseCameraPage({
     super.key,
     required this.nombre,
     required this.duracion,
     required this.icono,
+    required this.usuarioId,
+    required this.ejercicioId,
   });
 
   @override
@@ -167,10 +173,15 @@ class ExerciseCameraPage extends StatefulWidget {
 }
 
 class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
+  final EjercicioService _ejercicioService = EjercicioService();
+
   CameraController? _cameraController;
   PoseDetector? _poseDetector;
   bool _isCameraReady = false;
   bool _isDetecting = false;
+
+  bool _yaGuardado = false;
+  bool _guardando = false;
 
   String _feedback = "Colócate frente a la cámara";
   Color _feedbackColor = Colors.orange;
@@ -730,6 +741,39 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     }
   }
 
+  void _finalizarYGuardarEnBackend() async {
+    // Si ya se envió el registro, evitamos duplicar la petición
+    if (_yaGuardado || _guardando) return;
+    setState(() => _guardando = true);
+
+    bool guardado = await _ejercicioService.registrarPausa(
+      usuarioId: widget.usuarioId,
+      ejercicioId: widget.ejercicioId,
+      completada: true,
+    );
+
+    if (!mounted) return;
+
+    if (guardado) {
+      _yaGuardado = true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Pausa registrada con éxito en la base de datos"),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
+    } else {
+      setState(() => _guardando = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Error al registrar la pausa en el servidor"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   void _finish({required bool timeUp}) {
     _timer?.cancel();
     if (!mounted) return;
@@ -744,6 +788,8 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         _feedback = '🎉 ¡Ejercicio completado! Excelente trabajo';
       }
     });
+
+    _finalizarYGuardarEnBackend();
   }
 
   String get _formattedTime {
@@ -1034,7 +1080,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
                   onPressed: () {
-                    _timer?.cancel();
+                    _finish(timeUp: false);
                     Navigator.pop(context);
                   },
                   icon: const Icon(Icons.stop),
