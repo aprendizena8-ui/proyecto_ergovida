@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 
+main
 import '../../main.dart';
 import '../../widgets/ergovida_logo.dart';
+=======
+import '../../data/services/auth_service.dart';
+
+develop
 import '../auth/login_page.dart';
 import '../exercises/exercises_page.dart';
 import '../routines/routine_page.dart';
@@ -9,9 +14,20 @@ import '../settings/settings_page.dart';
 import '../statistics/statistics_page.dart';
 
 class HomePage extends StatelessWidget {
+main
   final AppThemeController? themeController;
 
   const HomePage({super.key, this.themeController});
+=======
+
+  final LoginUser usuario;
+
+  // const HomePage({super.key});
+  const HomePage({
+    super.key,
+    required this.usuario,
+  });
+develop
 
   @override
   Widget build(BuildContext context) {
@@ -152,6 +168,7 @@ class HomePage extends StatelessWidget {
               ],
             ),
           ),
+main
             Expanded(
               child: Container(
                 color: pageBg,
@@ -204,6 +221,52 @@ class HomePage extends StatelessWidget {
                         ),
                       ),
                     ],
+
+          // CONTENIDO PRINCIPAL
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(30),
+
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+
+                children: [
+
+                  // const Text(
+                  //   "Bienvenido a ErgoVida",
+                  Text(
+                    " Hola, ${usuario.nombre}",
+                    // style: TextStyle(
+                    style: const TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  const Text(
+                    // "Gestiona tus pausas activas y mejora tu bienestar laboral.",
+                    "Bienvenido a ErgoVida",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                      // color: Colors.grey,
+                      color: Colors.black87,
+                      // fontSize: 18,
+                    ),
+                  ),
+
+                  SizedBox(height: 6),
+
+                  const Text(
+                    "Gestiona tus pausas activas y mejora tu bienestar laboral.",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
+                    ),
+develop
                   ),
                   const SizedBox(height: 28),
                   Row(

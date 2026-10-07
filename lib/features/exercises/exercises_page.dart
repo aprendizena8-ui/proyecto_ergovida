@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'exercise_camera_page.dart'; // ← Cambiado a la pantalla de cámara
 
 class ExercisesPage extends StatelessWidget {
   const ExercisesPage({super.key});
@@ -34,17 +35,38 @@ class ExercisesPage extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         itemCount: ejercicios.length,
         itemBuilder: (context, index) {
+          final ejercicio = ejercicios[index];
+
           return Card(
+            margin: const EdgeInsets.only(bottom: 12),
             child: ListTile(
               leading: Icon(
-                ejercicios[index]["icono"] as IconData,
+                ejercicio["icono"] as IconData,
                 color: Colors.green,
+                size: 28,
               ),
-              title: Text(ejercicios[index]["nombre"] as String),
-              subtitle:
-                  Text("Duración: ${ejercicios[index]["duracion"]}"),
+              title: Text(
+                ejercicio["nombre"] as String,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text("Duración: ${ejercicio["duracion"]}"),
               trailing: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ExerciseCameraPage(
+                        nombre: ejercicio["nombre"] as String,
+                        duracion: ejercicio["duracion"] as String,
+                        icono: ejercicio["icono"] as IconData,
+                      ),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                ),
                 child: const Text("Iniciar"),
               ),
             ),
