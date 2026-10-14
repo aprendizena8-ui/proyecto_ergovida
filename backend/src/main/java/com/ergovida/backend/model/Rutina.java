@@ -3,9 +3,11 @@ package com.ergovida.backend.model;
 import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(name = "rutinas")
+
 public class Rutina {
 
     @Id
@@ -15,7 +17,8 @@ public class Rutina {
     private String nombre;
     private String descripcion;
 
-    @ManyToMany
+    // EAGER para que se cargue siempre la lista de ejercicios
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "detalle_rutina",
         joinColumns = @JoinColumn(name = "rutina_id"),

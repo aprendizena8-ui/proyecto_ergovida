@@ -43,14 +43,6 @@ public class SecurityConfig {
             .formLogin(form -> form.disable())           // Desactiva el formulario de login por defecto
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/api/**").permitAll() // Permite el acceso a todos los endpoints de la API
-                    // .requestMatchers("/api/auth/**").permitAll()
-                    // .requestMatchers("/api/health").permitAll()
-                    // .requestMatchers("/api/users/**").permitAll()
-                    // .requestMatchers("/api/ejercicios/**").permitAll()
-                    // .requestMatchers("/api/rutinas/**").permitAll()
-                    // .requestMatchers("/api/horarios/**").permitAll()
-                    // .requestMatchers("/api/estadisticas/**").permitAll()
-                    // .requestMatchers("/api/pausas-realizadas/**").permitAll()
                     .anyRequest().permitAll()
             );
 

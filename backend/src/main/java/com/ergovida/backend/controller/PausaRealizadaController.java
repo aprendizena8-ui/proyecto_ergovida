@@ -1,8 +1,13 @@
 package com.ergovida.backend.controller;
 
+import com.ergovida.backend.dto.PausaRequest;
 import com.ergovida.backend.model.PausaRealizada;
 import com.ergovida.backend.repository.PausaRealizadaRepository;
+import com.ergovida.backend.service.PausaService;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,10 +18,15 @@ import java.util.List;
 public class PausaRealizadaController {
 
     @Autowired
-    private PausaRealizadaRepository pausaRealizadaRepository;
+    private PausaService pausaService;
+
+    @Autowired
+    private PausaRealizadaRepository pausaRealizadaRepository;  // ← AGREGAR ESTO
 
     @GetMapping
-    public List<PausaRealizada> getAll() { return pausaRealizadaRepository.findAll(); }
+    public List<PausaRealizada> getAll() {
+        return pausaRealizadaRepository.findAll();
+    }
 
     @GetMapping("/usuario/{usuarioId}")
     public List<PausaRealizada> getByUsuario(@PathVariable Long usuarioId) {
@@ -24,7 +34,7 @@ public class PausaRealizadaController {
     }
 
     @PostMapping
-    public PausaRealizada create(@RequestBody PausaRealizada pausa) {
-        return pausaRealizadaRepository.save(pausa);
+    public ResponseEntity<PausaRealizada> create(@RequestBody PausaRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(pausaService.registrar(req));
     }
 }

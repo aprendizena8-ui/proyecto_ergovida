@@ -2,16 +2,6 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-// class AuthResponse {
-//   final bool success;
-//   final String message;
-
-//   AuthResponse({
-//     required this.success,
-//     required this.message,
-//   });
-// }
-
 class LoginUser {
   final int id;
   final String nombre;
@@ -50,21 +40,6 @@ class AuthResponse {
 class AuthService {
   static const String baseUrl = "http://localhost:8080/api/auth";
 
-  // static String nombreGuardado = "";
-  // static String correoGuardado = "";
-  // static String passwordGuardada = "";
-
-
-  // static void registrar(
-  //   String nombre,
-  //   String correo,
-  //   String password,
-  // ) {
-  //   nombreGuardado = nombre;
-  //   correoGuardado = correo;
-  //   passwordGuardada = password;
-  // }
-
   Future<AuthResponse> registrar(
     String nombre,
     String correo,
@@ -100,12 +75,7 @@ class AuthService {
         success: false,
         message: response.body,
       );
-    // } catch (e) {
-    //   return AuthResponse(
-    //     success: false,
-    //     message: "No fue posible conectar con el servidor.",
-    //   );
-    // }
+
     } catch (e) {
       print("ERROR AL REGISTRAR: $e");
 
@@ -115,15 +85,6 @@ class AuthService {
       );
     }
   }
-  
-  //   bool login(
-  //     String correo,
-  //     String password,
-  //   ) {
-  //     return correo == correoGuardado &&
-  //         password == passwordGuardada;
-  //   }
-  // }
 
   Future<AuthResponse> login(
     String correo,

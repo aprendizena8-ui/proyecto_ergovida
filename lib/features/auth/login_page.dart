@@ -15,25 +15,13 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-main
   final TextEditingController correoController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-
+  final FocusNode passwordFocusNode = FocusNode();
   final AuthService auth = AuthService();
 
-  final TextEditingController correoController =
-      TextEditingController();
-
-  final TextEditingController passwordController =
-      TextEditingController();
-
-  final FocusNode passwordFocusNode = FocusNode();
-
- develop
   bool ocultarPassword = true;
-
   bool cargando = false;
-
   String? errorCorreo;
   String? errorPassword;
 
@@ -41,21 +29,13 @@ main
   void dispose() {
     correoController.dispose();
     passwordController.dispose();
-
     passwordFocusNode.dispose();
-
     super.dispose();
   }
 
-main
-  void iniciarSesion() {
+  Future<void> iniciarSesion() async {
     final correo = correoController.text.trim();
     final password = passwordController.text.trim();
-
-  Future<void> iniciarSesion() async {
-    String correo = correoController.text.trim();
-    String password = passwordController.text.trim();
-develop
 
     setState(() {
       errorCorreo = null;
@@ -63,117 +43,71 @@ develop
     });
 
     if (correo.isEmpty && password.isEmpty) {
-
       setState(() {
         errorCorreo = "Este campo es obligatorio";
         errorPassword = "Este campo es obligatorio";
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
- main
-          backgroundColor: Color(0xFF0E2238),
-          content: Text('Por favor completa todos los campos'),
           backgroundColor: Color(0xFF455A64),
-
-          content: Text(
-            "Por favor completa todos los campos.",
-          ),
-develop
+          content: Text("Por favor completa todos los campos."),
         ),
       );
       return;
     }
 
-main
-    final auth = AuthService();
-    final acceso = auth.login(correo, password);
     if (correo.isEmpty) {
-
       setState(() {
         errorCorreo = "Este campo es obligatorio";
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-
           backgroundColor: Color(0xFF455A64),
-
-          content: Text(
-
-            "Ingresa tu correo electrónico.",
-          ),
+          content: Text("Ingresa tu correo electrónico."),
         ),
       );
       return;
     }
 
     if (password.isEmpty) {
-
       setState(() {
         errorPassword = "Este campo es obligatorio";
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-
           backgroundColor: Color(0xFF455A64),
-
-          content: Text(
-            "Ingresa tu contraseña.",
-          ),
+          content: Text("Ingresa tu contraseña."),
         ),
       );
       return;
     }
 
-    // final auth = AuthService();
-
     setState(() {
       cargando = true;
     });
 
-    // await Future.delayed(
-    //   const Duration(seconds: 3),
-    // );
-
-    final respuesta = await auth.login(
-      correo,
-      password,
-    );
-develop
+    final respuesta = await auth.login(correo, password);
 
     if (!mounted) return;
-
     setState(() {
       cargando = false;
     });
 
-if (respuesta.success) {
+    if (respuesta.success) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-main
-          builder: (context) => HomePage(themeController: widget.themeController),
           builder: (context) => HomePage(
             usuario: respuesta.user!,
+            themeController: AppThemeController.instance,
           ),
-develop
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-main
-        const SnackBar(
-          backgroundColor: Color(0xFFCF3A3A),
-          content: Text('Correo o contraseña incorrectos'),
-
         SnackBar(
-          backgroundColor: Colors.red,
-          content: Text(
-            respuesta.message,
-          ),
-develop
+          backgroundColor: const Color(0xFFCF3A3A),
+          content: Text(respuesta.message),
         ),
       );
     }
@@ -220,7 +154,6 @@ develop
                       color: Color(0xFF10243A),
                     ),
                   ),
-main
                   const SizedBox(height: 8),
                   const Text(
                     'Inicia sesión para continuar con tu bienestar laboral.',
@@ -232,27 +165,124 @@ main
                   ),
                   const SizedBox(height: 28),
                   TextField(
+                    enabled: !cargando,
                     controller: correoController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
+                    textInputAction: TextInputAction.next,
+                    onSubmitted: (_) {
+                      FocusScope.of(context).requestFocus(passwordFocusNode);
+                    },
+                    onChanged: (value) {
+                      final emailValido = RegExp(
+                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                      setState(() {
+                        if (value.trim().isEmpty) {
+                          errorCorreo = "Este campo es obligatorio";
+                        } else if (!emailValido.hasMatch(value.trim())) {
+                          errorCorreo = "Ingresa un correo electrónico válido.";
+                        } else {
+                          errorCorreo = null;
+                        }
+                      });
+                    },
+                    decoration: InputDecoration(
                       labelText: 'Correo electrónico',
-                      prefixIcon: Icon(Icons.email_outlined),
+                      prefixIcon: const Icon(Icons.email),
+                      errorText: errorCorreo,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Colors.green,
+                          width: 2,
+                        ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Colors.red,
+                          width: 2,
+                        ),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Colors.red,
+                          width: 2,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 18),
                   TextField(
+                    enabled: !cargando,
                     controller: passwordController,
+                    focusNode: passwordFocusNode,
                     obscureText: ocultarPassword,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) {
+                      if (!cargando) {
+                        iniciarSesion();
+                      }
+                    },
+                    onChanged: (value) {
+                      setState(() {
+                        if (value.isEmpty) {
+                          errorPassword = "Este campo es obligatorio";
+                        } else {
+                          errorPassword = null;
+                        }
+                      });
+                    },
                     decoration: InputDecoration(
                       labelText: 'Contraseña',
-                      prefixIcon: const Icon(Icons.lock_outline),
+                      prefixIcon: const Icon(Icons.lock),
+                      errorText: errorPassword,
                       suffixIcon: IconButton(
                         icon: Icon(
                           ocultarPassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
+                              ? Icons.visibility
+                              : Icons.visibility_off,
                         ),
-                        onPressed: () => setState(() => ocultarPassword = !ocultarPassword),
+                        onPressed: cargando
+                            ? null
+                            : () {
+                                setState(() {
+                                  ocultarPassword = !ocultarPassword;
+                                });
+                              },
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Colors.green,
+                          width: 2,
+                        ),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Colors.red,
+                          width: 2,
+                        ),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: Colors.red,
+                          width: 2,
+                        ),
                       ),
                     ),
                   ),
@@ -265,224 +295,9 @@ main
                         '¿Olvidaste tu contraseña?',
                         style: TextStyle(color: Color(0xFF1F7FC0)),
                       ),
-                ),
-
-                const SizedBox(height: 30),
-
-                TextField(
-                  enabled: !cargando,
-                  controller: correoController,
-
-                  textInputAction: TextInputAction.next,
-
-                  onSubmitted: (_) {
-                    FocusScope.of(context).requestFocus(passwordFocusNode);
-                  },
-
-                  onChanged: (value) {
-                    final emailValido = RegExp(
-                      r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$',
-                    );
-
-                    setState(() {
-                      if (value.trim().isEmpty) {
-                        errorCorreo = "Este campo es obligatorio";
-                      } else if (!emailValido.hasMatch(value.trim())) {
-                        errorCorreo =
-                            "Ingresa un correo electrónico válido.";
-                      } else {
-                        errorCorreo = null;
-                      }
-                    });
-                  },
-
-                  decoration: InputDecoration(
-                    labelText: "Correo electrónico",
-
-                    prefixIcon: const Icon(Icons.email),
-
-                    errorText: errorCorreo,
-
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Colors.green,
-                        width: 2,
-                      ),
-                    ),
-
-                    errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Colors.red,
-                        width: 2,
-                      ),
-                    ),
-
-                    focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Colors.red,
-                        width: 2,
-                      ),
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 20),
-
-                TextField(
-                  enabled: !cargando,
-                  controller: passwordController,
-
-                  focusNode: passwordFocusNode,
-
-                  obscureText: ocultarPassword,
-
-                  textInputAction: TextInputAction.done,
-
-                  onSubmitted: (_) {
-                    if (!cargando) {
-                      iniciarSesion();
-                    }
-                  },
-
-                  onChanged: (value) {
-                    setState(() {
-                      if (value.isEmpty) {
-                        errorPassword = "Este campo es obligatorio";
-
-                      } else {
-                        errorPassword = null;
-                      }
-                    });
-                  },
-
-                  decoration: InputDecoration(
-                    labelText: "Contraseña",
-                    prefixIcon: const Icon(Icons.lock),
-
-                    errorText: errorPassword,
-
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        ocultarPassword
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                      ),
-                      // onPressed: () {
-                      onPressed: cargando
-                          ? null
-                          : () {
-                              setState(() {
-                                ocultarPassword =
-                                    !ocultarPassword;
-                              });
-                            },
-                    ),
-
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Colors.green,
-                        width: 2,
-                      ),
-                    ),
-
-                    errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Colors.red,
-                        width: 2,
-                      ),
-                    ),
-
-                    focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: Colors.red,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-                  
-                const SizedBox(height: 25),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: cargando
-                          ? Colors.grey.shade300
-                          : Colors.green,
-                      foregroundColor: Colors.white,
-develop
-                    ),
-                    
-                    onPressed: cargando ? null : iniciarSesion,
-
-                    child: cargando
-
-                        ? const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-
-                              SizedBox(
-                                width: 22,
-                                height: 22,
-
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 3,
-
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                  Color(0xFF2E7D32),
-                                  ),
-                                ),
-                              ),
-
-                              SizedBox(width: 15),
-
-                              Text(
-                                "Ingresando...",
-                                style: TextStyle(
-
-                                  color: Colors.black87,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          )
-                          
-
-                        : const Text(
-                            "Iniciar Sesión",
-                            style: TextStyle(
-                              fontSize: 16,
-                            ),
-                          ),
-                  ),
-main
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 30),
                   SizedBox(
                     width: double.infinity,
                     child: DecoratedBox(
@@ -502,7 +317,7 @@ main
                         ],
                       ),
                       child: ElevatedButton(
-                        onPressed: iniciarSesion,
+                        onPressed: cargando ? null : iniciarSesion,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
@@ -511,13 +326,40 @@ main
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 18),
                         ),
-                        child: const Text(
-                          'Iniciar sesión',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                        child: cargando
+                            ? const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 3,
+                                      valueColor:
+                                          AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: 15),
+                                  Text(
+                                    "Ingresando...",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : const Text(
+                                "Iniciar Sesión",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
                   ),
@@ -537,65 +379,39 @@ main
                   ),
                   const SizedBox(height: 18),
                   TextButton(
-                    onPressed: () {
-                      Navigator.push(
+                    onPressed: () async {
+                      final correoRegistrado = await Navigator.push<String>(
                         context,
-                        MaterialPageRoute(builder: (context) => const RegisterPage()),
+                        MaterialPageRoute(
+                          builder: (context) => const RegisterPage(),
+                        ),
                       );
+                      if (correoRegistrado != null) {
+                        setState(() {
+                          correoController.text = correoRegistrado;
+                          passwordController.clear();
+                          errorCorreo = null;
+                          errorPassword = null;
+                        });
+                        FocusScope.of(context).requestFocus(passwordFocusNode);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            backgroundColor: Colors.green,
+                            content: Text(
+                              "Cuenta creada correctamente. Ahora inicia sesión.",
+                            ),
+                          ),
+                        );
+                      }
                     },
                     child: const Text(
-                      'Crear cuenta nueva',
+                      "¿No tienes cuenta? Regístrate",
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF0E2238),
+                        color: Color(0xFF0E2238), // Azul oscuro
                       ),
                     ),
-                ),
-
-                const SizedBox(height: 15),
-
-                TextButton(
-
-                  onPressed: cargando
-                      ? null
-                      : () async {
-
-                    final correoRegistrado =
-
-                        await Navigator.push<String>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const RegisterPage(),
-                      ),
-                    );
-
-                    if (correoRegistrado != null) {
-
-                      setState(() {
-                        correoController.text = correoRegistrado;
-                        passwordController.clear();
-
-                        errorCorreo = null;
-                        errorPassword = null;
-                      });
-
-                      FocusScope.of(context).requestFocus(passwordFocusNode);
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          backgroundColor: Colors.green,
-                          content: Text(
-                            "Cuenta creada correctamente. Ahora inicia sesión.",
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text(
-                    "¿No tienes cuenta? Regístrate",
-develop
                   ),
                 ],
               ),
