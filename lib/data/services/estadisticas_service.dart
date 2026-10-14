@@ -1,18 +1,45 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'api_client.dart';
 
 class EstadisticasService {
-  static const String baseUrl = "http://localhost:8080/api/estadisticas";
-
-  Future<Map<String, dynamic>?> obtenerEstadisticasUsuario(int usuarioId) async {
+  // GET: Todas las estadísticas
+  Future<List<dynamic>> obtenerTodas() async {
     try {
-      final response = await http.get(Uri.parse("$baseUrl/usuario/$usuarioId"));
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
-      }
-      return null;
+      final data = await ApiClient.get('/estadisticas');
+      return data as List<dynamic>;
     } catch (e) {
-      print("Error al obtener estadísticas: $e");
+      print('Error al obtener estadísticas: $e');
+      return [];
+    }
+  }
+
+  // GET: Estadísticas por usuario
+  Future<List<dynamic>> obtenerPorUsuario(int usuarioId) async {
+    try {
+      final data = await ApiClient.get('/estadisticas/usuario/$usuarioId');
+      return data as List<dynamic>;
+    } catch (e) {
+      print('Error al obtener estadísticas del usuario: $e');
+      return [];
+    }
+  }
+
+  // POST: Crear o actualizar estadística
+  Future<Map<String, dynamic>?> guardarEstadistica({
+    required int usuarioId,
+    required int pausasRealizadas,
+    required int minutosActivos,
+    required String fecha,
+  }) async {
+    try {
+      final data = await ApiClient.post('/estadisticas', {
+        'usuarioId': usuarioId,
+        'pausasRealizadas': pausasRealizadas,
+        'minutosActivos': minutosActivos,
+        'fecha': fecha,
+      });
+      return data as Map<String, dynamic>;
+    } catch (e) {
+      print('Error al guardar estadística: $e');
       return null;
     }
   }

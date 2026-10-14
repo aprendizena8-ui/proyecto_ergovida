@@ -30,15 +30,57 @@ class EjercicioService {
         Uri.parse("$baseUrl/pausas-realizadas"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "usuario": {"id": usuarioId},
-          "ejercicio": {"id": ejercicioId},
-          "fecha": DateTime.now().toIso8601String(),
-          "completada": completada,
+          'usuarioId': usuarioId,
+          'ejercicioId': ejercicioId,
+          'completada': completada,
         }),
       );
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
       print("Error al guardar pausa en la BD: $e");
+      return false;
+    }
+  }
+
+    // POST: Crear ejercicio
+  Future<bool> crearEjercicio(Map<String, dynamic> datos) async {
+    try {
+      final response = await http.post(
+        Uri.parse("$baseUrl/ejercicios"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(datos),
+      );
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      print("Error al crear ejercicio: $e");
+      return false;
+    }
+  }
+
+  // PUT: Actualizar ejercicio
+  Future<bool> actualizarEjercicio(int id, Map<String, dynamic> datos) async {
+    try {
+      final response = await http.put(
+        Uri.parse("$baseUrl/ejercicios/$id"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(datos),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Error al actualizar ejercicio: $e");
+      return false;
+    }
+  }
+
+  // DELETE: Eliminar ejercicio
+  Future<bool> eliminarEjercicio(int id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse("$baseUrl/ejercicios/$id"),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Error al eliminar ejercicio: $e");
       return false;
     }
   }

@@ -1,9 +1,13 @@
 package com.ergovida.backend.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 
 @Entity
 @Table(name = "ejercicios")
+@JsonIgnoreProperties("rutinas")
+
 public class Ejercicio {
 
     @Id

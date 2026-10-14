@@ -7,5 +7,4 @@ class RoutineModel {
     required this.nombre,
     required this.ejercicios,
   });
-
 }

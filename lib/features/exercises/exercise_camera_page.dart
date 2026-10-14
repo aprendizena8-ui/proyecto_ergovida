@@ -4,153 +4,26 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:pose_detection/pose_detection.dart';
-import '../../data/services/pausa_service.dart';
 import '../../data/services/ejercicio_service.dart';
-
-// ============================================================
-//  AJUSTES (cambia estos valores si algo se siente muy fácil/difícil)
-// ============================================================
-
-/// true = modelo más preciso pero más lento. Si la app va con tirones,
-/// ponlo en false.
-const bool _useHeavyModel = true;
-
-/// Visibilidad mínima para considerar válido un punto del cuerpo.
-const double _minVis = 0.4;
-
-/// Suavizado de los puntos (0 a 1). Más bajo = más estable pero con retraso.
-const double _smooth = 0.5;
-
-// Cuello
-const double _neckTiltDeg = 15; // inclinación mínima de la cabeza (grados)
-const double _neckHoldSec = 10; // segundos que hay que mantener cada lado
-const int _neckTargetSides = 4; // lados a completar (2 por lado)
-
-// Hombros
-const double _shrugRatio = 0.85; // hombros "arriba" si bajan a este % de lo normal
-const double _shrugRelease = 0.93; // hombros "soltados" al volver a este %
-const int _shrugTarget = 5; // encogimientos a completar
-const double _shrugMinHold = 1.0; // segundos mínimos arriba
-const double _circleMove = 0.07; // movimiento mínimo para contar círculos
-const double _circlesTargetSec = 10; // segundos de círculos
-
-// Muñecas
-const double _wristMoveDeg = 45; // giro mínimo de la mano (grados)
-const double _wristTargetSec = 20; // segundos de movimiento
-
-// Descanso visual
-const int _visualCycleSec = 30; // 20 s mirando lejos + 10 s ojos cerrados
-const int _visualFarSec = 20;
-
-// ============================================================
-//  Tipos auxiliares
-// ============================================================
-
-enum _Kind { neck, shoulders, wrists, visual, other }
-
-/// Punto del cuerpo ya normalizado (0 a 1) y suavizado.
-class _Pt {
-  final double x;
-  final double y;
-  final double v; // visibilidad
-  const _Pt(this.x, this.y, this.v);
-}
-
-const List<PoseLandmarkType> _usedTypes = [
-  PoseLandmarkType.nose,
-  PoseLandmarkType.leftEar,
-  PoseLandmarkType.rightEar,
-  PoseLandmarkType.leftShoulder,
-  PoseLandmarkType.rightShoulder,
-  PoseLandmarkType.leftElbow,
-  PoseLandmarkType.rightElbow,
-  PoseLandmarkType.leftWrist,
-  PoseLandmarkType.rightWrist,
-  PoseLandmarkType.leftIndex,
-  PoseLandmarkType.rightIndex,
-];
-
-const List<List<PoseLandmarkType>> _bones = [
-  [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
-  [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
-  [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
-  [PoseLandmarkType.leftWrist, PoseLandmarkType.leftIndex],
-  [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow],
-  [PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist],
-  [PoseLandmarkType.rightWrist, PoseLandmarkType.rightIndex],
-  [PoseLandmarkType.leftEar, PoseLandmarkType.nose],
-  [PoseLandmarkType.nose, PoseLandmarkType.rightEar],
-];
-
-/// Serie de valores en una ventana de tiempo (para medir movimiento).
-class _Series {
-  final double window;
-  final List<double> _t = [];
-  final List<double> _v = [];
-  _Series(this.window);
-
-  void add(double t, double v) {
-    _t.add(t);
-    _v.add(v);
-    while (_t.isNotEmpty && t - _t.first > window) {
-      _t.removeAt(0);
-      _v.removeAt(0);
-    }
-  }
-
-  double get range {
-    if (_v.length < 3) return 0;
-    var mn = _v.first;
-    var mx = _v.first;
-    for (final x in _v) {
-      if (x < mn) mn = x;
-      if (x > mx) mx = x;
-    }
-    return mx - mn;
-  }
-
-  void clear() {
-    _t.clear();
-    _v.clear();
-  }
-}
-
-/// Sigue el ángulo de la mano (muñeca -> dedo índice) sin saltos de 360°.
-class _AngleTracker {
-  final _Series series;
-  double? _last;
-  double _unwrapped = 0;
-  _AngleTracker(double window) : series = _Series(window);
-
-  void add(double t, double angle) {
-    if (_last == null) {
-      _unwrapped = angle;
-    } else {
-      var d = angle - _last!;
-      while (d > math.pi) {
-        d -= 2 * math.pi;
-      }
-      while (d < -math.pi) {
-        d += 2 * math.pi;
-      }
-      _unwrapped += d;
-    }
-    _last = angle;
-    series.add(t, _unwrapped);
-  }
-
-  double get rangeDeg => series.range * 180 / math.pi;
-
-  void clear() {
-    _last = null;
-    _unwrapped = 0;
-    series.clear();
-  }
-}
+import 'exercise_camera_models.dart';
+import 'exercise_camera_logic.dart';
+import 'exercise_camera_painter.dart';
+import 'pose_detector_provider.dart';
 
 // ============================================================
 //  Página
 // ============================================================
+
+// // Cache global del PoseDetector (se crea una sola vez)
+// PoseDetector? _globalPoseDetector;
+
+// Future<PoseDetector> _getPoseDetector() async {
+//   if (_globalPoseDetector != null) return _globalPoseDetector!;
+//   _globalPoseDetector = useHeavyModel
+//       ? await PoseDetector.create(landmarkModel: PoseLandmarkModel.heavy)
+//       : await PoseDetector.create();
+//   return _globalPoseDetector!;
+// }
 
 class ExerciseCameraPage extends StatefulWidget {
   final String nombre;
@@ -183,19 +56,21 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   bool _yaGuardado = false;
   bool _guardando = false;
 
+  bool _lastPositioned = false;
+
   String _feedback = "Colócate frente a la cámara";
   Color _feedbackColor = Colors.orange;
   String _progressLabel = "";
   double _progress = 0;
 
-  final Map<PoseLandmarkType, _Pt> _pts = {};
+  final Map<PoseLandmarkType, BodyPoint> _pts = {};
   Size? _imageSize;
   bool _personVisible = false;
   DateTime? _lastFrame;
   double _clock = 0;
 
   Timer? _timer;
-  late final _Kind _kind;
+  late final ExerciseKind _kind;
   late final int _totalSeconds;
   int _remainingSeconds = 0;
   bool _isRunning = false;
@@ -216,12 +91,18 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   bool _shrugUp = false;
   double _shrugHold = 0;
   bool _circlesPhase = false;
-  final _Series _shoulderMx = _Series(1.5);
-  final _Series _shoulderMy = _Series(1.5);
+  final MotionSeries _shoulderMx = MotionSeries(1.5);
+  final MotionSeries _shoulderMy = MotionSeries(1.5);
 
   // Muñecas
-  final _AngleTracker _leftHand = _AngleTracker(2.0);
-  final _AngleTracker _rightHand = _AngleTracker(2.0);
+  final AngleTracker _leftHand = AngleTracker(2.0);
+  final AngleTracker _rightHand = AngleTracker(2.0);
+
+  DateTime? _lastDetection;
+  // FPS dinámicos: 5 cuando no corre, 10 cuando corre
+  Duration get _detectionInterval => _isRunning
+      ? const Duration(milliseconds: 100)  // 10 FPS corriendo
+      : const Duration(milliseconds: 100); // 10 FPS en espera
 
   // En Windows la vista previa va en espejo, pero los frames del stream no.
   bool get _mirrorOverlay => Platform.isWindows;
@@ -229,23 +110,14 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   @override
   void initState() {
     super.initState();
-    _kind = _kindFor(widget.nombre);
+    _kind = kindFor(widget.nombre);
     _totalSeconds = int.parse(widget.duracion.split(" ")[0]) * 60;
     _remainingSeconds = _totalSeconds;
-    if (_kind == _Kind.visual) {
+    if (_kind == ExerciseKind.visual) {
       _feedback = "Presiona Iniciar: te guiaremos para descansar la vista";
       _feedbackColor = Colors.blue;
     }
     _initCameraAndDetector();
-  }
-
-  _Kind _kindFor(String nombre) {
-    final s = nombre.toLowerCase();
-    if (s.contains('cuello')) return _Kind.neck;
-    if (s.contains('hombro')) return _Kind.shoulders;
-    if (s.contains('muñeca') || s.contains('muneca')) return _Kind.wrists;
-    if (s.contains('visual')) return _Kind.visual;
-    return _Kind.other;
   }
 
   // ------------------------------------------------------------
@@ -254,9 +126,8 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
 
   Future<void> _initCameraAndDetector() async {
     try {
-      _poseDetector = _useHeavyModel
-          ? await PoseDetector.create(landmarkModel: PoseLandmarkModel.heavy)
-          : await PoseDetector.create();
+      // Reutilizar el detector global (mucho más rápido)
+      _poseDetector = await getPoseDetector();
 
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
@@ -275,18 +146,25 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
 
       _cameraController = CameraController(
         camera,
-        ResolutionPreset.medium,
+        ResolutionPreset.low,
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.bgra8888,
+        // En Windows usar bgra8888 (default). En Android usar yuv420
+        imageFormatGroup: Platform.isWindows
+            ? ImageFormatGroup.bgra8888
+            : ImageFormatGroup.yuv420,
       );
 
       await _cameraController!.initialize();
+
+      // Esperar un frame para que la cámara esté estable
+      await Future.delayed(const Duration(milliseconds: 300));
+      
       await _cameraController!.startImageStream(_processCameraImage);
 
       if (!mounted) return;
       setState(() {
         _isCameraReady = true;
-        if (_kind != _Kind.visual) {
+        if (_kind != ExerciseKind.visual) {
           _feedback = "Cámara lista. Colócate frente a ella";
           _feedbackColor = Colors.green;
         }
@@ -302,13 +180,29 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
 
   Future<void> _processCameraImage(CameraImage image) async {
     // El descanso visual no necesita detectar el cuerpo.
-    if (_kind == _Kind.visual) return;
+    if (_kind == ExerciseKind.visual) return;
+
+    // Si ya se está procesando un frame, ignóralo
     if (_isDetecting || _poseDetector == null) return;
+
+    // Si el ejercicio ya terminó, no proceses más
+    if (_finished || _yaGuardado) return;
+
+    // Limitar a ~10 FPS para no saturar la CPU
+    final ahora = DateTime.now();
+    if (_lastDetection != null &&
+        ahora.difference(_lastDetection!) < _detectionInterval) {
+      return;
+    }
+    _lastDetection = ahora;
+
     _isDetecting = true;
 
     try {
       _imageSize = Size(image.width.toDouble(), image.height.toDouble());
+      final sw = Stopwatch()..start();
       final poses = await _poseDetector!.detectFromCameraImage(image);
+      debugPrint('inferencia: ${sw.elapsedMilliseconds} ms');
       if (!mounted) return;
 
       final now = DateTime.now();
@@ -331,8 +225,18 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       _clock += dt;
       _personVisible = true;
       _updatePoints(poses.first);
+
+      // Si el ejercicio NO está corriendo y ya está "positioned",
+      //    no hacemos setState cada frame (ahorra CPU)
+      // Evaluar posición UNA sola vez por frame
+      final positioned = _isPositioned();
+      final hayQueActualizar = _isRunning || positioned != _lastPositioned;
+      _lastPositioned = positioned;
       _evaluate(dt);
-      setState(() {});
+
+      if (hayQueActualizar) {
+        setState(() {});
+      }
     } catch (e) {
       // Silenciar errores de frames individuales
     } finally {
@@ -341,7 +245,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   }
 
   void _updatePoints(Pose pose) {
-    for (final t in _usedTypes) {
+    for (final t in usedTypes) {
       final lm = pose.getLandmark(t);
       if (lm == null) {
         _pts.remove(t);
@@ -350,20 +254,16 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       final n = normalizedPoint(lm, _imageSize);
       final prev = _pts[t];
       if (prev == null) {
-        _pts[t] = _Pt(n.dx, n.dy, lm.visibility);
+        _pts[t] = BodyPoint(n.dx, n.dy, lm.visibility);
       } else {
-        _pts[t] = _Pt(
-          prev.x + (n.dx - prev.x) * _smooth,
-          prev.y + (n.dy - prev.y) * _smooth,
+        _pts[t] = BodyPoint(
+          prev.x + (n.dx - prev.x) * smooth,
+          prev.y + (n.dy - prev.y) * smooth,
           lm.visibility,
         );
       }
     }
   }
-
-  // ------------------------------------------------------------
-  //  Utilidades de geometría
-  // ------------------------------------------------------------
 
   double get _ar {
     final s = _imageSize;
@@ -371,12 +271,12 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     return s.width / s.height;
   }
 
-  Offset _u(_Pt p) => Offset(p.x * _ar, p.y); // unidades de "alto de imagen"
-  double _dist(_Pt a, _Pt b) => (_u(a) - _u(b)).distance;
+  Offset _u(BodyPoint p) => Offset(p.x * _ar, p.y); // unidades de "alto de imagen"
+  double _dist(BodyPoint a, BodyPoint b) => (_u(a) - _u(b)).distance;
 
-  _Pt? _p(PoseLandmarkType t) {
+  BodyPoint? _p(PoseLandmarkType t) {
     final p = _pts[t];
-    if (p == null || p.v < _minVis) return null;
+    if (p == null || p.v < minVis) return null;
     return p;
   }
 
@@ -386,7 +286,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   }
 
   bool _isPositioned() {
-    if (_kind == _Kind.wrists) {
+    if (_kind == ExerciseKind.wrists) {
       return _p(PoseLandmarkType.leftWrist) != null &&
           _p(PoseLandmarkType.rightWrist) != null &&
           _p(PoseLandmarkType.leftElbow) != null &&
@@ -401,7 +301,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     return _dist(ls, rs) >= _dist(le, re) * 1.5;
   }
 
-  String get _positionHint => _kind == _Kind.wrists
+  String get _positionHint => _kind == ExerciseKind.wrists
       ? 'Levanta los antebrazos frente al pecho y aléjate hasta que se vean tus codos y manos'
       : 'Aléjate un poco: deben verse tu cabeza, tus hombros completos y tus codos';
 
@@ -409,10 +309,14 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   //  Evaluación por ejercicio
   // ------------------------------------------------------------
 
+  // Contador de frames consecutivos fuera de posición
+  int _framesOutOfPosition = 0;
+  static const _maxFramesOutOfPosition = 15; // ~1.5 seg a 10 FPS
+
   void _evaluate(double dt) {
     if (_finished) return;
 
-    if (_kind == _Kind.other) {
+    if (_kind == ExerciseKind.other) {
       _setFeedback('Cuerpo detectado - Sigue las instrucciones', Colors.green);
       return;
     }
@@ -420,26 +324,38 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     final ok = _isPositioned();
 
     if (!_isRunning) {
+      // Antes de iniciar: feedback suave (no cambia con cada micro-movimiento)
       _setFeedback(
         ok ? 'Te veo bien. Presiona Iniciar para comenzar' : _positionHint,
         ok ? Colors.green : Colors.orange,
       );
+      _framesOutOfPosition = 0;
       return;
     }
 
+
+    // Ya está corriendo: aplicar histéresis
     if (!ok) {
-      _setFeedback(_positionHint, Colors.orange);
+      _framesOutOfPosition++;
+      // Solo mostramos el mensaje naranja si lleva MÁS de 1.5s fuera de posición
+      if (_framesOutOfPosition > _maxFramesOutOfPosition) {
+        _setFeedback(_positionHint, Colors.orange);
+      }
+      // Si no ha pasado el umbral, MANTENER el último mensaje
       return;
+    } else {
+      // Volvió a estar bien → resetear contador
+      _framesOutOfPosition = 0;
     }
 
     switch (_kind) {
-      case _Kind.neck:
+      case ExerciseKind.neck:
         _evalNeck(dt);
         break;
-      case _Kind.shoulders:
+      case ExerciseKind.shoulders:
         _evalShoulders(dt);
         break;
-      case _Kind.wrists:
+      case ExerciseKind.wrists:
         _evalWrists(dt);
         break;
       default:
@@ -461,8 +377,8 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     final absA = angle.abs();
     final side = angle > 0 ? 1 : -1;
 
-    _progressLabel = 'Lados completados: $_reps / $_neckTargetSides';
-    _progress = _reps / _neckTargetSides;
+    _progressLabel = 'Lados completados: $_reps / $neckTargetSides';
+    _progress = _reps / neckTargetSides;
 
     if (_needCenter) {
       if (absA < 8) {
@@ -474,7 +390,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       return;
     }
 
-    if (absA >= _neckTiltDeg) {
+    if (absA >= neckTiltDeg) {
       if (absA > 50) {
         _setFeedback('Inclina con suavidad, no fuerces el cuello', Colors.orange);
         return;
@@ -490,21 +406,21 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         _holdTime = 0;
       }
       _holdTime += dt;
-      if (_holdTime >= _neckHoldSec) {
+      if (_holdTime >= neckHoldSec) {
         _reps++;
         _lastDoneSide = side;
         _holdSide = 0;
         _holdTime = 0;
         _needCenter = true;
-        _progressLabel = 'Lados completados: $_reps / $_neckTargetSides';
-        _progress = _reps / _neckTargetSides;
-        if (_reps >= _neckTargetSides) {
+        _progressLabel = 'Lados completados: $_reps / $neckTargetSides';
+        _progress = _reps / neckTargetSides;
+        if (_reps >= neckTargetSides) {
           _finish(timeUp: false);
           return;
         }
         _setFeedback('¡Lado completado! Regresa al centro', Colors.green);
       } else {
-        final left = (_neckHoldSec - _holdTime).ceil();
+        final left = (neckHoldSec - _holdTime).ceil();
         _setFeedback('✅ Buen estiramiento. Mantén $left s', Colors.green);
       }
     } else {
@@ -530,8 +446,8 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       final earY = (le.y + re.y) / 2;
       final h = (shY - earY) / sw; // altura relativa hombros-orejas
 
-      _progressLabel = 'Encogimientos: $_reps / $_shrugTarget';
-      _progress = (_reps / _shrugTarget) * 0.5;
+      _progressLabel = 'Encogimientos: $_reps / $shrugTarget';
+      _progress = (_reps / shrugTarget) * 0.5;
 
       if (_baseH == null) {
         _calib.add(h);
@@ -546,7 +462,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
 
       final ratio = h / _baseH!;
       if (!_shrugUp) {
-        if (ratio < _shrugRatio) {
+        if (ratio < shrugRatio) {
           _shrugUp = true;
           _shrugHold = 0;
           _setFeedback('Mantén los hombros arriba...', Colors.green);
@@ -556,13 +472,13 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         }
       } else {
         _shrugHold += dt;
-        if (ratio > _shrugRelease) {
+        if (ratio > shrugRelease) {
           _shrugUp = false;
-          if (_shrugHold >= _shrugMinHold) {
+          if (_shrugHold >= shrugMinHold) {
             _reps++;
-            _progressLabel = 'Encogimientos: $_reps / $_shrugTarget';
-            _progress = (_reps / _shrugTarget) * 0.5;
-            if (_reps >= _shrugTarget) {
+            _progressLabel = 'Encogimientos: $_reps / $shrugTarget';
+            _progress = (_reps / shrugTarget) * 0.5;
+            if (_reps >= shrugTarget) {
               _circlesPhase = true;
               _motionSeconds = 0;
               _shoulderMx.clear();
@@ -586,14 +502,14 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       final my = ((ls.y + rs.y) / 2) / sw;
       _shoulderMx.add(_clock, mx);
       _shoulderMy.add(_clock, my);
-      final active = math.max(_shoulderMx.range, _shoulderMy.range) >= _circleMove;
+      final active = math.max(_shoulderMx.range, _shoulderMy.range) >= circleMove;
       if (active) _motionSeconds += dt;
 
       _progressLabel =
-          'Círculos: ${_motionSeconds.floor()} / ${_circlesTargetSec.toInt()} s';
-      _progress = 0.5 + (_motionSeconds / _circlesTargetSec).clamp(0.0, 1.0) * 0.5;
+          'Círculos: ${_motionSeconds.floor()} / ${circlesTargetSec.toInt()} s';
+      _progress = 0.5 + (_motionSeconds / circlesTargetSec).clamp(0.0, 1.0) * 0.5;
 
-      if (_motionSeconds >= _circlesTargetSec) {
+      if (_motionSeconds >= circlesTargetSec) {
         _finish(timeUp: false);
         return;
       }
@@ -611,7 +527,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     var tracked = false;
     var active = false;
 
-    void track(PoseLandmarkType wrist, PoseLandmarkType index, _AngleTracker tr) {
+    void track(PoseLandmarkType wrist, PoseLandmarkType index, AngleTracker tr) {
       final pw = _p(wrist);
       final pi2 = _p(index);
       if (pw == null || pi2 == null) return;
@@ -619,7 +535,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       final a = _u(pw);
       final b = _u(pi2);
       tr.add(_clock, math.atan2(b.dy - a.dy, b.dx - a.dx));
-      if (tr.rangeDeg >= _wristMoveDeg) active = true;
+      if (tr.rangeDeg >= wristMoveDeg) active = true;
     }
 
     track(PoseLandmarkType.leftWrist, PoseLandmarkType.leftIndex, _leftHand);
@@ -628,10 +544,10 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     if (active) _motionSeconds += dt;
 
     _progressLabel =
-        'Movimiento: ${_motionSeconds.floor()} / ${_wristTargetSec.toInt()} s';
-    _progress = (_motionSeconds / _wristTargetSec).clamp(0.0, 1.0);
+        'Movimiento: ${_motionSeconds.floor()} / ${wristTargetSec.toInt()} s';
+    _progress = (_motionSeconds / wristTargetSec).clamp(0.0, 1.0);
 
-    if (_motionSeconds >= _wristTargetSec) {
+    if (_motionSeconds >= wristTargetSec) {
       _finish(timeUp: false);
       return;
     }
@@ -639,7 +555,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     if (!tracked) {
       _setFeedback('Muestra tus manos a la cámara', Colors.orange);
     } else if (active) {
-      final left = (_wristTargetSec - _motionSeconds).ceil();
+      final left = (wristTargetSec - _motionSeconds).ceil();
       _setFeedback('✅ ¡Bien! Sigue moviendo las muñecas ($left s)', Colors.green);
     } else {
       _setFeedback(
@@ -650,20 +566,20 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   // ---------- Descanso visual (guiado por tiempo) ----------
   void _updateVisual() {
     final elapsed = _totalSeconds - _remainingSeconds;
-    final pos = elapsed % _visualCycleSec;
-    final target = math.max(1, _totalSeconds ~/ _visualCycleSec);
-    _reps = elapsed ~/ _visualCycleSec;
+    final pos = elapsed % visualCycleSec;
+    final target = math.max(1, _totalSeconds ~/ visualCycleSec);
+    _reps = elapsed ~/ visualCycleSec;
     _progressLabel = 'Ciclos completados: $_reps / $target';
     _progress = (elapsed / _totalSeconds).clamp(0.0, 1.0);
 
-    if (pos < _visualFarSec) {
+    if (pos < visualFarSec) {
       _setFeedback(
-        '👀 Mira un objeto lejano, lejos de la pantalla (${_visualFarSec - pos} s)',
+        '👀 Mira un objeto lejano, lejos de la pantalla (${visualFarSec - pos} s)',
         Colors.green,
       );
     } else {
       _setFeedback(
-        '😌 Cierra los ojos y relájalos (${_visualCycleSec - pos} s)',
+        '😌 Cierra los ojos y relájalos (${visualCycleSec - pos} s)',
         Colors.blue,
       );
     }
@@ -700,7 +616,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       _resetProgress();
       _isRunning = true;
       _finished = false;
-      if (_kind == _Kind.visual) {
+      if (_kind == ExerciseKind.visual) {
         _updateVisual();
       } else {
         _setFeedback('¡Vamos! Empieza el ejercicio', Colors.green);
@@ -715,7 +631,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       if (_remainingSeconds > 0) {
         setState(() {
           _remainingSeconds--;
-          if (_kind == _Kind.visual) _updateVisual();
+          if (_kind == ExerciseKind.visual) _updateVisual();
         });
       }
       if (_remainingSeconds <= 0) {
@@ -726,70 +642,83 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
 
   String _summary() {
     switch (_kind) {
-      case _Kind.neck:
-        return 'Lados completados: $_reps de $_neckTargetSides.';
-      case _Kind.shoulders:
+      case ExerciseKind.neck:
+        return 'Lados completados: $_reps de $neckTargetSides.';
+      case ExerciseKind.shoulders:
         return _circlesPhase
             ? 'Encogimientos completos y ${_motionSeconds.floor()} s de círculos.'
-            : 'Encogimientos: $_reps de $_shrugTarget.';
-      case _Kind.wrists:
-        return 'Movimiento detectado: ${_motionSeconds.floor()} s de ${_wristTargetSec.toInt()} s.';
-      case _Kind.visual:
+            : 'Encogimientos: $_reps de $shrugTarget.';
+      case ExerciseKind.wrists:
+        return 'Movimiento detectado: ${_motionSeconds.floor()} s de ${wristTargetSec.toInt()} s.';
+      case ExerciseKind.visual:
         return 'Completaste tu pausa visual.';
-      case _Kind.other:
+      case ExerciseKind.other:
         return 'Excelente trabajo.';
     }
   }
 
-  void _finalizarYGuardarEnBackend() async {
+    Future<void> _finalizarYGuardarEnBackend(bool completada) async {
     // Si ya se envió el registro, evitamos duplicar la petición
     if (_yaGuardado || _guardando) return;
-    setState(() => _guardando = true);
+    _yaGuardado = true;
+    _guardando = true;
 
-    bool guardado = await _ejercicioService.registrarPausa(
-      usuarioId: widget.usuarioId,
-      ejercicioId: widget.ejercicioId,
-      completada: true,
-    );
+    // 1️ PRIMERO cerramos la pantalla (evita el error de cámara disposed)
+    if (mounted) {
+      Navigator.pop(context, completada);
+    }
 
-    if (!mounted) return;
+    // 2️ DESPUÉS detenemos la cámara con un pequeño delay
+    await Future.delayed(const Duration(milliseconds: 150));
 
-    if (guardado) {
-      _yaGuardado = true;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Pausa registrada con éxito en la base de datos"),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.pop(context);
-    } else {
-      setState(() => _guardando = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Error al registrar la pausa en el servidor"),
-          backgroundColor: Colors.red,
-        ),
-      );
+    try {
+      await _cameraController?.stopImageStream();
+    } catch (_) {}
+    try {
+      await _cameraController?.dispose();
+    } catch (_) {}
+    _cameraController = null;
+    _poseDetector = null;
+
+    // 3️ Guardar en backend con timeout de 8 segundos
+    final guardado = await _ejercicioService
+        .registrarPausa(
+          usuarioId: widget.usuarioId,
+          ejercicioId: widget.ejercicioId,
+          completada: completada,
+        )
+        .timeout(const Duration(seconds: 8), onTimeout: () => false);
+
+    if (!guardado) {
+      debugPrint('No se pudo guardar la pausa en el backend');
     }
   }
 
-  void _finish({required bool timeUp}) {
+  void _finish({required bool timeUp, bool manual = false}) {
     _timer?.cancel();
     if (!mounted) return;
+
+    final completada = !manual &&
+        (!timeUp ||
+            _kind == ExerciseKind.visual ||
+            _kind == ExerciseKind.other);
+
     setState(() {
       _isRunning = false;
       _finished = true;
-      _feedbackColor = Colors.green;
+      _feedbackColor = completada ? Colors.green : Colors.orange;
+
       if (timeUp) {
         _feedback = '¡Tiempo terminado! ${_summary()}';
       } else {
-        _progress = 1.0;
-        _feedback = '🎉 ¡Ejercicio completado! Excelente trabajo';
+        _progress = completada ? 1.0 : _progress;
+        _feedback = completada
+            ? '🎉 ¡Ejercicio completado! Excelente trabajo'
+            : 'Ejercicio detenido: ${_summary()}';
       }
     });
 
-    _finalizarYGuardarEnBackend();
+    _finalizarYGuardarEnBackend(completada);
   }
 
   String get _formattedTime {
@@ -804,65 +733,9 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     try {
       _cameraController?.dispose();
     } catch (_) {}
-    _poseDetector?.dispose();
+    // NO disponer del detector global
+    _poseDetector = null;
     super.dispose();
-  }
-
-  // ------------------------------------------------------------
-  //  Instrucciones
-  // ------------------------------------------------------------
-
-  List<String> _instructions() {
-    switch (_kind) {
-      case _Kind.neck:
-        return [
-          "Siéntate derecho con la espalda recta, a una distancia donde se vean tus hombros.",
-          "Inclina suavemente la cabeza hacia un lado, como acercando la oreja al hombro.",
-          "Mantén la posición unos segundos sin levantar el hombro.",
-          "Vuelve al centro y repite hacia el otro lado.",
-          "Respira profundo durante todo el ejercicio.",
-        ];
-      case _Kind.shoulders:
-        return [
-          "Siéntate derecho, relajado, con los hombros y codos a la vista.",
-          "Quédate quieto 2 segundos mientras medimos tu postura.",
-          "Sube ambos hombros hacia las orejas y mantén 1-2 segundos.",
-          "Suelta de golpe y repite 5 veces.",
-          "Luego haz círculos grandes con los hombros, adelante y atrás.",
-        ];
-      case _Kind.wrists:
-        return [
-          "Levanta los antebrazos frente al pecho, con los codos doblados.",
-          "Mantén las manos abiertas y a la vista de la cámara.",
-          "Gira las muñecas en círculos hacia afuera y luego hacia adentro.",
-          "También puedes flexionarlas hacia arriba y hacia abajo.",
-          "Sacude las manos suavemente al terminar.",
-        ];
-      case _Kind.visual:
-        return [
-          "Aparta la mirada de la pantalla.",
-          "Durante 20 segundos enfoca un objeto lejano (mínimo 6 metros).",
-          "Luego cierra los ojos y relájalos durante 10 segundos.",
-          "Parpadea varias veces de forma consciente.",
-          "El ciclo se repite hasta que termine el tiempo.",
-        ];
-      case _Kind.other:
-        return ["Sigue las indicaciones del ejercicio."];
-    }
-  }
-
-  String _tip() {
-    switch (_kind) {
-      case _Kind.neck:
-      case _Kind.shoulders:
-        return "Consejo: aléjate de la cámara hasta que se vean tu cabeza, hombros y codos. Con buena luz la detección mejora mucho.";
-      case _Kind.wrists:
-        return "Consejo: la cámara debe ver tus codos y manos. Mantén las manos abiertas y de frente.";
-      case _Kind.visual:
-        return "Nota: la cámara no puede comprobar si miras lejos o si cierras los ojos. Esta rutina te guía con el temporizador.";
-      case _Kind.other:
-        return "";
-    }
   }
 
   // ------------------------------------------------------------
@@ -883,7 +756,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
           children: [
             CameraPreview(_cameraController!),
             if (_personVisible && _pts.isNotEmpty)
-              CustomPaint(painter: _PosePainter(_pts, _mirrorOverlay)),
+              CustomPaint(painter: PosePainter(_pts, _mirrorOverlay)),
           ],
         ),
       ),
@@ -891,8 +764,8 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   }
 
   Widget _buildInstructionPanel() {
-    final steps = _instructions();
-    final tip = _tip();
+    final steps = getInstructions(_kind);
+    final tip = getTip(_kind);
     return Container(
       color: const Color(0xFF151515),
       width: double.infinity,
@@ -1079,10 +952,11 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
-                  onPressed: () {
-                    _finish(timeUp: false);
-                    Navigator.pop(context);
-                  },
+                  onPressed: _isRunning
+                      ? () {
+                          _finish(timeUp: false, manual: true);
+                        }
+                      : () => Navigator.pop(context),
                   icon: const Icon(Icons.stop),
                   label: const Text("Finalizar"),
                   style: ElevatedButton.styleFrom(
@@ -1099,56 +973,4 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       ),
     );
   }
-}
-
-/// Devuelve la posición del punto entre 0 y 1.
-/// Si la librería entrega píxeles (valores > 1.5), los divide por el tamaño
-/// del frame; si ya vienen normalizados, los deja igual.
-Offset normalizedPoint(PoseLandmark lm, Size? imageSize) {
-  double x = lm.x;
-  double y = lm.y;
-  if (imageSize != null && (x > 1.5 || y > 1.5)) {
-    x = x / imageSize.width;
-    y = y / imageSize.height;
-  }
-  return Offset(x, y);
-}
-
-// Dibuja el esqueleto de la parte superior del cuerpo
-class _PosePainter extends CustomPainter {
-  final Map<PoseLandmarkType, _Pt> pts;
-  final bool mirror;
-
-  _PosePainter(this.pts, this.mirror);
-
-  Offset _o(_Pt p, Size size) {
-    final x = mirror ? 1 - p.x : p.x;
-    return Offset(x * size.width, p.y * size.height);
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final line = Paint()
-      ..color = Colors.lightGreenAccent
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke;
-    final dot = Paint()
-      ..color = Colors.greenAccent
-      ..style = PaintingStyle.fill;
-
-    for (final bone in _bones) {
-      final a = pts[bone[0]];
-      final b = pts[bone[1]];
-      if (a == null || b == null || a.v < _minVis || b.v < _minVis) continue;
-      canvas.drawLine(_o(a, size), _o(b, size), line);
-    }
-    for (final p in pts.values) {
-      if (p.v >= _minVis) {
-        canvas.drawCircle(_o(p, size), 6, dot);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

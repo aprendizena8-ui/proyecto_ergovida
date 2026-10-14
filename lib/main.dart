@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'features/auth/login_page.dart';
 
 const Color brandNavy = Color(0xFF0E2238);
@@ -19,13 +20,25 @@ class AppThemeController extends ChangeNotifier {
   AppThemeController._internal();
 
   ThemeMode _themeMode = ThemeMode.light;
+  static const _prefKey = 'ergovida_theme_dark';
 
   ThemeMode get themeMode => _themeMode;
   bool get isDark => _themeMode == ThemeMode.dark;
 
-  void setTheme(bool dark) {
+  /// Carga el tema guardado al iniciar la app
+  Future<void> cargarTemaGuardado() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isDark = prefs.getBool(_prefKey) ?? false;
+    _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
+  }
+
+  Future<void> setTheme(bool dark) async {
     _themeMode = dark ? ThemeMode.dark : ThemeMode.light;
     notifyListeners();
+    // Persistir en disco
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_prefKey, dark);
   }
 }
 
@@ -42,6 +55,13 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final AppThemeController _themeController = AppThemeController.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    // Cargar el tema guardado al iniciar
+    _themeController.cargarTemaGuardado();
+  }
 
   ThemeData _buildLightTheme() {
     return ThemeData(

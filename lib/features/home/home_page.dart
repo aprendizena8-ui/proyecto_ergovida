@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import '../../main.dart';
 import '../../data/services/auth_service.dart';
+import '../../data/services/estadisticas_service.dart';
+import '../../data/services/pausa_service.dart';
 import '../../widgets/ergovida_logo.dart';
 import '../auth/login_page.dart';
 import '../exercises/exercises_page.dart';
 import '../routines/routine_page.dart';
 import '../settings/settings_page.dart';
 import '../statistics/statistics_page.dart';
+import '../profile/profile_page.dart';
+import '../exercises/pose_detector_provider.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   final LoginUser usuario;
   final AppThemeController? themeController;
 
@@ -19,8 +23,52 @@ class HomePage extends StatelessWidget {
   });
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final EstadisticasService _estadisticasService = EstadisticasService();
+  final PausaService _pausaService = PausaService();
+
+  int _pausasRealizadas = 0;
+  int _ejerciciosCompletados = 0;
+  int _minutosActivos = 0;
+  bool _cargandoStats = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarStats();
+    // Precarga el modelo de la cámara para que el primer ejercicio abra rápido
+    getPoseDetector().then((_) {}, onError: (_) {});
+  }
+
+  Future<void> _cargarStats() async {
+    if (!mounted) return;
+    setState(() => _cargandoStats = true);
+
+    final usuarioId = widget.usuario.id;
+    final estadisticas = await _estadisticasService.obtenerPorUsuario(usuarioId);
+    final pausas = await _pausaService.obtenerPorUsuario(usuarioId);
+
+    final completadas = pausas.where((p) => p['completada'] == true).length;
+    final minutos = estadisticas.fold<int>(
+      0,
+      (s, e) => s + ((e['minutosActivos'] ?? 0) as int),
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _pausasRealizadas = completadas;
+      _ejerciciosCompletados = completadas;
+      _minutosActivos = minutos;
+      _cargandoStats = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isDark = themeController?.isDark ??
+    final isDark = widget.themeController?.isDark ??
         Theme.of(context).brightness == Brightness.dark;
     final pageBg = isDark ? const Color(0xFF0F172A) : Colors.white;
     final panelBg = isDark ? const Color(0xFF111C2E) : Colors.white;
@@ -35,6 +83,7 @@ class HomePage extends StatelessWidget {
       backgroundColor: pageBg,
       body: Row(
         children: [
+            // ---------- MENÚ LATERAL ----------
             Container(
               width: 270,
               padding: const EdgeInsets.fromLTRB(18, 24, 18, 18),
@@ -84,8 +133,8 @@ class HomePage extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (_) => ExercisesPage(
-                            usuario: usuario,
-                            usuarioId: usuario.id,
+                            usuario: widget.usuario,
+                            usuarioId: widget.usuario.id,
                           ),
                         ),
                       );
@@ -99,7 +148,10 @@ class HomePage extends StatelessWidget {
                     () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const RoutinePage()),
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              RoutinePage(usuario: widget.usuario),
+                        ),
                       );
                     },
                   ),
@@ -112,7 +164,9 @@ class HomePage extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (_) => const StatisticsPage()),
+                          builder: (_) =>
+                              StatisticsPage(usuarioId: widget.usuario.id),
+                        ),
                       );
                     },
                   ),
@@ -126,7 +180,25 @@ class HomePage extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
-                              SettingsPage(themeController: themeController),
+                            SettingsPage(
+                              themeController: widget.themeController,
+                              usuario: widget.usuario,
+                            ),
+                        ),
+                      );
+                    },
+                  ),
+                  _menuItem(
+                    context,
+                    Icons.person_rounded,
+                    'Mi perfil',
+                    false,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => 
+                              ProfilePage(usuario: widget.usuario),
                         ),
                       );
                     },
@@ -163,6 +235,8 @@ class HomePage extends StatelessWidget {
                 ],
               ),
             ),
+
+            // ---------- CONTENIDO PRINCIPAL ----------
             Expanded(
               child: Container(
                 color: pageBg,
@@ -179,10 +253,10 @@ class HomePage extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Bienvenido a ErgoVida',
+                                  'Bienvenido, ${widget.usuario.nombre}',
                                   style: TextStyle(
                                     color: textPrimary,
-                                    fontSize: 38,
+                                    fontSize: 34,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: -1,
                                   ),
@@ -198,60 +272,69 @@ class HomePage extends StatelessWidget {
                               ],
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF123A35)
-                                  : const Color(0xFFDCF9F2),
-                              borderRadius: BorderRadius.circular(999),
+                          IconButton(
+                              icon: Icon(Icons.refresh_rounded,
+                                  color: textPrimary, size: 28),
+                              tooltip: 'Recargar estadísticas',
+                              onPressed: _cargarStats,
                             ),
-                            child: Text(
-                              'Hoy',
-                              style: TextStyle(
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
                                 color: isDark
-                                    ? const Color(0xFF8BE7D7)
-                                    : const Color(0xFF0D5C4F),
-                                fontWeight: FontWeight.w700,
+                                    ? const Color(0xFF123A35)
+                                    : const Color(0xFFDCF9F2),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                'Hoy',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? const Color(0xFF8BE7D7)
+                                      : const Color(0xFF0D5C4F),
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 28),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _statCard(
-                              isDark,
-                              panelBg,
-                              'Pausas realizadas',
-                              '24',
-                              Icons.timer_rounded,
-                              const Color(0xFF22C55E),
-                              const Color(0xFFDCFBE7),
+                          ],
+                        ),
+                        const SizedBox(height: 28),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _statCard(
+                                isDark,
+                                panelBg,
+                                'Pausas realizadas',
+                                _cargandoStats ? '...' : '$_pausasRealizadas',
+                                Icons.timer_rounded,
+                                const Color(0xFF22C55E),
+                                const Color(0xFFDCFBE7),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 18),
-                          Expanded(
-                            child: _statCard(
-                              isDark,
-                              panelBg,
-                              'Ejercicios completados',
-                              '58',
-                              Icons.fitness_center_rounded,
-                              const Color(0xFF1F7FC0),
-                              const Color(0xFFE1F2FF),
+                            const SizedBox(width: 18),
+                            Expanded(
+                              child: _statCard(
+                                isDark,
+                                panelBg,
+                                'Ejercicios completados',
+                                _cargandoStats
+                                    ? '...' 
+                                    : '$_ejerciciosCompletados',
+                                Icons.fitness_center_rounded,
+                                const Color(0xFF1F7FC0),
+                                const Color(0xFFE1F2FF),
+                              ),
                             ),
-                          ),
                           const SizedBox(width: 18),
                           Expanded(
                             child: _statCard(
                               isDark,
                               panelBg,
                               'Tiempo activo',
-                              '12h',
+                              _cargandoStats ? '...' : '$_minutosActivos',
                               Icons.access_time_rounded,
                               const Color(0xFFF59E0B),
                               const Color(0xFFFFF1D6),
@@ -282,66 +365,75 @@ class HomePage extends StatelessWidget {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (_) => const RoutinePage()),
+                                    builder: (_) =>
+                                        RoutinePage(usuario: widget.usuario)
+                                ),
                               );
                             },
                           ),
                           _actionButton(
-                            context,
-                            'Ver ejercicios',
-                            Icons.fitness_center_rounded,
-                            const Color(0xFF1F7FC0),
-                            () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ExercisesPage(
-                                    usuario: usuario,
-                                    usuarioId: usuario.id,
+                          context,
+                          'Ver ejercicios',
+                          Icons.fitness_center_rounded,
+                          const Color(0xFF1F7FC0),
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ExercisesPage(
+                                  usuario: widget.usuario,
+                                  usuarioId: widget.usuario.id,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        _actionButton(
+                          context,
+                          'Consultar estadísticas',
+                          Icons.bar_chart_rounded,
+                          const Color(0xFFF59E0B),
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => StatisticsPage(
+                                    usuarioId: widget.usuario.id),
+                              ),
+                            );
+                          },
+                        ),
+                        _actionButton(
+                          context,
+                          'Configuración',
+                          Icons.settings_rounded,
+                          const Color(0xFF7C4DFF),
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                  SettingsPage(
+                                    themeController: widget.themeController,
+                                    usuario: widget.usuario,
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                          _actionButton(
-                            context,
-                            'Consultar estadísticas',
-                            Icons.bar_chart_rounded,
-                            const Color(0xFFF59E0B),
-                            () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) => const StatisticsPage()),
-                              );
-                            },
-                          ),
-                          _actionButton(
-                            context,
-                            'Configuración',
-                            Icons.settings_rounded,
-                            const Color(0xFF7C4DFF),
-                            () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => SettingsPage(
-                                      themeController: themeController),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
+          ),
         ],
       ),
     );
   }
+
+  // ---------- COMPONENTES REUTILIZABLES ----------
 
   static Widget _menuItem(
     BuildContext context,
