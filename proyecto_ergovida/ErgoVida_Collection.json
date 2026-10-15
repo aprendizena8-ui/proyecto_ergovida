@@ -1,0 +1,273 @@
+{
+	"info": {
+		"name": "ErgoVida API - Coleccion CRUD",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. POST - Registrar Usuario (Create)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nombre\": \"Laura Pulido\",\n  \"correo\": \"laura.test@ergovida.com\",\n  \"password\": \"Sena1234!\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/auth/register",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "auth", "register"]
+				}
+			}
+		},
+		{
+			"name": "2. GET - Listar Usuarios (Read)",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:8080/api/users",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "users"]
+				}
+			}
+		},
+		{
+			"name": "3. PUT - Actualizar Usuario (Update)",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nombre\": \"Laura Pulido Actualizado\",\n  \"fotoPerfil\": \"avatar_nuevo.png\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/users/1",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "users", "1"]
+				}
+			}
+		},
+		{
+			"name": "4. DELETE - Eliminar Usuario (Delete)",
+			"request": {
+				"method": "DELETE",
+				"url": {
+					"raw": "http://localhost:8080/api/users/1",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "users", "1"]
+				}
+			}
+		},
+		{
+			"name": "5. Ejercicios - POST Crear Ejercicio",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nombre\": \"Estiramiento de Cuello\",\n  \"descripcion\": \"Girar la cabeza suavemente durante 15 segundos\",\n  \"duracion\": 15,\n  \"categoria\": \"Cuello\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/ejercicios",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "ejercicios"]
+				}
+			}
+		},
+		{
+			"name": "6. Ejercicios - GET Listar Ejercicios",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:8080/api/ejercicios",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "ejercicios"]
+				}
+			}
+		},
+		{
+			"name": "7. Ejercicios - PUT Actualizar",
+      		"request": {
+				"method": "PUT",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+        		],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nombre\": \"Estiramiento de Cuello Avanzado\",\n  \"descripcion\": \"Girar la cabeza suavemente durante 30 segundos\",\n  \"duracion\": 30,\n  \"categoria\": \"Cervical\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/ejercicios/1",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "ejercicios", "1"]
+       			}
+      		}
+    	},
+    	{
+			"name": "8. Ejercicios - DELETE Eliminar",
+			"request": {
+				"method": "DELETE",
+				"url": {
+					"raw": "http://localhost:8080/api/ejercicios/1",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "ejercicios", "1"]
+				}
+      		}
+    	},
+		{
+			"name": "9. Rutinas - POST Crear Rutina",
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nombre\": \"Pausa Activa Mañana\",\n  \"descripcion\": \"Rutina de descompresión para columna y muñecas\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/rutinas",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "rutinas"]
+				}
+			}
+		},
+		{
+			"name": "10. Rutinas - GET Listar Rutinas",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:8080/api/rutinas",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "rutinas"]
+				}
+			}
+		},
+		{
+			"name": "11. Rutinas - PUT Actualizar",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+				],
+				"body": {
+				"mode": "raw",
+				"raw": "{\n  \"nombre\": \"Pausa Activa Tarde\",\n  \"descripcion\": \"Rutina intensiva de estiramiento lumbar\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/rutinas/1",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "rutinas", "1"]
+				}
+      		}
+    	},
+		{
+			"name": "12. Rutinas - DELETE Eliminar",
+			"request": {
+				"method": "DELETE",
+				"url": {
+					"raw": "http://localhost:8080/api/rutinas/1",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "rutinas", "1"]
+				}
+			}
+		},
+		{
+			"name": "13. Horarios - POST Crear Horario",
+      		"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"usuarioId\": 1,\n  \"hora\": \"10:30:00\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/horarios",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "horarios"]
+				}
+			}
+		},
+    	{
+      		"name": "14. Horarios - GET Por Usuario",
+			"request": {
+				"method": "GET",
+				"url": {
+					"raw": "http://localhost:8080/api/horarios/usuario/1",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "horarios", "usuario", "1"]
+				}
+      		}
+    	},
+    	{
+			"name": "15. Estadisticas - POST Guardar Estadistica",
+				"request": {
+					"method": "POST",
+					"header": [{ "key": "Content-Type", "value": "application/json" }],
+					"body": {
+						"mode": "raw",
+						"raw": "{\n  \"usuarioId\": 1,\n  \"pausasRealizadas\": 4,\n  \"minutosActivos\": 20,\n  \"fecha\": \"2026-09-29\"\n}"
+					},
+					"url": {
+						"raw": "http://localhost:8080/api/estadisticas",
+						"protocol": "http",
+						"host": ["localhost"],
+						"port": "8080",
+						"path": ["api", "estadisticas"]
+					}
+				}
+    		},
+    	{
+			"name": "16. Pausas Realizadas - POST Registrar Pausa",
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"usuarioId\": 1,\n  \"ejercicioId\": 1,\n  \"fecha\": \"2026-09-29T10:30:00\",\n  \"completada\": true\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/pausas-realizadas",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "8080",
+					"path": ["api", "pausas-realizadas"]
+				}
+			}
+		}
+	]
+}

@@ -1,0 +1,570 @@
+import 'package:flutter/material.dart';
+import '../../main.dart';
+import '../../data/services/auth_service.dart';
+import '../../data/services/estadisticas_service.dart';
+import '../../data/services/pausa_service.dart';
+import '../../widgets/ergovida_logo.dart';
+import '../auth/login_page.dart';
+import '../exercises/exercises_page.dart';
+import '../routines/routine_page.dart';
+import '../settings/settings_page.dart';
+import '../statistics/statistics_page.dart';
+import '../profile/profile_page.dart';
+import '../exercises/pose_detector_provider.dart';
+
+class HomePage extends StatefulWidget {
+  final LoginUser usuario;
+  final AppThemeController? themeController;
+
+  const HomePage({
+    super.key,
+    required this.usuario,
+    this.themeController,
+  });
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final EstadisticasService _estadisticasService = EstadisticasService();
+  final PausaService _pausaService = PausaService();
+
+  int _pausasRealizadas = 0;
+  int _ejerciciosCompletados = 0;
+  int _minutosActivos = 0;
+  bool _cargandoStats = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarStats();
+    // Precarga el modelo de la cámara para que el primer ejercicio abra rápido
+    getPoseDetector().then((_) {}, onError: (_) {});
+  }
+
+  Future<void> _cargarStats() async {
+    if (!mounted) return;
+    setState(() => _cargandoStats = true);
+
+    final usuarioId = widget.usuario.id;
+    final estadisticas = await _estadisticasService.obtenerPorUsuario(usuarioId);
+    final pausas = await _pausaService.obtenerPorUsuario(usuarioId);
+
+    final completadas = pausas.where((p) => p['completada'] == true).length;
+    final minutos = estadisticas.fold<int>(
+      0,
+      (s, e) => s + ((e['minutosActivos'] ?? 0) as int),
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _pausasRealizadas = completadas;
+      _ejerciciosCompletados = completadas;
+      _minutosActivos = minutos;
+      _cargandoStats = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = widget.themeController?.isDark ??
+        Theme.of(context).brightness == Brightness.dark;
+    final pageBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+    final panelBg = isDark ? const Color(0xFF111C2E) : Colors.white;
+    final textPrimary = isDark ? Colors.white : const Color(0xFF10243A);
+    final textSecondary =
+        isDark ? const Color(0xFFCBD5E1) : const Color(0xFF4A5F73);
+    final sidebarTop = isDark ? const Color(0xFF0B1B2B) : const Color(0xFF0E2238);
+    final sidebarBottom =
+        isDark ? const Color(0xFF13233A) : const Color(0xFF122D46);
+
+    return Scaffold(
+      backgroundColor: pageBg,
+      body: Row(
+        children: [
+            // ---------- MENÚ LATERAL ----------
+            Container(
+              width: 270,
+              padding: const EdgeInsets.fromLTRB(18, 24, 18, 18),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [sidebarTop, sidebarBottom],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Column(
+                      children: const [
+                        ErgoVidaLogo(size: 78, showText: false),
+                        SizedBox(height: 12),
+                        Text(
+                          'ErgoVida',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  _menuItem(
+                    context,
+                    Icons.dashboard_rounded,
+                    'Dashboard',
+                    true,
+                    () {},
+                  ),
+                  _menuItem(
+                    context,
+                    Icons.fitness_center_rounded,
+                    'Ejercicios',
+                    false,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ExercisesPage(
+                            usuario: widget.usuario,
+                            usuarioId: widget.usuario.id,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  _menuItem(
+                    context,
+                    Icons.repeat_rounded,
+                    'Rutinas',
+                    false,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              RoutinePage(usuario: widget.usuario),
+                        ),
+                      );
+                    },
+                  ),
+                  _menuItem(
+                    context,
+                    Icons.bar_chart_rounded,
+                    'Estadísticas',
+                    false,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              StatisticsPage(usuarioId: widget.usuario.id),
+                        ),
+                      );
+                    },
+                  ),
+                  _menuItem(
+                    context,
+                    Icons.settings_rounded,
+                    'Configuración',
+                    false,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                            SettingsPage(
+                              themeController: widget.themeController,
+                              usuario: widget.usuario,
+                            ),
+                        ),
+                      );
+                    },
+                  ),
+                  _menuItem(
+                    context,
+                    Icons.person_rounded,
+                    'Mi perfil',
+                    false,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => 
+                              ProfilePage(usuario: widget.usuario),
+                        ),
+                      );
+                    },
+                  ),
+                  const Spacer(),
+                  const Divider(color: Color(0xFF31506C), thickness: 1),
+                  const SizedBox(height: 8),
+                  Material(
+                    color: Colors.transparent,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 2),
+                      leading: const Icon(Icons.logout_rounded,
+                          color: Color(0xFFFF7A7A), size: 22),
+                      title: const Text(
+                        'Cerrar sesión',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                      onTap: () {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const LoginPage()),
+                          (route) => false,
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ---------- CONTENIDO PRINCIPAL ----------
+            Expanded(
+              child: Container(
+                color: pageBg,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(30),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Bienvenido, ${widget.usuario.nombre}',
+                                  style: TextStyle(
+                                    color: textPrimary,
+                                    fontSize: 34,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -1,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Gestiona tus pausas activas y mejora tu bienestar laboral.',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    color: textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                              icon: Icon(Icons.refresh_rounded,
+                                  color: textPrimary, size: 28),
+                              tooltip: 'Recargar estadísticas',
+                              onPressed: _cargarStats,
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF123A35)
+                                    : const Color(0xFFDCF9F2),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                'Hoy',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? const Color(0xFF8BE7D7)
+                                      : const Color(0xFF0D5C4F),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 28),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _statCard(
+                                isDark,
+                                panelBg,
+                                'Pausas realizadas',
+                                _cargandoStats ? '...' : '$_pausasRealizadas',
+                                Icons.timer_rounded,
+                                const Color(0xFF22C55E),
+                                const Color(0xFFDCFBE7),
+                              ),
+                            ),
+                            const SizedBox(width: 18),
+                            Expanded(
+                              child: _statCard(
+                                isDark,
+                                panelBg,
+                                'Ejercicios completados',
+                                _cargandoStats
+                                    ? '...' 
+                                    : '$_ejerciciosCompletados',
+                                Icons.fitness_center_rounded,
+                                const Color(0xFF1F7FC0),
+                                const Color(0xFFE1F2FF),
+                              ),
+                            ),
+                          const SizedBox(width: 18),
+                          Expanded(
+                            child: _statCard(
+                              isDark,
+                              panelBg,
+                              'Tiempo activo',
+                              _cargandoStats ? '...' : '$_minutosActivos',
+                              Icons.access_time_rounded,
+                              const Color(0xFFF59E0B),
+                              const Color(0xFFFFF1D6),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 40),
+                      Text(
+                        'Acciones rápidas',
+                        style: TextStyle(
+                          color: textPrimary,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      Wrap(
+                        spacing: 20,
+                        runSpacing: 20,
+                        children: [
+                          _actionButton(
+                            context,
+                            'Iniciar pausa activa',
+                            Icons.play_circle_fill_rounded,
+                            const Color(0xFF22C55E),
+                            () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        RoutinePage(usuario: widget.usuario)
+                                ),
+                              );
+                            },
+                          ),
+                          _actionButton(
+                          context,
+                          'Ver ejercicios',
+                          Icons.fitness_center_rounded,
+                          const Color(0xFF1F7FC0),
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ExercisesPage(
+                                  usuario: widget.usuario,
+                                  usuarioId: widget.usuario.id,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        _actionButton(
+                          context,
+                          'Consultar estadísticas',
+                          Icons.bar_chart_rounded,
+                          const Color(0xFFF59E0B),
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => StatisticsPage(
+                                    usuarioId: widget.usuario.id),
+                              ),
+                            );
+                          },
+                        ),
+                        _actionButton(
+                          context,
+                          'Configuración',
+                          Icons.settings_rounded,
+                          const Color(0xFF7C4DFF),
+                          () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                  SettingsPage(
+                                    themeController: widget.themeController,
+                                    usuario: widget.usuario,
+                                  ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------- COMPONENTES REUTILIZABLES ----------
+
+  static Widget _menuItem(
+    BuildContext context,
+    IconData icon,
+    String title,
+    bool active,
+    VoidCallback onTap,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: active
+            ? (isDark
+                ? const Color(0xFF1F7FC0).withValues(alpha: 0.26)
+                : const Color(0xFF1F7FC0).withValues(alpha: 0.18))
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+          leading: Icon(icon, color: Colors.white, size: 22),
+          title: Text(
+            title,
+            style: const TextStyle(
+                color: Colors.white, fontWeight: FontWeight.w600),
+          ),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14)),
+          onTap: onTap,
+        ),
+      ),
+    );
+  }
+
+  static Widget _statCard(
+    bool isDark,
+    Color panelBg,
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    Color surface,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      height: 200,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF111C2E) : Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: [
+          BoxShadow(
+            color: isDark 
+              ? Colors.black.withValues(alpha: 0.3)
+              : const Color(0x1A0E2238),
+            blurRadius: 18,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: surface,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(icon, color: color, size: 30),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            value,
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF0E2238),
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            style: TextStyle(
+              color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF5E7387),
+              fontSize: 15,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _actionButton(
+    BuildContext context,
+    String text,
+    IconData icon,
+    Color color,
+    VoidCallback onPressed,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final actionColor = isDark
+        ? Color.alphaBlend(const Color(0xFF0E2238), color)
+            .withValues(alpha: 0.9)
+        : color;
+
+    return SizedBox(
+      width: 260,
+      height: 94,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 26),
+        label: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: actionColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+        ),
+      ),
+    );
+  }
+}
