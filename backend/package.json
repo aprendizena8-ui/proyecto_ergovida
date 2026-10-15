@@ -1,0 +1,11 @@
+{
+  "name": "ergovida-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend local para ErgoVida",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  }
+}

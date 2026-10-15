@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'data/services/auth_service.dart';
 import 'features/auth/login_page.dart';
+import 'features/home/home_page.dart';
 
 const Color brandNavy = Color(0xFF0E2238);
 const Color brandBlue = Color(0xFF1F7FC0);
@@ -12,33 +15,25 @@ const Color brandText = Color(0xFF10243A);
 const Color brandMuted = Color(0xFF5E7387);
 
 class AppThemeController extends ChangeNotifier {
-  // Instancia global única
-  static final AppThemeController instance = AppThemeController._internal();
-
-  factory AppThemeController() => instance;
-
-  AppThemeController._internal();
+  static const String _themeKey = 'theme_dark_mode';
 
   ThemeMode _themeMode = ThemeMode.light;
-  static const _prefKey = 'ergovida_theme_dark';
 
   ThemeMode get themeMode => _themeMode;
   bool get isDark => _themeMode == ThemeMode.dark;
 
-  /// Carga el tema guardado al iniciar la app
-  Future<void> cargarTemaGuardado() async {
+  Future<void> loadTheme() async {
     final prefs = await SharedPreferences.getInstance();
-    final isDark = prefs.getBool(_prefKey) ?? false;
-    _themeMode = isDark ? ThemeMode.dark : ThemeMode.light;
+    _themeMode = prefs.getBool(_themeKey) == true ? ThemeMode.dark : ThemeMode.light;
     notifyListeners();
   }
 
   Future<void> setTheme(bool dark) async {
     _themeMode = dark ? ThemeMode.dark : ThemeMode.light;
     notifyListeners();
-    // Persistir en disco
+
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_prefKey, dark);
+    await prefs.setBool(_themeKey, dark);
   }
 }
 
@@ -54,14 +49,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final AppThemeController _themeController = AppThemeController.instance;
-
-  @override
-  void initState() {
-    super.initState();
-    // Cargar el tema guardado al iniciar
-    _themeController.cargarTemaGuardado();
-  }
+  final AppThemeController _themeController = AppThemeController();
 
   ThemeData _buildLightTheme() {
     return ThemeData(
@@ -164,6 +152,12 @@ class _MyAppState extends State<MyApp> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _themeController.loadTheme();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _themeController,
@@ -174,7 +168,18 @@ class _MyAppState extends State<MyApp> {
           themeMode: _themeController.themeMode,
           theme: _buildLightTheme(),
           darkTheme: _buildDarkTheme(),
-          home: LoginPage(themeController: _themeController),
+          home: FutureBuilder<bool>(
+            future: AuthService.isLoggedIn(),
+            builder: (context, snapshot) {
+              final loggedIn = snapshot.data ?? false;
+
+              if (loggedIn) {
+                return HomePage(themeController: _themeController);
+              }
+
+              return LoginPage(themeController: _themeController);
+            },
+          ),
         );
       },
     );

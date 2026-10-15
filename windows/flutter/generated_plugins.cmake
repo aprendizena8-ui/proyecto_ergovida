@@ -3,12 +3,10 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  camera_desktop
-  pose_detection
+  permission_handler_windows
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
-  flutter_litert
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

@@ -1,385 +1,172 @@
 import 'package:flutter/material.dart';
-import '../../data/services/auth_service.dart';
-import '../../data/services/rutina_service.dart';
-import '../../data/services/ejercicio_service.dart';
 
-class RoutinePage extends StatefulWidget {
-  final LoginUser? usuario;
+class RoutinePage extends StatelessWidget {
+  const RoutinePage({super.key});
 
-  const RoutinePage({super.key, this.usuario});
-
-  @override
-  State<RoutinePage> createState() => _RoutinePageState();
-}
-
-class _RoutinePageState extends State<RoutinePage> {
-  final RutinaService _rutinaService = RutinaService();
-  final EjercicioService _ejercicioService = EjercicioService();
-
-  List<dynamic> _rutinas = [];
-  bool _cargando = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _cargarRutinas();
-  }
-
-  Future<void> _cargarRutinas() async {
-    setState(() => _cargando = true);
-    final data = await _rutinaService.obtenerRutinas();
-    if (!mounted) return;
-    setState(() {
-      _rutinas = data;
-      _cargando = false;
-    });
-  }
-
-  Future<void> _mostrarDialogoCrear() async {
-    final nombreController = TextEditingController();
-    final descripcionController = TextEditingController();
-
-    final resultado = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Nueva rutina'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nombreController,
-              decoration: const InputDecoration(labelText: 'Nombre'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descripcionController,
-              decoration: const InputDecoration(labelText: 'Descripción'),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nombreController.text.trim().isEmpty) return;
-              await _rutinaService.crearRutina(
-                nombre: nombreController.text.trim(),
-                descripcion: descripcionController.text.trim(),
-              );
-              if (!context.mounted) return;
-              Navigator.pop(context, true);
-            },
-            child: const Text('Crear'),
-          ),
-        ],
-      ),
-    );
-
-    if (resultado == true) {
-      _cargarRutinas();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.green,
-          content: Text('Rutina creada correctamente'),
-        ),
-      );
-    }
-  }
-
-  Future<void> _mostrarDialogoEditar(Map<String, dynamic> rutina) async {
-    final nombreController = TextEditingController(text: rutina['nombre'] ?? '');
-    final descripcionController =
-        TextEditingController(text: rutina['descripcion'] ?? '');
-
-    final resultado = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Editar rutina'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nombreController,
-              decoration: const InputDecoration(labelText: 'Nombre'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descripcionController,
-              decoration: const InputDecoration(labelText: 'Descripción'),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nombreController.text.trim().isEmpty) return;
-              await _rutinaService.actualizarRutina(
-                rutina['id'],
-                nombre: nombreController.text.trim(),
-                descripcion: descripcionController.text.trim(),
-              );
-              if (!context.mounted) return;
-              Navigator.pop(context, true);
-            },
-            child: const Text('Guardar'),
-          ),
-        ],
-      ),
-    );
-
-    if (resultado == true) {
-      _cargarRutinas();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.blue,
-          content: Text('Rutina actualizada'),
-        ),
-      );
-    }
-  }
-
-  Future<void> _confirmarEliminar(Map<String, dynamic> rutina) async {
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminar rutina'),
-        content: Text(
-            '¿Estás seguro de eliminar "${rutina['nombre']}"? Esta acción no se puede deshacer.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmar == true) {
-      await _rutinaService.eliminarRutina(rutina['id']);
-      _cargarRutinas();
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.red,
-          content: Text('Rutina eliminada'),
-        ),
-      );
-    }
-  }
-
-  Future<void> _abrirDialogoAsignar(Map<String, dynamic> rutina) async {
-    // 1. Cargar todos los ejercicios
-    final ejercicios = await _ejercicioService.obtenerEjercicios();
-    if (ejercicios.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.orange,
-          content: Text('No hay ejercicios disponibles para asignar'),
-        ),
-      );
-      return;
-    }
-    // 2. Obtener los IDs de ejercicios ya asignados a esta rutina
-    final ejerciciosAsignados =
-        (rutina['ejercicios'] as List<dynamic>? ?? [])
-            .map((e) => e['id'])
-            .toSet();
-
-    if (!mounted) return;
-
-    // 3. Mostrar diálogo con la lista de ejercicios
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Asignar a "${rutina['nombre']}"'),
-          content: SizedBox(
-            width: 400,
-            height: 400,
-            child: ListView.builder(
-              itemCount: ejercicios.length,
-              itemBuilder: (context, index) {
-                final ej = ejercicios[index];
-                final id = ej['id'];
-                final nombre = ej['nombre'] ?? 'Ejercicio';
-                final yaAsignado = ejerciciosAsignados.contains(id);
-
-                return CheckboxListTile(
-                  title: Text(nombre),
-                  subtitle: Text(ej['categoria'] ?? ''),
-                  value: yaAsignado,
-                  onChanged: yaAsignado
-                      ? null
-                      : (v) async {
-                          if (v == true) {
-                            final ok = await _rutinaService.asignarEjercicio(
-                              rutina['id'],
-                              id,
-                            );
-                            if (!context.mounted) return;
-                            if (ok != null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  backgroundColor: Colors.green,
-                                  content: Text('"$nombre" asignado'),
-                                ),
-                              );
-                              Navigator.pop(context);
-                              _cargarRutinas();
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  backgroundColor: Colors.red,
-                                  content: Text('Error al asignar'),
-                                ),
-                              );
-                            }
-                          }
-                        },
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cerrar'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  final List<RoutineItem> _routines = const [
+    RoutineItem(
+      nombre: 'Rutina Oficina',
+      descripcion: 'Recupera postura y energía durante la jornada.',
+      ejercicios: '5 ejercicios',
+      tiempo: '10 minutos',
+      nivel: 'Moderado',
+    ),
+    RoutineItem(
+      nombre: 'Rutina Casa',
+      descripcion: 'Relaja cuello, hombros y espalda tras el trabajo.',
+      ejercicios: '4 ejercicios',
+      tiempo: '8 minutos',
+      nivel: 'Fácil',
+    ),
+    RoutineItem(
+      nombre: 'Rutina de cuello y hombros',
+      descripcion: 'Reduce tensión acumulada en la parte superior del cuerpo.',
+      ejercicios: '3 ejercicios',
+      tiempo: '6 minutos',
+      nivel: 'Leve',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Rutinas'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _cargarRutinas,
+      appBar: AppBar(title: const Text('Rutinas')),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Rutinas recomendadas',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF10243A),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Selecciona la rutina ideal para tu momento del día.',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Color(0xFF5E7387),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: _routines.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 16),
+                  itemBuilder: (context, index) {
+                    final routine = _routines[index];
+                    return _routineCard(context, routine);
+                  },
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _mostrarDialogoCrear,
-        icon: const Icon(Icons.add),
-        label: const Text('Nueva rutina'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-      ),
-      body: _cargando
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _cargarRutinas,
-              child: _rutinas.isEmpty
-                  ? ListView(
-                      children: const [
-                        SizedBox(height: 120),
-                        Center(
-                          child: Text(
-                            'No hay rutinas registradas.\n¡Crea la primera!',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
-                          ),
-                        ),
-                      ],
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _rutinas.length,
-                      itemBuilder: (context, index) {
-                        final rutina = _rutinas[index];
-                        final ejercicios = rutina['ejercicios'] as List<dynamic>? ?? [];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Icon(Icons.repeat, color: Colors.green, size: 28),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        rutina['nombre'] ?? 'Sin nombre',
-                                        style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  rutina['descripcion'] ?? 'Sin descripción',
-                                  style: const TextStyle(color: Colors.grey),
-                                ),
-                                const SizedBox(height: 12),
-                                Row(
-                                  children: [
-                                    Chip(
-                                      avatar: const Icon(Icons.fitness_center, size: 16),
-                                      label: Text('${ejercicios.length} ejercicios'),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    TextButton.icon(
-                                      onPressed: () =>
-                                           _abrirDialogoAsignar(rutina),
-                                      icon: const Icon(Icons.playlist_add,
-                                          size: 18),
-                                      label: const Text('Asignar'),
-                                    ),
-                                    TextButton.icon(
-                                      onPressed: () =>
-                                          _mostrarDialogoEditar(rutina),
-                                      icon: const Icon(Icons.edit, size: 18),
-                                      label: const Text('Editar'),
-                                    ),
-                                    TextButton.icon(
-                                      onPressed: () => _confirmarEliminar(rutina),
-                                      icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-                                      label: const Text(
-                                        'Eliminar',
-                                        style: TextStyle(color: Colors.red),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
     );
   }
+
+  Widget _routineCard(BuildContext context, RoutineItem routine) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDCF9F2),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    routine.nivel,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF116A5D),
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  routine.tiempo,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1F7FC0),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              routine.nombre,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              routine.descripcion,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF5E7387),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                const Icon(Icons.check_circle_outline, size: 18, color: Color(0xFF22C55E)),
+                const SizedBox(width: 8),
+                Text(routine.ejercicios),
+              ],
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Iniciando ${routine.nombre}'),
+                      backgroundColor: const Color(0xFF0E2238),
+                    ),
+                  );
+                },
+                child: const Text('Iniciar rutina'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class RoutineItem {
+  final String nombre;
+  final String descripcion;
+  final String ejercicios;
+  final String tiempo;
+  final String nivel;
+
+  const RoutineItem({
+    required this.nombre,
+    required this.descripcion,
+    required this.ejercicios,
+    required this.tiempo,
+    required this.nivel,
+  });
 }

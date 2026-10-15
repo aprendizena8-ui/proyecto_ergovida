@@ -17,19 +17,12 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController correoController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final FocusNode passwordFocusNode = FocusNode();
-  final AuthService auth = AuthService();
-
   bool ocultarPassword = true;
-  bool cargando = false;
-  String? errorCorreo;
-  String? errorPassword;
 
   @override
   void dispose() {
     correoController.dispose();
     passwordController.dispose();
-    passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -37,77 +30,45 @@ class _LoginPageState extends State<LoginPage> {
     final correo = correoController.text.trim();
     final password = passwordController.text.trim();
 
-    setState(() {
-      errorCorreo = null;
-      errorPassword = null;
-    });
-
-    if (correo.isEmpty && password.isEmpty) {
-      setState(() {
-        errorCorreo = "Este campo es obligatorio";
-        errorPassword = "Este campo es obligatorio";
-      });
+    if (correo.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          backgroundColor: Color(0xFF455A64),
-          content: Text("Por favor completa todos los campos."),
+          backgroundColor: Color(0xFF0E2238),
+          content: Text('Por favor completa todos los campos'),
         ),
       );
       return;
     }
 
-    if (correo.isEmpty) {
-      setState(() {
-        errorCorreo = "Este campo es obligatorio";
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Color(0xFF455A64),
-          content: Text("Ingresa tu correo electrónico."),
-        ),
-      );
-      return;
-    }
+    try {
+      final auth = AuthService();
+      final acceso = await auth.login(correo, password);
 
-    if (password.isEmpty) {
-      setState(() {
-        errorPassword = "Este campo es obligatorio";
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Color(0xFF455A64),
-          content: Text("Ingresa tu contraseña."),
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      cargando = true;
-    });
-
-    final respuesta = await auth.login(correo, password);
-
-    if (!mounted) return;
-    setState(() {
-      cargando = false;
-    });
-
-    if (respuesta.success) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => HomePage(
-            usuario: respuesta.user!,
-            themeController: AppThemeController.instance,
+      if (acceso) {
+        if (!mounted) return;
+        await AuthService.saveSession(correo, password);
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomePage(themeController: widget.themeController),
           ),
-        ),
-      );
-    } else {
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Color(0xFFCF3A3A),
+            content: Text('Correo o contraseña incorrectos'),
+          ),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: const Color(0xFFCF3A3A),
-          content: Text(respuesta.message),
+        const SnackBar(
+          backgroundColor: Color(0xFFCF3A3A),
+          content: Text('No se pudo conectar con el backend local'),
         ),
       );
     }
@@ -165,124 +126,27 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 28),
                   TextField(
-                    enabled: !cargando,
                     controller: correoController,
                     keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    onSubmitted: (_) {
-                      FocusScope.of(context).requestFocus(passwordFocusNode);
-                    },
-                    onChanged: (value) {
-                      final emailValido = RegExp(
-                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                      setState(() {
-                        if (value.trim().isEmpty) {
-                          errorCorreo = "Este campo es obligatorio";
-                        } else if (!emailValido.hasMatch(value.trim())) {
-                          errorCorreo = "Ingresa un correo electrónico válido.";
-                        } else {
-                          errorCorreo = null;
-                        }
-                      });
-                    },
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: 'Correo electrónico',
-                      prefixIcon: const Icon(Icons.email),
-                      errorText: errorCorreo,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Colors.green,
-                          width: 2,
-                        ),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Colors.red,
-                          width: 2,
-                        ),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Colors.red,
-                          width: 2,
-                        ),
-                      ),
+                      prefixIcon: Icon(Icons.email_outlined),
                     ),
                   ),
                   const SizedBox(height: 18),
                   TextField(
-                    enabled: !cargando,
                     controller: passwordController,
-                    focusNode: passwordFocusNode,
                     obscureText: ocultarPassword,
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) {
-                      if (!cargando) {
-                        iniciarSesion();
-                      }
-                    },
-                    onChanged: (value) {
-                      setState(() {
-                        if (value.isEmpty) {
-                          errorPassword = "Este campo es obligatorio";
-                        } else {
-                          errorPassword = null;
-                        }
-                      });
-                    },
                     decoration: InputDecoration(
                       labelText: 'Contraseña',
-                      prefixIcon: const Icon(Icons.lock),
-                      errorText: errorPassword,
+                      prefixIcon: const Icon(Icons.lock_outline),
                       suffixIcon: IconButton(
                         icon: Icon(
                           ocultarPassword
-                              ? Icons.visibility
-                              : Icons.visibility_off,
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
                         ),
-                        onPressed: cargando
-                            ? null
-                            : () {
-                                setState(() {
-                                  ocultarPassword = !ocultarPassword;
-                                });
-                              },
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Colors.green,
-                          width: 2,
-                        ),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Colors.red,
-                          width: 2,
-                        ),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Colors.red,
-                          width: 2,
-                        ),
+                        onPressed: () => setState(() => ocultarPassword = !ocultarPassword),
                       ),
                     ),
                   ),
@@ -297,7 +161,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
                     child: DecoratedBox(
@@ -317,7 +181,7 @@ class _LoginPageState extends State<LoginPage> {
                         ],
                       ),
                       child: ElevatedButton(
-                        onPressed: cargando ? null : iniciarSesion,
+                        onPressed: iniciarSesion,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
@@ -326,40 +190,13 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 18),
                         ),
-                        child: cargando
-                            ? const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 3,
-                                      valueColor:
-                                          AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(width: 15),
-                                  Text(
-                                    "Ingresando...",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : const Text(
-                                "Iniciar Sesión",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
+                        child: const Text(
+                          'Iniciar sesión',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -379,37 +216,18 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 18),
                   TextButton(
-                    onPressed: () async {
-                      final correoRegistrado = await Navigator.push<String>(
+                    onPressed: () {
+                      Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => const RegisterPage(),
-                        ),
+                        MaterialPageRoute(builder: (context) => const RegisterPage()),
                       );
-                      if (correoRegistrado != null) {
-                        setState(() {
-                          correoController.text = correoRegistrado;
-                          passwordController.clear();
-                          errorCorreo = null;
-                          errorPassword = null;
-                        });
-                        FocusScope.of(context).requestFocus(passwordFocusNode);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            backgroundColor: Colors.green,
-                            content: Text(
-                              "Cuenta creada correctamente. Ahora inicia sesión.",
-                            ),
-                          ),
-                        );
-                      }
                     },
                     child: const Text(
-                      "¿No tienes cuenta? Regístrate",
+                      'Crear cuenta nueva',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF0E2238), // Azul oscuro
+                        color: Color(0xFF0E2238),
                       ),
                     ),
                   ),

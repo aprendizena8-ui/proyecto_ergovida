@@ -76,7 +76,7 @@ class _ErgoVidaBrandPainter extends CustomPainter {
     final ringPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = size.width * 0.10
-      ..color = Colors.white.withOpacity(0.95);
+      ..color = Colors.white.withValues(alpha: 0.95);
 
     final innerPaint = Paint()
       ..style = PaintingStyle.fill
@@ -88,7 +88,7 @@ class _ErgoVidaBrandPainter extends CustomPainter {
 
     final softPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = Colors.white.withOpacity(0.9);
+      ..color = Colors.white.withValues(alpha: 0.9);
 
     canvas.drawArc(
       Rect.fromCenter(
@@ -195,7 +195,7 @@ class _ErgoVidaBrandPainter extends CustomPainter {
       ..close();
     canvas.drawPath(rightLeg, accentPaint);
 
-    final sparkles = Paint()..color = Colors.white.withOpacity(0.9);
+    final sparkles = Paint()..color = Colors.white.withValues(alpha: 0.9);
     for (int i = 0; i < 7; i++) {
       final dx = center.dx + size.width * (0.18 + i * 0.05);
       final dy = center.dy + size.height * (0.20 - i * 0.03);
