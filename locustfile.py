@@ -1,8 +1,8 @@
 from locust import HttpUser, task, between
 
-class ErgoVidaUser(HttpUser):
-    wait_time = between(0.5, 1.5)
+class SREUser(HttpUser):
+    wait_time = between(0.1, 0.5)
 
     @task
-    def check_home(self):
-        self.client.get("/")
+    def test_aplicar_descuento(self):
+        self.client.post("/aplicar-descuento")
