@@ -21,7 +21,8 @@ El análisis de percentiles (P95 y P99) demuestra que la arquitectura del backen
 Asimismo, la ejecución de las pruebas mediante Locust permitió identificar umbrales de saturación estables, asegurando que los tiempos de procesamiento se mantengan dentro de rangos eficientes y adecuados para la experiencia del usuario final en el ecosistema ErgoVida.
 
 ## 5. Evidencia Gráfica / Captura de Pantalla
-![Captura de Rendimiento y Pruebas](assets/flutter_01.png)
+![Captura de Rendimiento y Pruebas]<img width="946" height="616" alt="image" src="https://github.com/user-attachments/assets/136b9e19-557e-4a74-8c4a-f6c96110656e" />
+
 
 ## 6. Conclusiones y Despliegue
 La arquitectura basada en contenedores Docker y Flask gestiona eficientemente la concurrencia registrada, garantizando la correcta implantación y disponibilidad del sistema en el entorno de producción.
