@@ -3,16 +3,17 @@ import 'package:pose_detection/pose_detection.dart';
 import 'exercise_camera_models.dart';
 
 /// Devuelve la posición del punto entre 0 y 1.
-/// Si la librería entrega píxeles (valores > 1.5), los divide por el tamaño
-/// del frame; si ya vienen normalizados, los deja igual.
+/// El paquete entrega píxeles del frame ya rotado/reescalado, así que se
+/// dividen por el tamaño reportado por [detectionSize].
 Offset normalizedPoint(PoseLandmark lm, Size? imageSize) {
-  double x = lm.x;
-  double y = lm.y;
-  if (imageSize != null && (x > 1.5 || y > 1.5)) {
-    x = x / imageSize.width;
-    y = y / imageSize.height;
+  if (imageSize == null || imageSize.width <= 0 || imageSize.height <= 0) {
+    return Offset(lm.x.clamp(0.0, 1.0), lm.y.clamp(0.0, 1.0));
   }
-  return Offset(x, y);
+
+  return Offset(
+    (lm.x / imageSize.width).clamp(0.0, 1.0),
+    (lm.y / imageSize.height).clamp(0.0, 1.0),
+  );
 }
 
 /// Dibuja el esqueleto de la parte superior del cuerpo.

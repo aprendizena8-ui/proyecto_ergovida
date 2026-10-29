@@ -168,13 +168,19 @@ class _MyAppState extends State<MyApp> {
           themeMode: _themeController.themeMode,
           theme: _buildLightTheme(),
           darkTheme: _buildDarkTheme(),
-          home: FutureBuilder<bool>(
-            future: AuthService.isLoggedIn(),
+          home: FutureBuilder(
+            future: AuthService.restoreSession(),
             builder: (context, snapshot) {
-              final loggedIn = snapshot.data ?? false;
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const _SplashScreen();
+              }
 
-              if (loggedIn) {
-                return HomePage(themeController: _themeController);
+              final usuario = snapshot.data;
+              if (usuario != null) {
+                return HomePage(
+                  themeController: _themeController,
+                  usuario: usuario,
+                );
               }
 
               return LoginPage(themeController: _themeController);
@@ -182,6 +188,50 @@ class _MyAppState extends State<MyApp> {
           ),
         );
       },
+    );
+  }
+}
+
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [brandNavy, Color(0xFF123A56)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: brandTeal,
+                ),
+              ),
+              SizedBox(height: 18),
+              Text(
+                'ErgoVida',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../data/models/user_model.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/usuario_service.dart';
 
 class ProfilePage extends StatefulWidget {
-  final LoginUser usuario;
+  final UserModel usuario;
 
   const ProfilePage({super.key, required this.usuario});
 
@@ -39,13 +40,19 @@ class _ProfilePageState extends State<ProfilePage> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _guardando = true);
 
-    final ok = await _usuarioService.actualizarUsuario(
-      widget.usuario.id,
-      {
-        'nombre': _nombreCtrl.text.trim(),
-        'correo': _correoCtrl.text.trim(),
-      },
-    );
+    final ok = await _usuarioService.actualizarUsuario(widget.usuario.id, {
+      'nombre': _nombreCtrl.text.trim(),
+      'correo': _correoCtrl.text.trim(),
+    });
+
+    if (ok) {
+      await AuthService.actualizarUsuarioActual(
+        widget.usuario.copyWith(
+          nombre: _nombreCtrl.text.trim(),
+          correo: _correoCtrl.text.trim(),
+        ),
+      );
+    }
 
     if (!mounted) return;
     setState(() => _guardando = false);
@@ -53,9 +60,11 @@ class _ProfilePageState extends State<ProfilePage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: ok ? Colors.green : Colors.red,
-        content: Text(ok
-            ? 'Perfil actualizado correctamente'
-            : 'Error al actualizar el perfil'),
+        content: Text(
+          ok
+              ? 'Perfil actualizado correctamente'
+              : 'Error al actualizar el perfil',
+        ),
       ),
     );
   }
@@ -66,7 +75,8 @@ class _ProfilePageState extends State<ProfilePage> {
       builder: (context) => AlertDialog(
         title: const Text('Eliminar cuenta'),
         content: const Text(
-            '¿Estás seguro? Esta acción eliminará tu cuenta y todos tus datos. No se puede deshacer.'),
+          '¿Estás seguro? Esta acción eliminará tu cuenta y todos tus datos. No se puede deshacer.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -256,44 +266,59 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 30),
             // Botón temporal para convertir admin (ELIMINAR EN PRODUCCIÓN)
             TextButton.icon(
-                onPressed: () async {
-                  final confirmar = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Modo desarrollo'),
-                      content: const Text('¿Convertir este usuario en ADMINISTRADOR?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancelar'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Sí'),
-                        ),
-                      ],
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final confirmar = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Modo desarrollo'),
+                    content: const Text(
+                      '¿Convertir este usuario en ADMINISTRADOR?',
                     ),
-                  );
-                  if (confirmar == true) {
-                    await _usuarioService.actualizarUsuario(
-                      widget.usuario.id,
-                      {'rol': 'ADMINISTRADOR'},
-                    );
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        backgroundColor: Colors.orange,
-                        content: Text('Usuario convertido en ADMIN. Reinicia sesión.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancelar'),
                       ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Sí'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmar == true) {
+                  final ok = await _usuarioService.actualizarUsuario(
+                    widget.usuario.id,
+                    {'rol': 'ADMINISTRADOR'},
+                  );
+                  if (ok) {
+                    await AuthService.actualizarUsuarioActual(
+                      widget.usuario.copyWith(rol: 'ADMINISTRADOR'),
                     );
                   }
-                },
-                icon: const Icon(Icons.admin_panel_settings,
-                  color: Colors.orange, size: 18),
-                label: const Text(
-                  'Convertir en ADMIN (dev)',
-                  style: TextStyle(color: Colors.orange, fontSize: 12),
-                ),
+                  if (!mounted) return;
+                  messenger.showSnackBar(
+                    SnackBar(
+                      backgroundColor: ok ? Colors.orange : Colors.red,
+                      content: Text(
+                        ok
+                            ? 'Usuario convertido en ADMIN. Ya puedes usar el panel de administración.'
+                            : 'No se pudo convertir el usuario en ADMIN.',
+                      ),
+                    ),
+                  );
+                }
+              },
+              icon: const Icon(
+                Icons.admin_panel_settings,
+                color: Colors.orange,
+                size: 18,
+              ),
+              label: const Text(
+                'Convertir en ADMIN (dev)',
+                style: TextStyle(color: Colors.orange, fontSize: 12),
+              ),
             ),
           ],
         ),

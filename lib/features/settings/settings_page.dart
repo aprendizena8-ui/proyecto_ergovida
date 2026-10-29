@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../main.dart';
-import '../../data/services/auth_service.dart';
+import '../../data/models/user_model.dart';
 import '../../data/services/horario_service.dart';
 
 class SettingsPage extends StatefulWidget {
   final AppThemeController? themeController;
-  final LoginUser? usuario;
+  final UserModel? usuario;
 
-  const SettingsPage({
-    super.key,
-    this.themeController,
-    this.usuario,
-  });
+  const SettingsPage({super.key, this.themeController, this.usuario});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -32,7 +28,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _cargarHorarios();
   }
 
-    Future<void> _cargarHorarios() async {
+  Future<void> _cargarHorarios() async {
     if (widget.usuario == null) {
       setState(() => _cargandoHorarios = false);
       return;
@@ -133,7 +129,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = widget.themeController?.isDark ??
+    final isDark =
+        widget.themeController?.isDark ??
         Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -155,7 +152,9 @@ class _SettingsPageState extends State<SettingsPage> {
             color: Colors.transparent,
             child: SwitchListTile(
               title: const Text('Recordatorios activos'),
-              subtitle: const Text('Activar o desactivar todos los recordatorios'),
+              subtitle: const Text(
+                'Activar o desactivar todos los recordatorios',
+              ),
               value: recordatorios,
               onChanged: (v) => setState(() => recordatorios = v),
             ),
@@ -164,11 +163,12 @@ class _SettingsPageState extends State<SettingsPage> {
             color: Colors.transparent,
             child: SwitchListTile(
               title: const Text('Tema oscuro'),
-              subtitle: const Text('Ajusta la interfaz para mejor visibilidad nocturna'),
+              subtitle: const Text(
+                'Ajusta la interfaz para mejor visibilidad nocturna',
+              ),
               value: isDark,
               onChanged: (v) {
-                // Usar la instancia global para que el cambio persista
-                AppThemeController.instance.setTheme(v);
+                widget.themeController?.setTheme(v);
                 setState(() {});
               },
             ),
@@ -185,10 +185,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 const Expanded(
                   child: Text(
                     'Recordatorios de pausas activas',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
                 if (widget.usuario != null)

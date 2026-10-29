@@ -1,20 +1,15 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'api_client.dart';
 
 class EjercicioService {
-  static const String baseUrl = "http://localhost:8080/api";
+  static String get baseUrl => ApiClient.baseUrl;
 
   // GET: Obtiene la lista de ejercicios desde MySQL vía Spring Boot
   Future<List<dynamic>> obtenerEjercicios() async {
     try {
-      final response = await http.get(Uri.parse("$baseUrl/ejercicios"));
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body) as List<dynamic>;
-      }
-      print("Error de servidor: ${response.statusCode}");
-      return [];
+      final data = await ApiClient.get('/ejercicios');
+      return data is List ? data : [];
     } catch (e) {
-      print("Error al obtener ejercicios: $e");
+      print('Error al obtener ejercicios: $e');
       return [];
     }
   }
@@ -26,48 +21,39 @@ class EjercicioService {
     required bool completada,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse("$baseUrl/pausas-realizadas"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          'usuarioId': usuarioId,
-          'ejercicioId': ejercicioId,
-          'completada': completada,
-        }),
-      );
-      return response.statusCode == 200 || response.statusCode == 201;
+      await ApiClient.post('/pausas-realizadas', {
+        'usuarioId': usuarioId,
+        'ejercicioId': ejercicioId,
+        'completada': completada,
+      });
+      return true;
     } catch (e) {
-      print("Error al guardar pausa en la BD: $e");
+      print('Error al guardar pausa en la BD: $e');
       return false;
     }
   }
 
-    // POST: Crear ejercicio
-  Future<bool> crearEjercicio(Map<String, dynamic> datos) async {
+  // POST: Crear ejercicio y devolver el registro creado (con su id)
+  Future<Map<String, dynamic>?> crearEjercicio(
+    Map<String, dynamic> datos,
+  ) async {
     try {
-      final response = await http.post(
-        Uri.parse("$baseUrl/ejercicios"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(datos),
-      );
-      return response.statusCode == 200 || response.statusCode == 201;
+      final data = await ApiClient.post('/ejercicios', datos);
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return null;
     } catch (e) {
-      print("Error al crear ejercicio: $e");
-      return false;
+      print('Error al crear ejercicio: $e');
+      return null;
     }
   }
 
   // PUT: Actualizar ejercicio
   Future<bool> actualizarEjercicio(int id, Map<String, dynamic> datos) async {
     try {
-      final response = await http.put(
-        Uri.parse("$baseUrl/ejercicios/$id"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(datos),
-      );
-      return response.statusCode == 200;
+      await ApiClient.put('/ejercicios/$id', datos);
+      return true;
     } catch (e) {
-      print("Error al actualizar ejercicio: $e");
+      print('Error al actualizar ejercicio: $e');
       return false;
     }
   }
@@ -75,12 +61,10 @@ class EjercicioService {
   // DELETE: Eliminar ejercicio
   Future<bool> eliminarEjercicio(int id) async {
     try {
-      final response = await http.delete(
-        Uri.parse("$baseUrl/ejercicios/$id"),
-      );
-      return response.statusCode == 200;
+      await ApiClient.delete('/ejercicios/$id');
+      return true;
     } catch (e) {
-      print("Error al eliminar ejercicio: $e");
+      print('Error al eliminar ejercicio: $e');
       return false;
     }
   }

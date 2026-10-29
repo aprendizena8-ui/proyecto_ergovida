@@ -8,8 +8,12 @@ PoseDetector? _globalPoseDetector;
 /// después es instantáneo.
 Future<PoseDetector> getPoseDetector() async {
   if (_globalPoseDetector != null) return _globalPoseDetector!;
-  _globalPoseDetector = useHeavyModel
-      ? await PoseDetector.create(landmarkModel: PoseLandmarkModel.heavy)
-      : await PoseDetector.create();
+  _globalPoseDetector = await PoseDetector.create(
+    landmarkModel: poseLandmarkModel,
+    // Solo analizamos a la persona principal: menos post-proceso por frame.
+    maxDetections: 2,
+    // Manos y orejas suelen tener visibilidad baja; no las descartamos antes.
+    minLandmarkScore: 0.35,
+  );
   return _globalPoseDetector!;
 }

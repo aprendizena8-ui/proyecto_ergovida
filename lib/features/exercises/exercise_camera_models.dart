@@ -9,33 +9,46 @@ import 'package:pose_detection/pose_detection.dart';
 //  AJUSTES (cambia estos valores si algo se siente muy fácil/difícil)
 // ============================================================
 
-/// true = modelo más preciso pero más lento. Si la app va con tirones,
-/// ponlo en false.
-/// Modelo light (más rápido que heavy)
-const bool useHeavyModel = false;
+/// Modelo de landmarks. [full] es el mejor equilibrio precisión/velocidad;
+/// [heavy] solo si el equipo tiene recursos de sobra.
+const PoseLandmarkModel poseLandmarkModel = PoseLandmarkModel.full;
+
+/// Resolución máxima que se pasa al detector. 640 es suficiente para
+/// distinguir manos y hombros sin castigar los FPS.
+const int detectionMaxDim = 640;
 
 /// Visibilidad mínima para considerar válido un punto del cuerpo.
-const double minVis = 0.3;
+/// 0.25 es más tolerante con manos y orejas parcialmente visibles.
+const double minVis = 0.25;
 
-/// Suavizado de los puntos (0 a 1). Más bajo = más estable pero con retraso.
-/// Suavizado (más bajo = más estable, un poco más de lag)
-const double smooth = 0.6;
+/// Suavizado adaptativo: poco suavizado al moverse rápido, más al estar quieto.
+/// Evita que el esqueleto "vaya con retraso" en los movimientos del ejercicio.
+const double smoothMin = 0.50;
+const double smoothMax = 0.90;
+const double smoothLowSpeed = 0.002;
+const double smoothHighSpeed = 0.015;
 
 // Cuello
-const double neckTiltDeg = 12; // inclinación mínima de la cabeza (grados)
+const double neckTiltDeg = 10; // inclinación para empezar a contar
+const double neckKeepDeg = 7; // inclinación mínima para mantener el conteo
+const double neckCenterDeg = 6; // ángulo para considerar que volvió al centro
 const double neckHoldSec = 10; // segundos que hay que mantener cada lado
 const int neckTargetSides = 4; // lados a completar (2 por lado)
 
 // Hombros
-const double shrugRatio = 0.88; // hombros "arriba" si bajan a este % de lo normal
-const double shrugRelease = 0.95; // hombros "soltados" al volver a este %
+const double shrugRatio =
+    0.92; // hombros "arriba" si bajan a este % de lo normal
+const double shrugRelease = 0.98; // hombros "soltados" al volver a este %
 const int shrugTarget = 5; // encogimientos a completar
 const double shrugMinHold = 1.0; // segundos mínimos arriba
+const int shrugCalibrationFrames = 25; // frames para medir la postura base
+const double shrugCalibrationSec = 3.0; // tiempo máximo de calibración
 const double circleMove = 0.05; // movimiento mínimo para contar círculos
 const double circlesTargetSec = 10; // segundos de círculos
 
 // Muñecas
-const double wristMoveDeg = 30; // giro mínimo de la mano (grados)
+const double wristMoveDeg = 25; // giro mínimo de la mano (grados)
+const double wristMoveNorm = 0.08; // desplazamiento mínimo de la muñeca
 const double wristTargetSec = 20; // segundos de movimiento
 
 // Descanso visual
@@ -57,6 +70,9 @@ class BodyPoint {
 }
 
 const List<PoseLandmarkType> usedTypes = [
+  PoseLandmarkType.nose,
+  PoseLandmarkType.leftEye,
+  PoseLandmarkType.rightEye,
   PoseLandmarkType.leftEar,
   PoseLandmarkType.rightEar,
   PoseLandmarkType.leftShoulder,
@@ -67,6 +83,10 @@ const List<PoseLandmarkType> usedTypes = [
   PoseLandmarkType.rightWrist,
   PoseLandmarkType.leftIndex,
   PoseLandmarkType.rightIndex,
+  PoseLandmarkType.leftPinky,
+  PoseLandmarkType.rightPinky,
+  PoseLandmarkType.leftThumb,
+  PoseLandmarkType.rightThumb,
 ];
 
 const List<List<PoseLandmarkType>> bones = [
@@ -74,9 +94,15 @@ const List<List<PoseLandmarkType>> bones = [
   [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
   [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
   [PoseLandmarkType.leftWrist, PoseLandmarkType.leftIndex],
+  [PoseLandmarkType.leftWrist, PoseLandmarkType.leftPinky],
+  [PoseLandmarkType.leftWrist, PoseLandmarkType.leftThumb],
   [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow],
   [PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist],
   [PoseLandmarkType.rightWrist, PoseLandmarkType.rightIndex],
+  [PoseLandmarkType.rightWrist, PoseLandmarkType.rightPinky],
+  [PoseLandmarkType.rightWrist, PoseLandmarkType.rightThumb],
+  [PoseLandmarkType.leftEar, PoseLandmarkType.rightEar],
+  [PoseLandmarkType.leftEye, PoseLandmarkType.rightEye],
   [PoseLandmarkType.leftEar, PoseLandmarkType.leftShoulder],
   [PoseLandmarkType.rightEar, PoseLandmarkType.rightShoulder],
 ];

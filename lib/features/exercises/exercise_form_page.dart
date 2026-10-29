@@ -61,9 +61,10 @@ class _ExerciseFormPageState extends State<ExerciseFormPage> {
 
     bool ok;
     if (_esEdicion) {
-      ok = await _service.actualizarEjercicio(widget.ejercicio!['id'], datos);
+      final id = int.tryParse('${widget.ejercicio!['id']}') ?? 0;
+      ok = await _service.actualizarEjercicio(id, datos);
     } else {
-      ok = await _service.crearEjercicio(datos);
+      ok = await _service.crearEjercicio(datos) != null;
     }
 
     if (!mounted) return;

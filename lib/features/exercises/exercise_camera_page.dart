@@ -49,6 +49,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   final EjercicioService _ejercicioService = EjercicioService();
 
   CameraController? _cameraController;
+  CameraDescription? _cameraDescription;
   PoseDetector? _poseDetector;
   bool _isCameraReady = false;
   bool _isDetecting = false;
@@ -88,6 +89,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   // Hombros
   final List<double> _calib = [];
   double? _baseH;
+  double _calibStartClock = 0;
   bool _shrugUp = false;
   double _shrugHold = 0;
   bool _circlesPhase = false;
@@ -97,12 +99,16 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   // Muñecas
   final AngleTracker _leftHand = AngleTracker(2.0);
   final AngleTracker _rightHand = AngleTracker(2.0);
+  final MotionSeries _leftWristX = MotionSeries(2.0);
+  final MotionSeries _leftWristY = MotionSeries(2.0);
+  final MotionSeries _rightWristX = MotionSeries(2.0);
+  final MotionSeries _rightWristY = MotionSeries(2.0);
 
   DateTime? _lastDetection;
-  // FPS dinámicos: 5 cuando no corre, 10 cuando corre
+  // Más muestras cuando el ejercicio está activo; menos en espera para ahorrar CPU.
   Duration get _detectionInterval => _isRunning
-      ? const Duration(milliseconds: 100)  // 10 FPS corriendo
-      : const Duration(milliseconds: 100); // 10 FPS en espera
+      ? const Duration(milliseconds: 80) // ~12 FPS corriendo
+      : const Duration(milliseconds: 120); // ~8 FPS en espera
 
   // En Windows la vista previa va en espejo, pero los frames del stream no.
   bool get _mirrorOverlay => Platform.isWindows;
@@ -143,10 +149,11 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         (c) => c.lensDirection == CameraLensDirection.front,
         orElse: () => cameras.first,
       );
+      _cameraDescription = camera;
 
       _cameraController = CameraController(
         camera,
-        ResolutionPreset.low,
+        ResolutionPreset.medium,
         enableAudio: false,
         // En Windows usar bgra8888 (default). En Android usar yuv420
         imageFormatGroup: Platform.isWindows
@@ -158,7 +165,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
 
       // Esperar un frame para que la cámara esté estable
       await Future.delayed(const Duration(milliseconds: 300));
-      
+
       await _cameraController!.startImageStream(_processCameraImage);
 
       if (!mounted) return;
@@ -199,9 +206,22 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     _isDetecting = true;
 
     try {
-      _imageSize = Size(image.width.toDouble(), image.height.toDouble());
+      final rotation = _rotationForImage(image);
+      _imageSize = detectionSize(
+        width: image.width,
+        height: image.height,
+        rotation: rotation,
+        maxDim: detectionMaxDim,
+      );
+
       final sw = Stopwatch()..start();
-      final poses = await _poseDetector!.detectFromCameraImage(image);
+      final poses = await _poseDetector!.detectFromCameraImage(
+        image,
+        rotation: rotation,
+        maxDim: detectionMaxDim,
+        // camera_desktop entrega BGRA; el paquete asume RGBA salvo macOS.
+        isBgra: Platform.isWindows,
+      );
       debugPrint('inferencia: ${sw.elapsedMilliseconds} ms');
       if (!mounted) return;
 
@@ -216,7 +236,24 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         _personVisible = false;
         _pts.clear();
         if (!_finished) {
-          _setFeedback('No te detecto. Colócate frente a la cámara', Colors.orange);
+          _setFeedback(
+            'No te detecto. Colócate frente a la cámara',
+            Colors.orange,
+          );
+        }
+        setState(() {});
+        return;
+      }
+
+      final pose = _bestPose(poses);
+      if (!pose.hasLandmarks) {
+        _personVisible = false;
+        _pts.clear();
+        if (!_finished) {
+          _setFeedback(
+            'Te veo, pero no distingo bien tu postura. Acércate un poco o mejora la luz',
+            Colors.orange,
+          );
         }
         setState(() {});
         return;
@@ -224,7 +261,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
 
       _clock += dt;
       _personVisible = true;
-      _updatePoints(poses.first);
+      _updatePoints(pose);
 
       // Si el ejercicio NO está corriendo y ya está "positioned",
       //    no hacemos setState cada frame (ahorra CPU)
@@ -244,6 +281,44 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     }
   }
 
+  /// Rotación necesaria para que el modelo vea el frame derecho en móvil.
+  /// En escritorio los frames ya vienen derechos y no se rota nada.
+  CameraFrameRotation? _rotationForImage(CameraImage image) {
+    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      return null;
+    }
+
+    final description = _cameraDescription;
+    final controller = _cameraController;
+    if (description == null || controller == null) return null;
+
+    return rotationForFrame(
+      width: image.width,
+      height: image.height,
+      sensorOrientation: description.sensorOrientation,
+      isFrontCamera: description.lensDirection == CameraLensDirection.front,
+      deviceOrientation: controller.value.deviceOrientation,
+    );
+  }
+
+  /// Si hay varias personas en cámara, seguimos a la más grande.
+  Pose _bestPose(List<Pose> poses) {
+    var best = poses.first;
+    var bestArea = _poseArea(best);
+    for (final pose in poses.skip(1)) {
+      final area = _poseArea(pose);
+      if (area > bestArea) {
+        best = pose;
+        bestArea = area;
+      }
+    }
+    return best;
+  }
+
+  double _poseArea(Pose pose) {
+    return pose.boundingBox.width * pose.boundingBox.height;
+  }
+
   void _updatePoints(Pose pose) {
     for (final t in usedTypes) {
       final lm = pose.getLandmark(t);
@@ -253,15 +328,26 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       }
       final n = normalizedPoint(lm, _imageSize);
       final prev = _pts[t];
-      if (prev == null) {
+      if (prev == null || prev.v < minVis || lm.visibility < minVis) {
         _pts[t] = BodyPoint(n.dx, n.dy, lm.visibility);
-      } else {
-        _pts[t] = BodyPoint(
-          prev.x + (n.dx - prev.x) * smooth,
-          prev.y + (n.dy - prev.y) * smooth,
-          lm.visibility,
-        );
+        continue;
       }
+
+      final dx = n.dx - prev.x;
+      final dy = n.dy - prev.y;
+      final speed = math.sqrt(dx * dx + dy * dy);
+      final t01 =
+          ((speed - smoothLowSpeed) / (smoothHighSpeed - smoothLowSpeed)).clamp(
+            0.0,
+            1.0,
+          );
+      final alpha = smoothMin + (smoothMax - smoothMin) * t01;
+
+      _pts[t] = BodyPoint(
+        prev.x + dx * alpha,
+        prev.y + dy * alpha,
+        lm.visibility,
+      );
     }
   }
 
@@ -271,7 +357,8 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     return s.width / s.height;
   }
 
-  Offset _u(BodyPoint p) => Offset(p.x * _ar, p.y); // unidades de "alto de imagen"
+  Offset _u(BodyPoint p) =>
+      Offset(p.x * _ar, p.y); // unidades de "alto de imagen"
   double _dist(BodyPoint a, BodyPoint b) => (_u(a) - _u(b)).distance;
 
   BodyPoint? _p(PoseLandmarkType t) {
@@ -285,20 +372,72 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     _feedbackColor = color;
   }
 
-  bool _isPositioned() {
-    if (_kind == ExerciseKind.wrists) {
-      return _p(PoseLandmarkType.leftWrist) != null &&
-          _p(PoseLandmarkType.rightWrist) != null &&
-          _p(PoseLandmarkType.leftElbow) != null &&
-          _p(PoseLandmarkType.rightElbow) != null;
-    }
-    final ls = _p(PoseLandmarkType.leftShoulder);
-    final rs = _p(PoseLandmarkType.rightShoulder);
+  /// Línea de la cabeza para medir inclinación. Preferimos orejas; si una
+  /// queda oculta al girar la cabeza, usamos los ojos.
+  List<BodyPoint>? _headLine() {
     final le = _p(PoseLandmarkType.leftEar);
     final re = _p(PoseLandmarkType.rightEar);
-    if (ls == null || rs == null || le == null || re == null) return false;
+    if (le != null && re != null) return [le, re];
+
+    final lEye = _p(PoseLandmarkType.leftEye);
+    final rEye = _p(PoseLandmarkType.rightEye);
+    if (lEye != null && rEye != null) return [lEye, rEye];
+
+    return null;
+  }
+
+  /// Punto estable de la cabeza para medir el encogimiento de hombros.
+  BodyPoint? _headAnchor() {
+    final le = _p(PoseLandmarkType.leftEar);
+    final re = _p(PoseLandmarkType.rightEar);
+    if (le != null && re != null) {
+      return BodyPoint((le.x + re.x) / 2, (le.y + re.y) / 2, 1);
+    }
+
+    final nose = _p(PoseLandmarkType.nose);
+    if (nose != null) return nose;
+
+    final lEye = _p(PoseLandmarkType.leftEye);
+    final rEye = _p(PoseLandmarkType.rightEye);
+    if (lEye != null && rEye != null) {
+      return BodyPoint((lEye.x + rEye.x) / 2, (lEye.y + rEye.y) / 2, 1);
+    }
+
+    return null;
+  }
+
+  /// Ancho de hombros en unidades de altura de imagen; sirve para normalizar
+  /// movimientos sin depender de la distancia a la cámara.
+  double get _bodyScale {
+    final ls = _p(PoseLandmarkType.leftShoulder);
+    final rs = _p(PoseLandmarkType.rightShoulder);
+    if (ls != null && rs != null) {
+      final d = _dist(ls, rs);
+      if (d > 0.05) return d;
+    }
+    return 0.25;
+  }
+
+  bool _isPositioned() {
+    if (_kind == ExerciseKind.wrists) {
+      // Con un brazo visible ya podemos analizar movimiento; pedimos el otro
+      // solo como recomendación para no bloquear el ejercicio.
+      final left =
+          _p(PoseLandmarkType.leftWrist) != null &&
+          _p(PoseLandmarkType.leftElbow) != null;
+      final right =
+          _p(PoseLandmarkType.rightWrist) != null &&
+          _p(PoseLandmarkType.rightElbow) != null;
+      return left || right;
+    }
+
+    final ls = _p(PoseLandmarkType.leftShoulder);
+    final rs = _p(PoseLandmarkType.rightShoulder);
+    final head = _headLine();
+    if (ls == null || rs == null || head == null) return false;
+
     // Los hombros deben verse claramente más anchos que la cabeza.
-    return _dist(ls, rs) >= _dist(le, re) * 1.5;
+    return _dist(ls, rs) >= _dist(head[0], head[1]) * 1.25;
   }
 
   String get _positionHint => _kind == ExerciseKind.wrists
@@ -333,7 +472,6 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       return;
     }
 
-
     // Ya está corriendo: aplicar histéresis
     if (!ok) {
       _framesOutOfPosition++;
@@ -365,14 +503,15 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
 
   // ---------- Cuello ----------
   void _evalNeck(double dt) {
-    final l = _p(PoseLandmarkType.leftEar)!;
-    final r = _p(PoseLandmarkType.rightEar)!;
-    final a = l.x <= r.x ? l : r;
-    final b = l.x <= r.x ? r : l;
+    final head = _headLine();
+    if (head == null) return;
+
+    final a = head[0].x <= head[1].x ? head[0] : head[1];
+    final b = head[0].x <= head[1].x ? head[1] : head[0];
     final ua = _u(a);
     final ub = _u(b);
 
-    // Ángulo de la línea entre las orejas respecto a la horizontal.
+    // Ángulo de la línea de la cabeza (orejas u ojos) respecto a la horizontal.
     final angle = math.atan2(ub.dy - ua.dy, ub.dx - ua.dx) * 180 / math.pi;
     final absA = angle.abs();
     final side = angle > 0 ? 1 : -1;
@@ -381,52 +520,71 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     _progress = _reps / neckTargetSides;
 
     if (_needCenter) {
-      if (absA < 8) {
+      if (absA < neckCenterDeg) {
         _needCenter = false;
-        _setFeedback('Muy bien. Ahora inclina hacia el otro lado', Colors.green);
+        _setFeedback(
+          'Muy bien. Ahora inclina hacia el otro lado',
+          Colors.green,
+        );
       } else {
         _setFeedback('Regresa la cabeza al centro', Colors.orange);
       }
       return;
     }
 
-    if (absA >= neckTiltDeg) {
-      if (absA > 50) {
-        _setFeedback('Inclina con suavidad, no fuerces el cuello', Colors.orange);
-        return;
-      }
-      if (side == _lastDoneSide) {
-        _holdTime = 0;
-        _holdSide = 0;
-        _setFeedback('Ahora inclina hacia el otro lado', Colors.orange);
-        return;
-      }
-      if (_holdSide != side) {
-        _holdSide = side;
-        _holdTime = 0;
-      }
-      _holdTime += dt;
-      if (_holdTime >= neckHoldSec) {
-        _reps++;
-        _lastDoneSide = side;
-        _holdSide = 0;
-        _holdTime = 0;
-        _needCenter = true;
-        _progressLabel = 'Lados completados: $_reps / $neckTargetSides';
-        _progress = _reps / neckTargetSides;
-        if (_reps >= neckTargetSides) {
-          _finish(timeUp: false);
-          return;
-        }
-        _setFeedback('¡Lado completado! Regresa al centro', Colors.green);
-      } else {
-        final left = (neckHoldSec - _holdTime).ceil();
-        _setFeedback('✅ Buen estiramiento. Mantén $left s', Colors.green);
-      }
-    } else {
+    final started = absA >= neckTiltDeg;
+    final maintaining = absA >= neckKeepDeg;
+
+    // Si ya empezó el estiramiento, toleramos pequeñas variaciones al mantenerlo.
+    if (!maintaining) {
       _holdSide = 0;
       _holdTime = 0;
       _setFeedback('Inclina suavemente la cabeza hacia un lado', Colors.orange);
+      return;
+    }
+
+    if (!started && _holdTime <= 0) {
+      _setFeedback(
+        'Inclina un poco más la cabeza hacia un lado',
+        Colors.orange,
+      );
+      return;
+    }
+
+    if (absA > 50) {
+      _setFeedback('Inclina con suavidad, no fuerces el cuello', Colors.orange);
+      return;
+    }
+
+    if (side == _lastDoneSide) {
+      _holdTime = 0;
+      _holdSide = 0;
+      _setFeedback('Ahora inclina hacia el otro lado', Colors.orange);
+      return;
+    }
+
+    if (_holdSide != side) {
+      _holdSide = side;
+      _holdTime = 0;
+    }
+
+    _holdTime += dt;
+    if (_holdTime >= neckHoldSec) {
+      _reps++;
+      _lastDoneSide = side;
+      _holdSide = 0;
+      _holdTime = 0;
+      _needCenter = true;
+      _progressLabel = 'Lados completados: $_reps / $neckTargetSides';
+      _progress = _reps / neckTargetSides;
+      if (_reps >= neckTargetSides) {
+        _finish(timeUp: false);
+        return;
+      }
+      _setFeedback('¡Lado completado! Regresa al centro', Colors.green);
+    } else {
+      final left = (neckHoldSec - _holdTime).ceil();
+      _setFeedback('✅ Buen estiramiento. Mantén $left s', Colors.green);
     }
   }
 
@@ -434,28 +592,33 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   void _evalShoulders(double dt) {
     final ls = _p(PoseLandmarkType.leftShoulder)!;
     final rs = _p(PoseLandmarkType.rightShoulder)!;
-    final le = _p(PoseLandmarkType.leftEar)!;
-    final re = _p(PoseLandmarkType.rightEar)!;
+    final head = _headAnchor();
+    if (head == null) return;
 
     final sw = _dist(ls, rs);
     if (sw <= 0) return;
 
     if (!_circlesPhase) {
-      // Fase 1: encogimientos (subir los hombros hacia las orejas)
+      // Fase 1: encogimientos (subir los hombros hacia la cabeza)
       final shY = (ls.y + rs.y) / 2;
-      final earY = (le.y + re.y) / 2;
-      final h = (shY - earY) / sw; // altura relativa hombros-orejas
+      final h = (shY - head.y) / sw; // altura relativa hombros-cabeza
 
       _progressLabel = 'Encogimientos: $_reps / $shrugTarget';
       _progress = (_reps / shrugTarget) * 0.5;
 
       if (_baseH == null) {
+        if (_calib.isEmpty) _calibStartClock = _clock;
         _calib.add(h);
         _setFeedback(
-            'Relaja los hombros y quédate quieto... midiendo tu postura',
-            Colors.orange);
-        if (_calib.length >= 20) {
-          _baseH = _calib.reduce((a, b) => a + b) / _calib.length;
+          'Relaja los hombros y quédate quieto... midiendo tu postura',
+          Colors.orange,
+        );
+
+        final enoughFrames = _calib.length >= shrugCalibrationFrames;
+        final enoughTime = _clock - _calibStartClock >= shrugCalibrationSec;
+        if (enoughFrames || enoughTime) {
+          final sorted = [..._calib]..sort();
+          _baseH = sorted[sorted.length ~/ 2];
         }
         return;
       }
@@ -467,7 +630,11 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
           _shrugHold = 0;
           _setFeedback('Mantén los hombros arriba...', Colors.green);
         } else {
-          _baseH = _baseH! * 0.98 + h * 0.02; // adapta a tu postura
+          // Adapta la postura base solo cuando está relajado, para no perder
+          // el encogimiento por una deriva lenta.
+          if (ratio > 0.98 && ratio < 1.08) {
+            _baseH = _baseH! * 0.997 + h * 0.003;
+          }
           _setFeedback('Sube los hombros hacia las orejas', Colors.orange);
         }
       } else {
@@ -484,13 +651,17 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
               _shoulderMx.clear();
               _shoulderMy.clear();
               _setFeedback(
-                  '¡Bien! Ahora haz círculos grandes con los hombros', Colors.green);
+                '¡Bien! Ahora haz círculos grandes con los hombros',
+                Colors.green,
+              );
             } else {
               _setFeedback('✅ Repetición completada. Otra vez', Colors.green);
             }
           } else {
             _setFeedback(
-                'Mantén los hombros arriba un poco más (1-2 s)', Colors.orange);
+              'Mantén los hombros arriba un poco más (1-2 s)',
+              Colors.orange,
+            );
           }
         } else {
           _setFeedback('Mantén arriba y luego suelta', Colors.green);
@@ -502,12 +673,14 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       final my = ((ls.y + rs.y) / 2) / sw;
       _shoulderMx.add(_clock, mx);
       _shoulderMy.add(_clock, my);
-      final active = math.max(_shoulderMx.range, _shoulderMy.range) >= circleMove;
+      final active =
+          math.max(_shoulderMx.range, _shoulderMy.range) >= circleMove;
       if (active) _motionSeconds += dt;
 
       _progressLabel =
           'Círculos: ${_motionSeconds.floor()} / ${circlesTargetSec.toInt()} s';
-      _progress = 0.5 + (_motionSeconds / circlesTargetSec).clamp(0.0, 1.0) * 0.5;
+      _progress =
+          0.5 + (_motionSeconds / circlesTargetSec).clamp(0.0, 1.0) * 0.5;
 
       if (_motionSeconds >= circlesTargetSec) {
         _finish(timeUp: false);
@@ -522,24 +695,87 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     }
   }
 
+  /// Dirección media de la mano usando los tres puntos base de los dedos.
+  /// Es más estable que depender solo del índice, que suele perder visibilidad.
+  Offset? _handTip(
+    PoseLandmarkType index,
+    PoseLandmarkType pinky,
+    PoseLandmarkType thumb,
+  ) {
+    final points = <Offset>[];
+    for (final type in [index, pinky, thumb]) {
+      final p = _p(type);
+      if (p != null) points.add(_u(p));
+    }
+    if (points.isEmpty) return null;
+
+    var x = 0.0;
+    var y = 0.0;
+    for (final p in points) {
+      x += p.dx;
+      y += p.dy;
+    }
+    return Offset(x / points.length, y / points.length);
+  }
+
   // ---------- Muñecas ----------
   void _evalWrists(double dt) {
     var tracked = false;
     var active = false;
+    var trackedArms = 0;
+    final scale = _bodyScale;
 
-    void track(PoseLandmarkType wrist, PoseLandmarkType index, AngleTracker tr) {
+    void track(
+      PoseLandmarkType wrist,
+      PoseLandmarkType index,
+      PoseLandmarkType pinky,
+      PoseLandmarkType thumb,
+      AngleTracker angleTracker,
+      MotionSeries xSeries,
+      MotionSeries ySeries,
+    ) {
       final pw = _p(wrist);
-      final pi2 = _p(index);
-      if (pw == null || pi2 == null) return;
+      if (pw == null) return;
+
       tracked = true;
-      final a = _u(pw);
-      final b = _u(pi2);
-      tr.add(_clock, math.atan2(b.dy - a.dy, b.dx - a.dx));
-      if (tr.rangeDeg >= wristMoveDeg) active = true;
+      trackedArms++;
+      final w = _u(pw);
+
+      // Desplazamiento de la muñeca: detecta círculos aunque no se vean dedos.
+      xSeries.add(_clock, w.dx / scale);
+      ySeries.add(_clock, w.dy / scale);
+      final positionActive =
+          math.max(xSeries.range, ySeries.range) >= wristMoveNorm;
+
+      // Rotación/flexión de la mano (índice + meñique + pulgar).
+      final tip = _handTip(index, pinky, thumb);
+      var angleActive = false;
+      if (tip != null) {
+        angleTracker.add(_clock, math.atan2(tip.dy - w.dy, tip.dx - w.dx));
+        angleActive = angleTracker.rangeDeg >= wristMoveDeg;
+      }
+
+      if (positionActive || angleActive) active = true;
     }
 
-    track(PoseLandmarkType.leftWrist, PoseLandmarkType.leftIndex, _leftHand);
-    track(PoseLandmarkType.rightWrist, PoseLandmarkType.rightIndex, _rightHand);
+    track(
+      PoseLandmarkType.leftWrist,
+      PoseLandmarkType.leftIndex,
+      PoseLandmarkType.leftPinky,
+      PoseLandmarkType.leftThumb,
+      _leftHand,
+      _leftWristX,
+      _leftWristY,
+    );
+    track(
+      PoseLandmarkType.rightWrist,
+      PoseLandmarkType.rightIndex,
+      PoseLandmarkType.rightPinky,
+      PoseLandmarkType.rightThumb,
+      _rightHand,
+      _rightWristX,
+      _rightWristY,
+    );
 
     if (active) _motionSeconds += dt;
 
@@ -556,10 +792,16 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       _setFeedback('Muestra tus manos a la cámara', Colors.orange);
     } else if (active) {
       final left = (wristTargetSec - _motionSeconds).ceil();
-      _setFeedback('✅ ¡Bien! Sigue moviendo las muñecas ($left s)', Colors.green);
+      final hint = trackedArms < 2 ? ' (muestra también la otra mano)' : '';
+      _setFeedback(
+        '✅ ¡Bien! Sigue moviendo las muñecas ($left s)$hint',
+        Colors.green,
+      );
     } else {
       _setFeedback(
-          'Gira las muñecas en círculos o flexiónalas arriba y abajo', Colors.orange);
+        'Gira las muñecas en círculos o flexiónalas arriba y abajo',
+        Colors.orange,
+      );
     }
   }
 
@@ -598,6 +840,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     _lastDoneSide = 0;
     _needCenter = false;
     _calib.clear();
+    _calibStartClock = 0;
     _baseH = null;
     _shrugUp = false;
     _shrugHold = 0;
@@ -606,6 +849,10 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     _shoulderMy.clear();
     _leftHand.clear();
     _rightHand.clear();
+    _leftWristX.clear();
+    _leftWristY.clear();
+    _rightWristX.clear();
+    _rightWristY.clear();
     _progress = 0;
     _progressLabel = '';
   }
@@ -657,48 +904,43 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     }
   }
 
-    Future<void> _finalizarYGuardarEnBackend(bool completada) async {
+  Future<void> _finalizarYGuardarEnBackend(bool completada) async {
     // Si ya se envió el registro, evitamos duplicar la petición
     if (_yaGuardado || _guardando) return;
     _yaGuardado = true;
     _guardando = true;
 
-    // 1️ PRIMERO cerramos la pantalla (evita el error de cámara disposed)
-    if (mounted) {
-      Navigator.pop(context, completada);
-    }
-
-    // 2️ DESPUÉS detenemos la cámara con un pequeño delay
-    await Future.delayed(const Duration(milliseconds: 150));
-
+    // Detenemos el stream antes de pedir el guardado y de cerrar la pantalla.
     try {
       await _cameraController?.stopImageStream();
     } catch (_) {}
-    try {
-      await _cameraController?.dispose();
-    } catch (_) {}
-    _cameraController = null;
-    _poseDetector = null;
 
-    // 3️ Guardar en backend con timeout de 8 segundos
+    if (mounted) {
+      setState(() => _feedback = 'Guardando tu progreso...');
+    }
+
     final guardado = await _ejercicioService
         .registrarPausa(
           usuarioId: widget.usuarioId,
           ejercicioId: widget.ejercicioId,
           completada: completada,
         )
-        .timeout(const Duration(seconds: 8), onTimeout: () => false);
+        .timeout(const Duration(seconds: 5), onTimeout: () => false);
 
     if (!guardado) {
       debugPrint('No se pudo guardar la pausa en el backend');
     }
+
+    if (!mounted) return;
+    Navigator.pop(context, completada);
   }
 
   void _finish({required bool timeUp, bool manual = false}) {
     _timer?.cancel();
     if (!mounted) return;
 
-    final completada = !manual &&
+    final completada =
+        !manual &&
         (!timeUp ||
             _kind == ExerciseKind.visual ||
             _kind == ExerciseKind.other);
@@ -748,9 +990,17 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         child: CircularProgressIndicator(color: Colors.green),
       );
     }
+    // El overlay se calcula sobre el frame ya rotado. Usar el mismo aspecto
+    // que ese frame evita que el esqueleto quede desplazado respecto al video.
+    final frameSize = _imageSize;
+    final aspectRatio =
+        frameSize != null && frameSize.width > 0 && frameSize.height > 0
+        ? frameSize.width / frameSize.height
+        : _cameraController!.value.aspectRatio;
+
     return Center(
       child: AspectRatio(
-        aspectRatio: _cameraController!.value.aspectRatio,
+        aspectRatio: aspectRatio,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -818,38 +1068,38 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
             ),
             const SizedBox(height: 10),
             ...steps.asMap().entries.map(
-                  (e) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CircleAvatar(
-                          radius: 11,
-                          backgroundColor: Colors.green,
-                          child: Text(
-                            "${e.key + 1}",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+              (e) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 11,
+                      backgroundColor: Colors.green,
+                      child: Text(
+                        "${e.key + 1}",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            e.value,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              height: 1.35,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        e.value,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+            ),
             if (tip.isNotEmpty) ...[
               const SizedBox(height: 6),
               Container(
@@ -940,19 +1190,23 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                 ),
                 const Spacer(),
                 ElevatedButton.icon(
-                  onPressed: _isRunning ? null : _startTimer,
+                  onPressed: _isRunning || _guardando ? null : _startTimer,
                   icon: const Icon(Icons.play_arrow),
                   label: Text(_finished ? "Repetir" : "Iniciar"),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
-                  onPressed: _isRunning
+                  onPressed: _guardando
+                      ? null
+                      : _isRunning
                       ? () {
                           _finish(timeUp: false, manual: true);
                         }
@@ -962,8 +1216,10 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                   ),
                 ),
               ],
