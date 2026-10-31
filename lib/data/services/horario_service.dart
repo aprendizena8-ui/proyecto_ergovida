@@ -30,7 +30,7 @@ class HorarioService {
   }) async {
     try {
       final data = await ApiClient.post('/horarios', {
-        'usuario': {'id': usuarioId},
+        'usuarioId': usuarioId,
         'hora': hora,
       });
       return data as Map<String, dynamic>;

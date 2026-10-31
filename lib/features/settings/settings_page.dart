@@ -36,12 +36,14 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() => _cargandoHorarios = true);
     try {
       final data = await _horarioService.obtenerPorUsuario(widget.usuario!.id);
+      print("Recordatorios obtenidos: $data");
       if (!mounted) return;
       setState(() {
         _horarios = data;
         _cargandoHorarios = false;
       });
     } catch (e) {
+      print("Error al cargar recordatorios: $e");
       if (!mounted) return;
       setState(() {
         _horarios = [];
@@ -71,11 +73,11 @@ class _SettingsPageState extends State<SettingsPage> {
     if (creado != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.green,
+          backgroundColor: brandBlue,
           content: Text('Recordatorio creado a las $horaStr'),
         ),
       );
-      _cargarHorarios();
+      await _cargarHorarios();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -168,8 +170,8 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               value: isDark,
               onChanged: (v) {
-                widget.themeController?.setTheme(v);
-                setState(() {});
+
+                AppThemeController.instance.setTheme(v);
               },
             ),
           ),
@@ -180,7 +182,7 @@ class _SettingsPageState extends State<SettingsPage> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                const Icon(Icons.alarm, color: Colors.green),
+                const Icon(Icons.alarm, color: brandBlue),
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
@@ -190,7 +192,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 if (widget.usuario != null)
                   IconButton(
-                    icon: const Icon(Icons.add_circle, color: Colors.green),
+                    icon: const Icon(Icons.add_circle, color: brandBlue),
                     tooltip: 'Agregar recordatorio',
                     onPressed: _agregarHorario,
                   ),
@@ -225,7 +227,7 @@ class _SettingsPageState extends State<SettingsPage> {
               return Material(
                 color: Colors.transparent,
                 child: ListTile(
-                  leading: const Icon(Icons.alarm_on, color: Colors.green),
+                  leading: const Icon(Icons.alarm_on, color: brandBlue),
                   title: Text('Recordatorio a las $horaCorta'),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline, color: Colors.red),

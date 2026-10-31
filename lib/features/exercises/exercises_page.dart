@@ -34,7 +34,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
       duracionMin: 2,
       categoria: 'Cuello',
       icono: Icons.accessibility_new_rounded,
-      color: Color(0xFF22C55E),
+      color: brandBlue,
       descripcion:
           'Libera la tensión del cuello con inclinaciones laterales suaves y controladas.',
       instrucciones:
@@ -45,7 +45,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
       duracionMin: 3,
       categoria: 'Hombros',
       icono: Icons.fitness_center_rounded,
-      color: Color(0xFF1F7FC0),
+      color: brandNavy,
       descripcion:
           'Activa la circulación de hombros y espalda alta con encogimientos y círculos.',
       instrucciones:
@@ -56,7 +56,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
       duracionMin: 1,
       categoria: 'Vista',
       icono: Icons.visibility_rounded,
-      color: Color(0xFF7C4DFF),
+      color: brandTeal,
       descripcion:
           'Reduce la fatiga visual alternando la mirada lejana con el descanso ocular.',
       instrucciones:
@@ -67,7 +67,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
       duracionMin: 2,
       categoria: 'Muñecas',
       icono: Icons.pan_tool_rounded,
-      color: Color(0xFFF59E0B),
+      color: brandCyan,
       descripcion:
           'Previene molestias por teclado y mouse movilizando tus muñecas.',
       instrucciones:
@@ -207,20 +207,25 @@ class _ExercisesPageState extends State<ExercisesPage> {
     );
 
     if (confirmar != true) return;
+
+    // Realizamos la eliminación
     final ok = await _ejercicioService.eliminarEjercicio(ejercicio.id);
 
+    // Verificamos que el widget siga montado antes de actualizar
     if (!mounted) return;
+
     _mensaje(
       ok ? 'Ejercicio eliminado' : 'No se pudo eliminar el ejercicio',
       ok: ok,
     );
+
     if (ok) _cargar();
   }
 
   void _mensaje(String texto, {required bool ok}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: ok ? const Color(0xFF15803D) : const Color(0xFFCF3A3A),
+        backgroundColor: ok ? brandBlue : const Color(0xFFCF3A3A),
         behavior: SnackBarBehavior.floating,
         content: Text(texto),
       ),
@@ -241,8 +246,8 @@ class _ExercisesPageState extends State<ExercisesPage> {
           'Ejercicios',
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
-        backgroundColor: Colors.transparent,
-        foregroundColor: textPrimary,
+        backgroundColor: brandNavy,
+        foregroundColor: Colors.white,
         actions: [
           if (_esAdmin)
             IconButton(
@@ -326,18 +331,18 @@ class _ExercisesPageState extends State<ExercisesPage> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF3E0),
+        color: const Color(0xFFE1F2FF),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFD8A8)),
+        border: Border.all(color: const Color(0xFFB3D9FF)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.cloud_off_rounded, color: Color(0xFFB45309)),
+          const Icon(Icons.cloud_off_rounded, color: brandBlue),
           const SizedBox(width: 12),
           const Expanded(
             child: Text(
               'No se pudo conectar con el backend. Los ejercicios no podrán registrarse hasta que vuelvas a intentarlo.',
-              style: TextStyle(color: Color(0xFF92400E), fontSize: 13),
+              style: TextStyle(color: brandNavy, fontSize: 13),
             ),
           ),
           TextButton(
@@ -436,7 +441,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
                 icon: const Icon(Icons.play_arrow_rounded, size: 20),
                 label: const Text('Iniciar'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: ejercicio.color,
+                  backgroundColor: brandBlue,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -736,13 +741,13 @@ class _EjercicioItem {
 
   static Color _colorPara(String categoria) {
     final c = categoria.toLowerCase();
-    if (c.contains('cuello')) return const Color(0xFF22C55E);
-    if (c.contains('hombro')) return const Color(0xFF1F7FC0);
+    if (c.contains('cuello')) return brandBlue;
+    if (c.contains('hombro')) return brandNavy;
     if (c.contains('vista') || c.contains('visual')) {
-      return const Color(0xFF7C4DFF);
+      return brandTeal;
     }
     if (c.contains('muñeca') || c.contains('muneca')) {
-      return const Color(0xFFF59E0B);
+      return brandCyan;
     }
     return brandBlue;
   }

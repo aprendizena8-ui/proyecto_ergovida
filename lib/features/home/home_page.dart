@@ -101,7 +101,10 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _abrir(Widget pagina) async {
     await Navigator.push(context, MaterialPageRoute(builder: (_) => pagina));
-    if (mounted) _cargarResumen();
+    if (mounted) {
+      setState(() {});
+      _cargarResumen();
+    }
   }
 
   Future<void> _abrirPerfil() async {
@@ -130,195 +133,181 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark =
-        widget.themeController?.isDark ??
-        Theme.of(context).brightness == Brightness.dark;
-    final pageBg = isDark ? const Color(0xFF0B1424) : const Color(0xFFEAF3F8);
-    final textPrimary = isDark ? Colors.white : brandText;
-    final textSecondary =
-        isDark ? const Color(0xFFCBD5E1) : brandMuted;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 980;
+    return AnimatedBuilder(
+      animation: AppThemeController.instance,
+      builder: (context, _) {
+        final isDark = AppThemeController.instance.isDark;
+        final pageBg = isDark ? const Color(0xFF0B1424) : const Color(0xFFEAF3F8);
+        final textPrimary = isDark ? Colors.white : brandText;
+        final textSecondary = isDark ? const Color(0xFFCBD5E1) : brandMuted;
 
-        return Scaffold(
-          backgroundColor: pageBg,
-          drawer: wide
-              ? null
-              : Drawer(
-                  width: 286,
-                  child: _Sidebar(
-                    usuario: _usuario,
-                    esAdmin: _esAdmin,
-                    isDark: isDark,
-                    onDashboard: () {},
-                    onEjercicios: () =>
-                        _abrir(ExercisesPage(usuarioId: _usuarioId)),
-                    onRutinas: () => _abrir(const RoutinePage()),
-                    onEstadisticas: () =>
-                        _abrir(StatisticsPage(usuarioId: _usuarioId)),
-                    onPerfil: _abrirPerfil,
-                    onAdmin: () => _abrir(const AdminPage()),
-                    onConfiguracion: () => _abrir(
-                      SettingsPage(
-                        themeController: widget.themeController,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 980;
+
+            return Scaffold(
+              backgroundColor: pageBg,
+              drawer: wide
+                  ? null
+                  : Drawer(
+                      width: 286,
+                      child: _Sidebar(
                         usuario: _usuario,
+                        esAdmin: _esAdmin,
+                        isDark: isDark,
+                        onDashboard: () {},
+                        onEjercicios: () =>
+                            _abrir(ExercisesPage(usuarioId: _usuarioId)),
+                        onRutinas: () => _abrir(const RoutinePage()),
+                        onEstadisticas: () =>
+                            _abrir(StatisticsPage(usuarioId: _usuarioId)),
+                        onPerfil: _abrirPerfil,
+                        onAdmin: () => _abrir(const AdminPage()),
+                        onConfiguracion: () => _abrir(
+                          SettingsPage(
+                            themeController: widget.themeController,
+                            usuario: _usuario,
+                          ),
+                        ),
+                        onSalir: _cerrarSesion,
                       ),
                     ),
-                    onSalir: _cerrarSesion,
+              body: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? const [Color(0xFF0B1424), Color(0xFF10243A)]
+                        : [const Color(0xFF0D2032), pageBg, pageBg],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
                   ),
                 ),
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDark
-                    ? const [Color(0xFF0B1424), Color(0xFF10243A)]
-                    : [const Color(0xFF0D2032), pageBg, pageBg],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
-            ),
-            child: Row(
-              children: [
-                if (wide)
-                  SizedBox(
-                    width: 286,
-                    child: _Sidebar(
-                      usuario: _usuario,
-                      esAdmin: _esAdmin,
-                      isDark: true,
-                      onDashboard: () {},
-                      onEjercicios: () =>
-                          _abrir(ExercisesPage(usuarioId: _usuarioId)),
-                      onRutinas: () => _abrir(const RoutinePage()),
-                      onEstadisticas: () =>
-                          _abrir(StatisticsPage(usuarioId: _usuarioId)),
-                      onPerfil: _abrirPerfil,
-                      onAdmin: () => _abrir(const AdminPage()),
-                      onConfiguracion: () => _abrir(
-                        SettingsPage(
-                          themeController: widget.themeController,
+                child: Row(
+                  children: [
+                    if (wide)
+                      SizedBox(
+                        width: 286,
+                        child: _Sidebar(
                           usuario: _usuario,
+                          esAdmin: _esAdmin,
+                          isDark: true,
+                          onDashboard: () {},
+                          onEjercicios: () =>
+                              _abrir(ExercisesPage(usuarioId: _usuarioId)),
+                          onRutinas: () => _abrir(const RoutinePage()),
+                          onEstadisticas: () =>
+                              _abrir(StatisticsPage(usuarioId: _usuarioId)),
+                          onPerfil: _abrirPerfil,
+                          onAdmin: () => _abrir(const AdminPage()),
+                          onConfiguracion: () => _abrir(
+                            SettingsPage(
+                              themeController: widget.themeController,
+                              usuario: _usuario,
+                            ),
+                          ),
+                          onSalir: _cerrarSesion,
                         ),
                       ),
-                      onSalir: _cerrarSesion,
-                    ),
-                  ),
-                Expanded(
-                  child: Container(
-                    color: pageBg,
-                    child: CustomScrollView(
-                      slivers: [
-                        SliverAppBar(
-                          pinned: true,
-                          backgroundColor: pageBg,
-                          surfaceTintColor: Colors.transparent,
-                          automaticallyImplyLeading: !wide,
-                          title: wide
-                              ? null
-                              : const Text(
-                                  'ErgoVida',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                          actions: [
-                            if (!wide)
-                              IconButton(
-                                tooltip: 'Actualizar',
-                                onPressed: _cargarResumen,
-                                icon: const Icon(Icons.refresh_rounded),
-                              ),
-                            const SizedBox(width: 8),
-                          ],
-                        ),
-                        SliverPadding(
-                          padding: EdgeInsets.fromLTRB(
-                            wide ? 34 : 20,
-                            8,
-                            wide ? 34 : 20,
-                            34,
-                          ),
-                          sliver: SliverList(
-                            delegate: SliverChildListDelegate([
-                              _cabecera(textPrimary, textSecondary, isDark),
-                              const SizedBox(height: 26),
-                              _statGrid(constraints.maxWidth, isDark),
-                              const SizedBox(height: 34),
-                              Text(
-                                'Acciones rápidas',
-                                style: TextStyle(
-                                  color: textPrimary,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.4,
-                                ),
-                              ),
-                              const SizedBox(height: 18),
-                              Wrap(
-                                spacing: 18,
-                                runSpacing: 18,
-                                children: [
-                                  _actionButton(
-                                    context,
-                                    'Iniciar pausa activa',
-                                    Icons.play_circle_fill_rounded,
-                                    const Color(0xFF22C55E),
-                                    () => _abrir(const RoutinePage()),
-                                  ),
-                                  _actionButton(
-                                    context,
-                                    'Ver ejercicios',
-                                    Icons.fitness_center_rounded,
-                                    brandBlue,
-                                    () => _abrir(
-                                      ExercisesPage(usuarioId: _usuarioId),
-                                    ),
-                                  ),
-                                  _actionButton(
-                                    context,
-                                    'Consultar estadísticas',
-                                    Icons.bar_chart_rounded,
-                                    const Color(0xFFF59E0B),
-                                    () => _abrir(
-                                      StatisticsPage(usuarioId: _usuarioId),
-                                    ),
-                                  ),
-                                  _actionButton(
-                                    context,
-                                    'Configuración',
-                                    Icons.settings_rounded,
-                                    const Color(0xFF7C4DFF),
-                                    () => _abrir(
-                                      SettingsPage(
-                                        themeController: widget.themeController,
-                                        usuario: _usuario,
+                    Expanded(
+                      child: Container(
+                        color: pageBg,
+                        child: CustomScrollView(
+                          slivers: [
+                            SliverAppBar(
+                              pinned: true,
+                              backgroundColor: pageBg,
+                              surfaceTintColor: Colors.transparent,
+                              automaticallyImplyLeading: !wide,
+                              title: wide
+                                  ? null
+                                  : const Text(
+                                      'ErgoVida',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w800,
                                       ),
                                     ),
+                              actions: [
+                                if (!wide)
+                                  IconButton(
+                                    tooltip: 'Actualizar',
+                                    onPressed: _cargarResumen,
+                                    icon: const Icon(Icons.refresh_rounded),
                                   ),
-                                  if (_esAdmin)
-                                    _actionButton(
-                                      context,
-                                      'Panel administrador',
-                                      Icons.admin_panel_settings_rounded,
-                                      brandTeal,
-                                      () => _abrir(const AdminPage()),
-                                    ),
-                                ],
+                                const SizedBox(width: 8),
+                              ],
+                            ),
+                            SliverPadding(
+                              padding: EdgeInsets.fromLTRB(
+                                wide ? 34 : 20,
+                                8,
+                                wide ? 34 : 20,
+                                34,
                               ),
-                              const SizedBox(height: 30),
-                              _resumenCard(textPrimary, textSecondary, isDark),
-                            ]),
-                          ),
+                              sliver: SliverList(
+                                delegate: SliverChildListDelegate([
+                                  _cabecera(textPrimary, textSecondary, isDark),
+                                  const SizedBox(height: 26),
+                                  _statGrid(constraints.maxWidth, isDark),
+                                  const SizedBox(height: 34),
+                                  Text(
+                                    'Acciones rápidas',
+                                    style: TextStyle(
+                                      color: textPrimary,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.4,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  Wrap(
+                                    spacing: 18,
+                                    runSpacing: 18,
+                                    children: [
+                                      _actionButton(
+                                        context, 
+                                        'Iniciar pausa activa', 
+                                        Icons.play_circle_fill_rounded, 
+                                        brandBlue, () => _abrir(const RoutinePage())),
+                                      _actionButton(
+                                        context, 
+                                        'Ver ejercicios', 
+                                        Icons.fitness_center_rounded, 
+                                        brandNavy, () => _abrir(ExercisesPage(usuarioId: _usuarioId))),
+                                      _actionButton(
+                                        context, 
+                                        'Consultar estadísticas', 
+                                        Icons.bar_chart_rounded, 
+                                        brandTeal, () => _abrir(StatisticsPage(usuarioId: _usuarioId))),
+                                      _actionButton(
+                                        context, 
+                                        'Configuración', 
+                                        Icons.settings_rounded, 
+                                        brandCyan, () => _abrir(SettingsPage(themeController: widget.themeController, usuario: _usuario))),
+                                      if (_esAdmin)
+                                        _actionButton(
+                                          context,
+                                          'Panel administrador',
+                                          Icons.admin_panel_settings_rounded,
+                                          brandTeal,
+                                          () => _abrir(const AdminPage()),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 30),
+                                  _resumenCard(textPrimary, textSecondary, isDark),
+                                ]),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -356,7 +345,7 @@ class _HomePageState extends State<HomePage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF123A35) : const Color(0xFFDCF9F2),
+            color: isDark ? const Color(0xFF123A56) : const Color(0xFFE1F2FF),
             borderRadius: BorderRadius.circular(999),
           ),
           child: Row(
@@ -365,15 +354,13 @@ class _HomePageState extends State<HomePage> {
               Icon(
                 Icons.calendar_today_rounded,
                 size: 15,
-                color: isDark ? const Color(0xFF8BE7D7) : const Color(0xFF116A5D),
+                color: isDark ? const Color(0xFF8BE7D7) : brandBlue
               ),
               const SizedBox(width: 7),
               Text(
-                'Hoy',
+                "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}", 
                 style: TextStyle(
-                  color: isDark
-                      ? const Color(0xFF8BE7D7)
-                      : const Color(0xFF116A5D),
+                  color: isDark ? const Color(0xFF8BE7D7) : brandBlue,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -391,22 +378,22 @@ class _HomePageState extends State<HomePage> {
         titulo: 'Pausas realizadas',
         valor: _cargando ? '...' : '$_pausas',
         icono: Icons.timer_rounded,
-        color: const Color(0xFF22C55E),
-        surface: const Color(0xFFDCFBE7),
+        color: brandBlue,
+        surface: const Color(0xFFE1F2FF),
       ),
       _StatCardData(
         titulo: 'Ejercicios completados',
         valor: _cargando ? '...' : '$_completados',
         icono: Icons.fitness_center_rounded,
-        color: brandBlue,
+        color: brandNavy,
         surface: const Color(0xFFE1F2FF),
       ),
       _StatCardData(
         titulo: 'Tiempo activo',
         valor: _cargando ? '...' : _tiempoActivo,
         icono: Icons.access_time_rounded,
-        color: const Color(0xFFF59E0B),
-        surface: const Color(0xFFFFF1D6),
+        color: brandCyan,
+        surface: const Color(0xFFE0F7FA),
       ),
     ];
 
@@ -648,16 +635,24 @@ class _Sidebar extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 22, 16, 16),
           children: [
-            const Center(
+            // 🔹 Logo corregido sin duplicar los Center
+            Center(
               child: Column(
                 children: [
-                  ErgoVidaLogo(size: 70, showText: false),
-                  SizedBox(height: 10),
-                  Text(
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ErgoVidaLogo(width: 80),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
                     'ErgoVida',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 25,
+                      fontSize: 22,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.5,
                     ),

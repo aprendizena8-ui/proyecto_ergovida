@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../main.dart';
 import '../../data/models/user_model.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/usuario_service.dart';
@@ -38,6 +40,15 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _guardar() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Verificar si cambió algo
+    if (_nombreCtrl.text.trim() == widget.usuario.nombre &&
+        _correoCtrl.text.trim() == widget.usuario.correo) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(backgroundColor: Colors.orange, content: Text('No has realizado ningún cambio')),
+      );
+      return;
+    }
     setState(() => _guardando = true);
 
     final ok = await _usuarioService.actualizarUsuario(widget.usuario.id, {
@@ -102,7 +113,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          backgroundColor: Colors.green,
+          backgroundColor: brandBlue,
           content: Text('Cuenta eliminada'),
         ),
       );
@@ -123,7 +134,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mi perfil'),
-        backgroundColor: Colors.green,
+        backgroundColor: brandBlue,
         foregroundColor: Colors.white,
       ),
       body: Form(
@@ -134,7 +145,7 @@ class _ProfilePageState extends State<ProfilePage> {
             Center(
               child: CircleAvatar(
                 radius: 50,
-                backgroundColor: Colors.green.shade100,
+                backgroundColor: brandBlue.withValues(alpha: 0.15),
                 child: Text(
                   widget.usuario.nombre.isNotEmpty
                       ? widget.usuario.nombre[0].toUpperCase()
@@ -142,7 +153,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   style: const TextStyle(
                     fontSize: 40,
                     fontWeight: FontWeight.bold,
-                    color: Colors.green,
+                    color: brandBlue,
                   ),
                 ),
               ),
@@ -177,12 +188,12 @@ class _ProfilePageState extends State<ProfilePage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: brandBlue.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.badge, color: Colors.grey),
+                  const Icon(Icons.badge, color: brandBlue),
                   const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,6 +204,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
+                          color: brandBlue,
                         ),
                       ),
                     ],
@@ -217,7 +229,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     : const Icon(Icons.save),
                 label: Text(_guardando ? 'Guardando...' : 'Guardar cambios'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: brandBlue,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -261,63 +273,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 30),
-            // Botón temporal para convertir admin (ELIMINAR EN PRODUCCIÓN)
-            TextButton.icon(
-              onPressed: () async {
-                final messenger = ScaffoldMessenger.of(context);
-                final confirmar = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Modo desarrollo'),
-                    content: const Text(
-                      '¿Convertir este usuario en ADMINISTRADOR?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancelar'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Sí'),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirmar == true) {
-                  final ok = await _usuarioService.actualizarUsuario(
-                    widget.usuario.id,
-                    {'rol': 'ADMINISTRADOR'},
-                  );
-                  if (ok) {
-                    await AuthService.actualizarUsuarioActual(
-                      widget.usuario.copyWith(rol: 'ADMINISTRADOR'),
-                    );
-                  }
-                  if (!mounted) return;
-                  messenger.showSnackBar(
-                    SnackBar(
-                      backgroundColor: ok ? Colors.orange : Colors.red,
-                      content: Text(
-                        ok
-                            ? 'Usuario convertido en ADMIN. Ya puedes usar el panel de administración.'
-                            : 'No se pudo convertir el usuario en ADMIN.',
-                      ),
-                    ),
-                  );
-                }
-              },
-              icon: const Icon(
-                Icons.admin_panel_settings,
-                color: Colors.orange,
-                size: 18,
-              ),
-              label: const Text(
-                'Convertir en ADMIN (dev)',
-                style: TextStyle(color: Colors.orange, fontSize: 12),
               ),
             ),
           ],

@@ -93,4 +93,14 @@ public class AuthService {
                 user.getRol()
         );
     }
+
+    public void cambiarPassword(String correo, String nuevaPassword) {
+        User user = repository.findByCorreo(correo)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        if (nuevaPassword == null || nuevaPassword.length() < 6) {
+            throw new RuntimeException("La contraseña debe tener mínimo 6 caracteres.");
+        }
+        user.setPassword(encoder.encode(nuevaPassword));
+        repository.save(user);
+    }
 }

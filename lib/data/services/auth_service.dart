@@ -284,6 +284,34 @@ class AuthService {
 
     return null;
   }
+
+  static Future<bool> enviarCodigoVerificacion(String correo) async {
+    try {
+      final url = Uri.parse('${ApiClient.baseUrl}/auth/enviar-codigo');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'correo': correo}),
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static Future<bool> verificarCodigo(String correo, String codigo) async {
+    try {
+      final url = Uri.parse('${ApiClient.baseUrl}/auth/verificar-codigo');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'correo': correo, 'codigo': codigo}),
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
 }
 
 class _LoginAttempt {

@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Archivos de error de Java
+hs_err_pid*
+replay_pid*
+*.hprof
+
+**/application.properties

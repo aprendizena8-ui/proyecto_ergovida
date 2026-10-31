@@ -17,6 +17,12 @@ const Color brandMuted = Color(0xFF5E7387);
 class AppThemeController extends ChangeNotifier {
   static const String _themeKey = 'theme_dark_mode';
 
+  static final AppThemeController instance = AppThemeController._internal();
+  
+  factory AppThemeController() => instance;
+  
+  AppThemeController._internal();
+
   ThemeMode _themeMode = ThemeMode.light;
 
   ThemeMode get themeMode => _themeMode;
@@ -165,6 +171,9 @@ class _MyAppState extends State<MyApp> {
         return MaterialApp(
           title: 'ErgoVida',
           debugShowCheckedModeBanner: false,
+          scrollBehavior: const MaterialScrollBehavior().copyWith(
+            scrollbars: false,
+          ),
           themeMode: _themeController.themeMode,
           theme: _buildLightTheme(),
           darkTheme: _buildDarkTheme(),
