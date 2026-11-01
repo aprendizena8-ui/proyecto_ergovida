@@ -6,6 +6,7 @@ import '../../data/services/estadisticas_service.dart';
 import '../../data/services/pausa_service.dart';
 import '../../main.dart';
 import '../../widgets/ergovida_logo.dart';
+import '../../widgets/user_avatar.dart';
 import '../admin/admin_page.dart';
 import '../auth/login_page.dart';
 import '../exercises/exercises_page.dart';
@@ -35,7 +36,8 @@ class _HomePageState extends State<HomePage> {
   bool _cargando = true;
 
   int get _usuarioId => _usuario?.id ?? AuthService.usuarioId;
-  bool get _esAdmin => (_usuario?.rol ?? AuthService.usuarioRol).toUpperCase() ==
+  bool get _esAdmin =>
+      (_usuario?.rol ?? AuthService.usuarioRol).toUpperCase() ==
       'ADMINISTRADOR';
 
   @override
@@ -133,12 +135,13 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-
     return AnimatedBuilder(
       animation: AppThemeController.instance,
       builder: (context, _) {
         final isDark = AppThemeController.instance.isDark;
-        final pageBg = isDark ? const Color(0xFF0B1424) : const Color(0xFFEAF3F8);
+        final pageBg = isDark
+            ? const Color(0xFF0B1424)
+            : const Color(0xFFEAF3F8);
         final textPrimary = isDark ? Colors.white : brandText;
         final textSecondary = isDark ? const Color(0xFFCBD5E1) : brandMuted;
 
@@ -265,25 +268,43 @@ class _HomePageState extends State<HomePage> {
                                     runSpacing: 18,
                                     children: [
                                       _actionButton(
-                                        context, 
-                                        'Iniciar pausa activa', 
-                                        Icons.play_circle_fill_rounded, 
-                                        brandBlue, () => _abrir(const RoutinePage())),
+                                        context,
+                                        'Iniciar pausa activa',
+                                        Icons.play_circle_fill_rounded,
+                                        brandBlue,
+                                        () => _abrir(const RoutinePage()),
+                                      ),
                                       _actionButton(
-                                        context, 
-                                        'Ver ejercicios', 
-                                        Icons.fitness_center_rounded, 
-                                        brandNavy, () => _abrir(ExercisesPage(usuarioId: _usuarioId))),
+                                        context,
+                                        'Ver ejercicios',
+                                        Icons.fitness_center_rounded,
+                                        brandNavy,
+                                        () => _abrir(
+                                          ExercisesPage(usuarioId: _usuarioId),
+                                        ),
+                                      ),
                                       _actionButton(
-                                        context, 
-                                        'Consultar estadísticas', 
-                                        Icons.bar_chart_rounded, 
-                                        brandTeal, () => _abrir(StatisticsPage(usuarioId: _usuarioId))),
+                                        context,
+                                        'Consultar estadísticas',
+                                        Icons.bar_chart_rounded,
+                                        brandTeal,
+                                        () => _abrir(
+                                          StatisticsPage(usuarioId: _usuarioId),
+                                        ),
+                                      ),
                                       _actionButton(
-                                        context, 
-                                        'Configuración', 
-                                        Icons.settings_rounded, 
-                                        brandCyan, () => _abrir(SettingsPage(themeController: widget.themeController, usuario: _usuario))),
+                                        context,
+                                        'Configuración',
+                                        Icons.settings_rounded,
+                                        brandCyan,
+                                        () => _abrir(
+                                          SettingsPage(
+                                            themeController:
+                                                widget.themeController,
+                                            usuario: _usuario,
+                                          ),
+                                        ),
+                                      ),
                                       if (_esAdmin)
                                         _actionButton(
                                           context,
@@ -295,7 +316,11 @@ class _HomePageState extends State<HomePage> {
                                     ],
                                   ),
                                   const SizedBox(height: 30),
-                                  _resumenCard(textPrimary, textSecondary, isDark),
+                                  _resumenCard(
+                                    textPrimary,
+                                    textSecondary,
+                                    isDark,
+                                  ),
                                 ]),
                               ),
                             ),
@@ -354,11 +379,11 @@ class _HomePageState extends State<HomePage> {
               Icon(
                 Icons.calendar_today_rounded,
                 size: 15,
-                color: isDark ? const Color(0xFF8BE7D7) : brandBlue
+                color: isDark ? const Color(0xFF8BE7D7) : brandBlue,
               ),
               const SizedBox(width: 7),
               Text(
-                "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}", 
+                "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}",
                 style: TextStyle(
                   color: isDark ? const Color(0xFF8BE7D7) : brandBlue,
                   fontWeight: FontWeight.w700,
@@ -497,15 +522,10 @@ class _HomePageState extends State<HomePage> {
             width: 54,
             height: 54,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [brandBlue, brandTeal],
-              ),
+              gradient: const LinearGradient(colors: [brandBlue, brandTeal]),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(
-              Icons.insights_rounded,
-              color: Colors.white,
-            ),
+            child: const Icon(Icons.insights_rounded, color: Colors.white),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -557,10 +577,7 @@ class _HomePageState extends State<HomePage> {
         label: Text(
           text,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
@@ -664,9 +681,19 @@ class _Sidebar extends StatelessWidget {
             _perfil(usuario),
             const SizedBox(height: 20),
             _item(Icons.dashboard_rounded, 'Dashboard', true, onDashboard),
-            _item(Icons.fitness_center_rounded, 'Ejercicios', false, onEjercicios),
+            _item(
+              Icons.fitness_center_rounded,
+              'Ejercicios',
+              false,
+              onEjercicios,
+            ),
             _item(Icons.repeat_rounded, 'Rutinas', false, onRutinas),
-            _item(Icons.bar_chart_rounded, 'Estadísticas', false, onEstadisticas),
+            _item(
+              Icons.bar_chart_rounded,
+              'Estadísticas',
+              false,
+              onEstadisticas,
+            ),
             _item(Icons.person_rounded, 'Mi perfil', false, onPerfil),
             if (esAdmin)
               _item(
@@ -676,15 +703,22 @@ class _Sidebar extends StatelessWidget {
                 onAdmin,
                 destacado: true,
               ),
-            _item(Icons.settings_rounded, 'Configuración', false, onConfiguracion),
+            _item(
+              Icons.settings_rounded,
+              'Configuración',
+              false,
+              onConfiguracion,
+            ),
             const SizedBox(height: 14),
             const Divider(color: Color(0xFF31506C), thickness: 1),
             const SizedBox(height: 8),
             Material(
               color: Colors.transparent,
               child: ListTile(
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 2,
+                ),
                 leading: const Icon(
                   Icons.logout_rounded,
                   color: Color(0xFFFF8A8A),
@@ -723,17 +757,11 @@ class _Sidebar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
+          UserAvatar(
+            usuario: usuario,
             radius: 22,
             backgroundColor: brandTeal,
-            child: Text(
-              usuario?.inicial ?? '?',
-              style: const TextStyle(
-                color: brandNavy,
-                fontWeight: FontWeight.w800,
-                fontSize: 18,
-              ),
-            ),
+            foregroundColor: brandNavy,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -762,8 +790,10 @@ class _Sidebar extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: rol.toUpperCase() == 'ADMINISTRADOR'
                         ? brandTeal.withValues(alpha: 0.22)
@@ -806,8 +836,10 @@ class _Sidebar extends StatelessWidget {
             : Colors.transparent,
         borderRadius: BorderRadius.circular(14),
         child: ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 1,
+          ),
           leading: Icon(
             icon,
             color: destacado ? const Color(0xFF7FF3E1) : Colors.white,

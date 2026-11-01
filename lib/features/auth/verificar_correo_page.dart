@@ -4,8 +4,15 @@ import '../../main.dart';
 
 class VerificarCorreoPage extends StatefulWidget {
   final String correo;
+  final String? codigoInicial;
+  final String tipo;
 
-  const VerificarCorreoPage({super.key, required this.correo});
+  const VerificarCorreoPage({
+    super.key,
+    required this.correo,
+    this.codigoInicial,
+    this.tipo = 'registro',
+  });
 
   @override
   State<VerificarCorreoPage> createState() => _VerificarCorreoPageState();
@@ -14,6 +21,15 @@ class VerificarCorreoPage extends StatefulWidget {
 class _VerificarCorreoPageState extends State<VerificarCorreoPage> {
   final TextEditingController _codigoCtrl = TextEditingController();
   bool _cargando = false;
+  bool _reenviando = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.codigoInicial != null && widget.codigoInicial!.isNotEmpty) {
+      _codigoCtrl.text = widget.codigoInicial!;
+    }
+  }
 
   @override
   void dispose() {
@@ -23,20 +39,58 @@ class _VerificarCorreoPageState extends State<VerificarCorreoPage> {
 
   Future<void> _verificar() async {
     final codigo = _codigoCtrl.text.trim();
-    if (codigo.length != 6) return;
+    if (codigo.length != 6) {
+      _mostrarMensaje('Ingresa el código de 6 dígitos', esError: true);
+      return;
+    }
 
     setState(() => _cargando = true);
-    final ok = await AuthService.verificarCodigo(widget.correo, codigo);
+    final resultado = await AuthService.verificarCodigo(widget.correo, codigo);
     if (!mounted) return;
     setState(() => _cargando = false);
 
-    if (ok) {
-      // Mostramos mensaje y cerramos retornando true
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: brandBlue, content: Text('✅ Correo verificado. Ya puedes iniciar sesión.')));
-      Navigator.pop(context, true); 
+    if (resultado.exito) {
+      _mostrarMensaje('Correo verificado correctamente.');
+      Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Color(0xFFCF3A3A), content: Text('Código incorrecto o expirado')));
+      _mostrarMensaje(resultado.mensaje, esError: true);
     }
+  }
+
+  Future<void> _reenviar() async {
+    if (_reenviando) return;
+    setState(() => _reenviando = true);
+
+    final envio = await AuthService.enviarCodigoVerificacion(
+      widget.correo,
+      tipo: widget.tipo,
+    );
+    if (!mounted) return;
+    setState(() => _reenviando = false);
+
+    if (!envio.exito) {
+      _mostrarMensaje(envio.mensaje, esError: true);
+      return;
+    }
+
+    if (envio.codigo != null) {
+      _codigoCtrl.text = envio.codigo!;
+      _mostrarMensaje(
+        'No se pudo enviar el correo. Tu código es ${envio.codigo}',
+        esError: true,
+      );
+    } else {
+      _mostrarMensaje('Código reenviado a ${widget.correo}.');
+    }
+  }
+
+  void _mostrarMensaje(String texto, {bool esError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: esError ? const Color(0xFFCF3A3A) : brandBlue,
+        content: Text(texto),
+      ),
+    );
   }
 
   @override
@@ -67,8 +121,11 @@ class _VerificarCorreoPageState extends State<VerificarCorreoPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.mark_email_read_rounded,
-                    size: 80, color: brandBlue),
+                const Icon(
+                  Icons.mark_email_read_rounded,
+                  size: 80,
+                  color: brandBlue,
+                ),
                 const SizedBox(height: 16),
                 const Text(
                   'Verifica tu correo',
@@ -90,6 +147,7 @@ class _VerificarCorreoPageState extends State<VerificarCorreoPage> {
                   keyboardType: TextInputType.number,
                   maxLength: 6,
                   textAlign: TextAlign.center,
+                  enabled: !_cargando,
                   style: const TextStyle(
                     fontSize: 32,
                     letterSpacing: 8,
@@ -124,8 +182,22 @@ class _VerificarCorreoPageState extends State<VerificarCorreoPage> {
                           )
                         : const Text(
                             'Verificar código',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: _reenviando || _cargando ? null : _reenviar,
+                  child: Text(
+                    _reenviando ? 'Reenviando...' : 'Reenviar código',
+                    style: const TextStyle(
+                      color: brandNavy,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],

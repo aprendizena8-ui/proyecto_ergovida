@@ -17,8 +17,18 @@ const PoseLandmarkModel poseLandmarkModel = PoseLandmarkModel.full;
 /// distinguir manos y hombros sin castigar los FPS.
 const int detectionMaxDim = 640;
 
+/// Confianza mínima del detector de personas. Algo por debajo del valor por
+/// defecto para tolerar cuerpos parcialmente fuera de cuadro (ejercicios
+/// sentado frente al escritorio).
+const double poseDetectorConf = 0.40;
+
+/// Confianza mínima global del modelo de landmarks. Se mantiene tolerante:
+/// con cuerpos parcialmente fuera de cuadro una pose válida puede puntuar bajo,
+/// y descartarla dejaría la pantalla sin esqueleto.
+const double poseMinLandmarkScore = 0.35;
+
 /// Visibilidad mínima para considerar válido un punto del cuerpo.
-/// 0.25 es más tolerante con manos y orejas parcialmente visibles.
+/// Las manos y orejas suelen tener valores más bajos que el torso.
 const double minVis = 0.25;
 
 /// Suavizado adaptativo: poco suavizado al moverse rápido, más al estar quieto.
@@ -27,6 +37,10 @@ const double smoothMin = 0.50;
 const double smoothMax = 0.90;
 const double smoothLowSpeed = 0.002;
 const double smoothHighSpeed = 0.015;
+
+/// Salto normalizado a partir del cual se reinicia el suavizado de un punto
+/// (por ejemplo, si la persona se movió de golpe o cambió el encuadre).
+const double smoothResetDistance = 0.20;
 
 // Cuello
 const double neckTiltDeg = 10; // inclinación para empezar a contar
@@ -69,12 +83,21 @@ class BodyPoint {
   const BodyPoint(this.x, this.y, this.v);
 }
 
+/// Puntos que dibujamos y suavizamos. Incluye cara, hombros, brazos, manos y
+/// caderas para que el esqueleto se entienda mejor; las piernas se omiten
+/// porque estos ejercicios se hacen sentado y suelen quedar fuera de cuadro.
 const List<PoseLandmarkType> usedTypes = [
   PoseLandmarkType.nose,
+  PoseLandmarkType.leftEyeInner,
   PoseLandmarkType.leftEye,
+  PoseLandmarkType.leftEyeOuter,
+  PoseLandmarkType.rightEyeInner,
   PoseLandmarkType.rightEye,
+  PoseLandmarkType.rightEyeOuter,
   PoseLandmarkType.leftEar,
   PoseLandmarkType.rightEar,
+  PoseLandmarkType.mouthLeft,
+  PoseLandmarkType.mouthRight,
   PoseLandmarkType.leftShoulder,
   PoseLandmarkType.rightShoulder,
   PoseLandmarkType.leftElbow,
@@ -87,24 +110,8 @@ const List<PoseLandmarkType> usedTypes = [
   PoseLandmarkType.rightPinky,
   PoseLandmarkType.leftThumb,
   PoseLandmarkType.rightThumb,
-];
-
-const List<List<PoseLandmarkType>> bones = [
-  [PoseLandmarkType.leftShoulder, PoseLandmarkType.rightShoulder],
-  [PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow],
-  [PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist],
-  [PoseLandmarkType.leftWrist, PoseLandmarkType.leftIndex],
-  [PoseLandmarkType.leftWrist, PoseLandmarkType.leftPinky],
-  [PoseLandmarkType.leftWrist, PoseLandmarkType.leftThumb],
-  [PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow],
-  [PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist],
-  [PoseLandmarkType.rightWrist, PoseLandmarkType.rightIndex],
-  [PoseLandmarkType.rightWrist, PoseLandmarkType.rightPinky],
-  [PoseLandmarkType.rightWrist, PoseLandmarkType.rightThumb],
-  [PoseLandmarkType.leftEar, PoseLandmarkType.rightEar],
-  [PoseLandmarkType.leftEye, PoseLandmarkType.rightEye],
-  [PoseLandmarkType.leftEar, PoseLandmarkType.leftShoulder],
-  [PoseLandmarkType.rightEar, PoseLandmarkType.rightShoulder],
+  PoseLandmarkType.leftHip,
+  PoseLandmarkType.rightHip,
 ];
 
 /// Serie de valores en una ventana de tiempo (para medir movimiento).

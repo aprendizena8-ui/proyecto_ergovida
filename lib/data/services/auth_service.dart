@@ -12,6 +12,7 @@ class AuthService {
   static const String _sessionIdKey = 'session_user_id';
   static const String _sessionNameKey = 'session_user_name';
   static const String _sessionRoleKey = 'session_user_role';
+  static const String _sessionPhotoKey = 'session_user_photo';
 
   static String nombreGuardado = '';
   static String correoGuardado = '';
@@ -21,6 +22,9 @@ class AuthService {
   static String usuarioNombre = '';
   static String usuarioCorreo = '';
   static String usuarioRol = 'USUARIO';
+  static String usuarioFotoPerfil = '';
+
+  static String _photoKey(int id) => 'profile_photo_$id';
 
   static bool get isAdmin => usuarioRol.toUpperCase() == 'ADMINISTRADOR';
 
@@ -31,6 +35,7 @@ class AuthService {
       nombre: usuarioNombre.trim().isEmpty ? usuarioCorreo : usuarioNombre,
       correo: usuarioCorreo,
       rol: usuarioRol,
+      fotoPerfil: usuarioFotoPerfil.trim().isEmpty ? null : usuarioFotoPerfil,
     );
   }
 
@@ -49,8 +54,10 @@ class AuthService {
   }
 
   static String _errorMessage(Map<String, dynamic> data, String fallback) {
-    final message = data['message']?.toString().trim();
-    return (message == null || message.isEmpty) ? fallback : message;
+    final message =
+        data['message'] ?? data['mensaje'] ?? data['error'] ?? data['detail'];
+    final texto = message?.toString().trim();
+    return (texto == null || texto.isEmpty) ? fallback : texto;
   }
 
   static UserModel? _userFromResponse(
@@ -117,11 +124,23 @@ class AuthService {
     passwordGuardada = password;
 
     final prefs = await SharedPreferences.getInstance();
+    final foto = (user.fotoPerfil ?? '').trim();
+    usuarioFotoPerfil = foto.isNotEmpty ? foto : _prefsPhoto(prefs, usuarioId);
+
     await prefs.setString(_sessionEmailKey, usuarioCorreo);
     await prefs.setString(_sessionPasswordKey, password);
     await prefs.setInt(_sessionIdKey, usuarioId);
     await prefs.setString(_sessionNameKey, usuarioNombre);
     await prefs.setString(_sessionRoleKey, usuarioRol);
+    await prefs.setString(_sessionPhotoKey, usuarioFotoPerfil);
+    if (usuarioFotoPerfil.isNotEmpty) {
+      await prefs.setString(_photoKey(usuarioId), usuarioFotoPerfil);
+    }
+  }
+
+  static String _prefsPhoto(SharedPreferences prefs, int id) {
+    if (id <= 0) return '';
+    return (prefs.getString(_photoKey(id)) ?? '').trim();
   }
 
   static Future<void> _loadCachedUser(SharedPreferences prefs) async {
@@ -129,6 +148,9 @@ class AuthService {
     usuarioNombre = prefs.getString(_sessionNameKey) ?? '';
     usuarioCorreo = prefs.getString(_sessionEmailKey) ?? '';
     usuarioRol = prefs.getString(_sessionRoleKey) ?? 'USUARIO';
+    usuarioFotoPerfil =
+        (prefs.getString(_sessionPhotoKey) ?? _prefsPhoto(prefs, usuarioId))
+            .trim();
     correoGuardado = usuarioCorreo;
     nombreGuardado = usuarioNombre;
     passwordGuardada = prefs.getString(_sessionPasswordKey) ?? '';
@@ -155,6 +177,7 @@ class AuthService {
     usuarioNombre = user.nombre;
     usuarioCorreo = user.correo;
     usuarioRol = user.rol;
+    usuarioFotoPerfil = (user.fotoPerfil ?? '').trim();
     nombreGuardado = user.nombre;
     correoGuardado = user.correo;
 
@@ -163,6 +186,12 @@ class AuthService {
     await prefs.setString(_sessionNameKey, usuarioNombre);
     await prefs.setString(_sessionEmailKey, usuarioCorreo);
     await prefs.setString(_sessionRoleKey, usuarioRol);
+    await prefs.setString(_sessionPhotoKey, usuarioFotoPerfil);
+    if (usuarioFotoPerfil.isEmpty) {
+      await prefs.remove(_photoKey(usuarioId));
+    } else {
+      await prefs.setString(_photoKey(usuarioId), usuarioFotoPerfil);
+    }
   }
 
   static Future<void> clearSession() async {
@@ -172,6 +201,7 @@ class AuthService {
     await prefs.remove(_sessionIdKey);
     await prefs.remove(_sessionNameKey);
     await prefs.remove(_sessionRoleKey);
+    await prefs.remove(_sessionPhotoKey);
 
     nombreGuardado = '';
     correoGuardado = '';
@@ -180,13 +210,17 @@ class AuthService {
     usuarioNombre = '';
     usuarioCorreo = '';
     usuarioRol = 'USUARIO';
+    usuarioFotoPerfil = '';
   }
 
   static Future<bool> isLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
     final email = prefs.getString(_sessionEmailKey);
     final password = prefs.getString(_sessionPasswordKey);
-    if (email == null || email.isEmpty || password == null || password.isEmpty) {
+    if (email == null ||
+        email.isEmpty ||
+        password == null ||
+        password.isEmpty) {
       return false;
     }
 
@@ -247,16 +281,10 @@ class AuthService {
         nombreGuardado = nombre;
         correoGuardado = correo.trim();
         passwordGuardada = password;
-        return _userFromResponse(
-          data,
-          correo: correo.trim(),
-          nombre: nombre,
-        );
+        return _userFromResponse(data, correo: correo.trim(), nombre: nombre);
       }
 
-      throw Exception(
-        _errorMessage(data, 'No se pudo registrar el usuario'),
-      );
+      throw Exception(_errorMessage(data, 'No se pudo registrar el usuario'));
     } on http.ClientException {
       throw Exception('No se pudo conectar con el backend local');
     } catch (error) {
@@ -277,41 +305,146 @@ class AuthService {
     }
 
     if (attempt.offline) {
-      final coincide =
-          email == correoGuardado && password == passwordGuardada;
+      final coincide = email == correoGuardado && password == passwordGuardada;
       return coincide ? currentUser : null;
     }
 
     return null;
   }
 
-  static Future<bool> enviarCodigoVerificacion(String correo) async {
+  /// Solicita un código de verificación.
+  ///
+  /// [tipo] debe ser `registro` (para crear una cuenta) o `recuperacion`
+  /// (para restablecer la contraseña de una cuenta existente).
+  static Future<EnvioCodigoResultado> enviarCodigoVerificacion(
+    String correo, {
+    String tipo = 'registro',
+  }) async {
     try {
       final url = Uri.parse('${ApiClient.baseUrl}/auth/enviar-codigo');
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'correo': correo}),
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'correo': correo.trim(), 'tipo': tipo}),
+          )
+          .timeout(const Duration(seconds: 25));
+
+      final data = _decodeBody(response);
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final codigo = data['codigo']?.toString();
+        return EnvioCodigoResultado(
+          exito: true,
+          mensaje: _errorMessage(data, 'Código enviado a tu correo.'),
+          codigo: (codigo == null || codigo.isEmpty) ? null : codigo,
+        );
+      }
+
+      return EnvioCodigoResultado(
+        exito: false,
+        mensaje: _errorMessage(data, 'No se pudo enviar el código.'),
       );
-      return response.statusCode == 200;
     } catch (_) {
-      return false;
+      return const EnvioCodigoResultado(
+        exito: false,
+        mensaje:
+            'No se pudo conectar con el servidor. Verifica que el backend esté activo.',
+      );
     }
   }
 
-  static Future<bool> verificarCodigo(String correo, String codigo) async {
+  static Future<VerificacionResultado> verificarCodigo(
+    String correo,
+    String codigo,
+  ) async {
     try {
       final url = Uri.parse('${ApiClient.baseUrl}/auth/verificar-codigo');
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'correo': correo, 'codigo': codigo}),
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'correo': correo.trim(),
+              'codigo': codigo.trim(),
+            }),
+          )
+          .timeout(const Duration(seconds: 25));
+
+      final data = _decodeBody(response);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return VerificacionResultado(
+          exito: true,
+          mensaje: _errorMessage(data, 'Código verificado.'),
+        );
+      }
+
+      return VerificacionResultado(
+        exito: false,
+        mensaje: _errorMessage(data, 'Código incorrecto o expirado.'),
       );
-      return response.statusCode == 200;
     } catch (_) {
-      return false;
+      return const VerificacionResultado(
+        exito: false,
+        mensaje:
+            'No se pudo conectar con el servidor. Verifica que el backend esté activo.',
+      );
     }
   }
+
+  /// Devuelve `null` si el cambio fue exitoso o el mensaje de error.
+  static Future<String?> cambiarPassword({
+    required String correo,
+    required String nuevaPassword,
+  }) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('${ApiClient.baseUrl}/auth/cambiar-password'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'correo': correo.trim(),
+              'password': nuevaPassword,
+              'nuevaPassword': nuevaPassword,
+            }),
+          )
+          .timeout(const Duration(seconds: 25));
+
+      final data = _decodeBody(response);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        passwordGuardada = nuevaPassword;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_sessionPasswordKey, nuevaPassword);
+        return null;
+      }
+
+      return _errorMessage(data, 'No se pudo actualizar la contraseña.');
+    } catch (_) {
+      return 'No se pudo conectar con el servidor. Verifica que el backend esté activo.';
+    }
+  }
+}
+
+class EnvioCodigoResultado {
+  final bool exito;
+  final String mensaje;
+
+  /// Solo se usa cuando el backend no pudo enviar el correo y devuelve el
+  /// código para que la app no bloquee el registro/recuperación.
+  final String? codigo;
+
+  const EnvioCodigoResultado({
+    required this.exito,
+    required this.mensaje,
+    this.codigo,
+  });
+}
+
+class VerificacionResultado {
+  final bool exito;
+  final String mensaje;
+
+  const VerificacionResultado({required this.exito, required this.mensaje});
 }
 
 class _LoginAttempt {

@@ -12,8 +12,10 @@ Future<PoseDetector> getPoseDetector() async {
     landmarkModel: poseLandmarkModel,
     // Solo analizamos a la persona principal: menos post-proceso por frame.
     maxDetections: 2,
-    // Manos y orejas suelen tener visibilidad baja; no las descartamos antes.
-    minLandmarkScore: 0.35,
+    // Tolerante con cuerpos parcialmente fuera de cuadro, pero exigente con
+    // la calidad global de los landmarks.
+    detectorConf: poseDetectorConf,
+    minLandmarkScore: poseMinLandmarkScore,
   );
   return _globalPoseDetector!;
 }

@@ -38,6 +38,79 @@ test('POST /api/auth/register registra un usuario', async () => {
   }
 });
 
+test('POST /api/auth/enviar-codigo y recuperación de contraseña', async () => {
+  const server = await startServer(0);
+
+  try {
+    await requestJson(server, 'POST', '/api/auth/register', {
+      nombre: 'Sofía',
+      correo: 'sofia@ergovida.test',
+      password: 'Clave123',
+    });
+
+    const envio = await requestJson(server, 'POST', '/api/auth/enviar-codigo', {
+      correo: 'sofia@ergovida.test',
+      tipo: 'recuperacion',
+    });
+
+    assert.equal(envio.status, 200);
+    assert.equal(envio.body.success, true);
+    assert.match(envio.body.codigo, /^\d{6}$/);
+
+    const verificacion = await requestJson(
+      server,
+      'POST',
+      '/api/auth/verificar-codigo',
+      {
+        correo: 'sofia@ergovida.test',
+        codigo: envio.body.codigo,
+      },
+    );
+
+    assert.equal(verificacion.status, 200);
+    assert.equal(verificacion.body.success, true);
+
+    const cambio = await requestJson(
+      server,
+      'POST',
+      '/api/auth/cambiar-password',
+      {
+        correo: 'sofia@ergovida.test',
+        nuevaPassword: 'NuevaClave123',
+      },
+    );
+
+    assert.equal(cambio.status, 200);
+    assert.equal(cambio.body.success, true);
+
+    const login = await requestJson(server, 'POST', '/api/auth/login', {
+      correo: 'sofia@ergovida.test',
+      password: 'NuevaClave123',
+    });
+
+    assert.equal(login.status, 200);
+    assert.equal(login.body.success, true);
+  } finally {
+    await server.close();
+  }
+});
+
+test('POST /api/auth/enviar-codigo rechaza correos no registrados en recuperación', async () => {
+  const server = await startServer(0);
+
+  try {
+    const result = await requestJson(server, 'POST', '/api/auth/enviar-codigo', {
+      correo: 'noexiste@ergovida.test',
+      tipo: 'recuperacion',
+    });
+
+    assert.equal(result.status, 404);
+    assert.equal(result.body.success, false);
+  } finally {
+    await server.close();
+  }
+});
+
 test('POST /api/auth/login valida credenciales', async () => {
   const server = await startServer(0);
 

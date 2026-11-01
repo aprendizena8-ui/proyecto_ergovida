@@ -1,5 +1,7 @@
 package com.ergovida.backend.service;
 
+import java.util.Locale;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -35,8 +37,13 @@ public class AuthService {
      */
     public User registrar(User user) {
 
-        if (user.getCorreo() == null || user.getCorreo().isBlank()) {
+        String correo = normalizarCorreo(user.getCorreo());
+        if (correo.isEmpty()) {
             throw new RuntimeException("El correo es obligatorio.");
+        }
+
+        if (user.getNombre() == null || user.getNombre().isBlank()) {
+            throw new RuntimeException("El nombre es obligatorio.");
         }
 
         if (user.getPassword() == null || user.getPassword().length() < 6) {
@@ -45,15 +52,21 @@ public class AuthService {
             );
         }
 
-        if (repository.existsByCorreo(user.getCorreo())) {
-            throw new RuntimeException("El correo ya está registrado.");
+        if (repository.existsByCorreo(correo)) {
+            throw new RuntimeException("El correo ya está registrado. Intenta iniciar sesión.");
         }
 
+        user.setNombre(user.getNombre().trim());
+        user.setCorreo(correo);
         user.setPassword(encoder.encode(user.getPassword()));
         user.setRol("USUARIO");
         user.setActivo(true);
 
         return repository.save(user);
+    }
+
+    public boolean existeCorreo(String correo) {
+        return repository.existsByCorreo(normalizarCorreo(correo));
     }
 
     /**
@@ -64,7 +77,9 @@ public class AuthService {
             String password,
             String origenIp) {
 
-        User user = repository.findByCorreo(correo)
+        String correoNormalizado = normalizarCorreo(correo);
+
+        User user = repository.findByCorreo(correoNormalizado)
                 .orElseThrow(() -> new RuntimeException(
                         "Credenciales inválidas."
                 ));
@@ -80,7 +95,7 @@ public class AuthService {
             systemLogService.registrar(
                     NivelLog.WARNING,
                     origenIp,
-                    "Intento de login fallido: contraseña incorrecta para el correo " + correo
+                    "Intento de login fallido: contraseña incorrecta para el correo " + correoNormalizado
             );
 
             throw new RuntimeException("Credenciales inválidas.");
@@ -95,12 +110,16 @@ public class AuthService {
     }
 
     public void cambiarPassword(String correo, String nuevaPassword) {
-        User user = repository.findByCorreo(correo)
+        User user = repository.findByCorreo(normalizarCorreo(correo))
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         if (nuevaPassword == null || nuevaPassword.length() < 6) {
             throw new RuntimeException("La contraseña debe tener mínimo 6 caracteres.");
         }
         user.setPassword(encoder.encode(nuevaPassword));
         repository.save(user);
+    }
+
+    private String normalizarCorreo(String correo) {
+        return correo == null ? "" : correo.trim().toLowerCase(Locale.ROOT);
     }
 }

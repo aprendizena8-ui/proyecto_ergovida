@@ -16,6 +16,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final correoController = TextEditingController();
   final passwordController = TextEditingController();
   bool ocultarPassword = true;
+  bool cargando = false;
 
   final emailValido = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
   final nombreValido = RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$');
@@ -29,45 +30,88 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> registrarUsuario() async {
+    if (cargando) return;
     if (!_formKey.currentState!.validate()) return;
 
+    final nombre = nombreController.text.trim();
     final correo = correoController.text.trim();
+    final password = passwordController.text.trim();
+
+    setState(() => cargando = true);
+
+    // Primero se verifica el correo; la cuenta se crea solo cuando el código
+    // fue validado. Así, si el envío del correo falla, no queda una cuenta
+    // "a medias" que luego impida volver a registrarse.
+    final envio = await AuthService.enviarCodigoVerificacion(
+      correo,
+      tipo: 'registro',
+    );
+    if (!mounted) return;
+
+    if (!envio.exito) {
+      setState(() => cargando = false);
+      _mostrarMensaje(envio.mensaje, esError: true);
+      return;
+    }
+
+    if (envio.codigo != null) {
+      _mostrarMensaje(
+        'No se pudo enviar el correo. Tu código es ${envio.codigo}',
+        esError: true,
+      );
+    } else {
+      _mostrarMensaje(envio.mensaje);
+    }
+
+    final verificado = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            VerificarCorreoPage(correo: correo, codigoInicial: envio.codigo),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (verificado != true) {
+      setState(() => cargando = false);
+      return;
+    }
 
     try {
-      await AuthService.registrar(nombreController.text.trim(), correo, passwordController.text.trim());
+      await AuthService.registrar(nombre, correo, password);
       if (!mounted) return;
 
-      final enviado = await AuthService.enviarCodigoVerificacion(correo);
-      if (!mounted) return;
-
-      if (!enviado) {
-        _mostrarMensaje('Error al enviar el código de verificación', esError: true);
-        return;
-      }
-
-      _mostrarMensaje('Código enviado a tu correo. Verifícalo.');
-      
-      // Navegamos a la pantalla de verificación sin esperar un resultado booleano
-      Navigator.pushReplacement(
-        context, 
-        MaterialPageRoute(builder: (context) => VerificarCorreoPage(correo: correo))
-      );
+      setState(() => cargando = false);
+      _mostrarMensaje('Cuenta creada correctamente. Ya puedes iniciar sesión.');
+      Navigator.pop(context, correo);
     } catch (error) {
       if (!mounted) return;
-      _mostrarMensaje(error.toString().replaceFirst('Exception: ', ''), esError: true);
+      setState(() => cargando = false);
+      _mostrarMensaje(
+        error.toString().replaceFirst('Exception: ', ''),
+        esError: true,
+      );
     }
   }
 
   void _mostrarMensaje(String texto, {bool esError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      backgroundColor: esError ? const Color(0xFFCF3A3A) : brandBlue,
-      behavior: SnackBarBehavior.floating,
-      content: Row(children: [
-        Icon(esError ? Icons.error_outline : Icons.check_circle_outline, color: Colors.white),
-        const SizedBox(width: 10),
-        Expanded(child: Text(texto)),
-      ]),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: esError ? const Color(0xFFCF3A3A) : brandBlue,
+        behavior: SnackBarBehavior.floating,
+        content: Row(
+          children: [
+            Icon(
+              esError ? Icons.error_outline : Icons.check_circle_outline,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text(texto)),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -75,11 +119,17 @@ class _RegisterPageState extends State<RegisterPage> {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(colors: [Color(0xFFF5F9FD), Color(0xFFE6EFF7)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+          gradient: LinearGradient(
+            colors: [Color(0xFFF5F9FD), Color(0xFFE6EFF7)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
         ),
         child: Center(
           child: ScrollConfiguration(
-            behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+            behavior: ScrollConfiguration.of(
+              context,
+            ).copyWith(scrollbars: false),
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Form(
@@ -90,21 +140,39 @@ class _RegisterPageState extends State<RegisterPage> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(28),
-                    boxShadow: const [BoxShadow(color: Color(0x1A0E2238), blurRadius: 24, offset: Offset(0, 18))],
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x1A0E2238),
+                        blurRadius: 24,
+                        offset: Offset(0, 18),
+                      ),
+                    ],
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const ErgoVidaLogo(width: 170),
                       const SizedBox(height: 10),
-                      const Text('Crear cuenta', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: brandText)),
+                      const Text(
+                        'Crear cuenta',
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          color: brandText,
+                        ),
+                      ),
                       const SizedBox(height: 24),
                       TextFormField(
                         controller: nombreController,
-                        decoration: const InputDecoration(labelText: 'Nombre completo', prefixIcon: Icon(Icons.person_outline)),
+                        decoration: const InputDecoration(
+                          labelText: 'Nombre completo',
+                          prefixIcon: Icon(Icons.person_outline),
+                        ),
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'El nombre es obligatorio';
-                          if (!nombreValido.hasMatch(v.trim())) return 'Solo se permiten letras y espacios';
+                          if (v == null || v.trim().isEmpty)
+                            return 'El nombre es obligatorio';
+                          if (!nombreValido.hasMatch(v.trim()))
+                            return 'Solo se permiten letras y espacios';
                           if (v.trim().length < 3) return 'Mínimo 3 caracteres';
                           return null;
                         },
@@ -113,10 +181,15 @@ class _RegisterPageState extends State<RegisterPage> {
                       TextFormField(
                         controller: correoController,
                         keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(labelText: 'Correo electrónico', prefixIcon: Icon(Icons.email_outlined)),
+                        decoration: const InputDecoration(
+                          labelText: 'Correo electrónico',
+                          prefixIcon: Icon(Icons.email_outlined),
+                        ),
                         validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'El correo es obligatorio';
-                          if (!emailValido.hasMatch(v.trim())) return 'Ingresa un correo válido';
+                          if (v == null || v.trim().isEmpty)
+                            return 'El correo es obligatorio';
+                          if (!emailValido.hasMatch(v.trim()))
+                            return 'Ingresa un correo válido';
                           return null;
                         },
                       ),
@@ -128,15 +201,24 @@ class _RegisterPageState extends State<RegisterPage> {
                           labelText: 'Contraseña',
                           prefixIcon: const Icon(Icons.lock_outline),
                           suffixIcon: IconButton(
-                            icon: Icon(ocultarPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
-                            onPressed: () => setState(() => ocultarPassword = !ocultarPassword),
+                            icon: Icon(
+                              ocultarPassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                            ),
+                            onPressed: () => setState(
+                              () => ocultarPassword = !ocultarPassword,
+                            ),
                           ),
                         ),
                         validator: (v) {
-                          if (v == null || v.isEmpty) return 'La contraseña es obligatoria';
+                          if (v == null || v.isEmpty)
+                            return 'La contraseña es obligatoria';
                           if (v.length < 8) return 'Mínimo 8 caracteres';
-                          if (!RegExp(r'[A-Z]').hasMatch(v)) return 'Falta una mayúscula';
-                          if (!RegExp(r'[0-9]').hasMatch(v)) return 'Falta un número';
+                          if (!RegExp(r'[A-Z]').hasMatch(v))
+                            return 'Falta una mayúscula';
+                          if (!RegExp(r'[0-9]').hasMatch(v))
+                            return 'Falta un número';
                           return null;
                         },
                       ),
@@ -144,19 +226,43 @@ class _RegisterPageState extends State<RegisterPage> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: registrarUsuario,
+                          onPressed: cargando ? null : registrarUsuario,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: brandBlue,
                             padding: const EdgeInsets.symmetric(vertical: 18),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
                           ),
-                          child: const Text('Registrarse', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                          child: cargando
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2.4,
+                                  ),
+                                )
+                              : const Text(
+                                  'Registrarse',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 18),
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Ya tengo una cuenta', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: brandNavy)),
+                        child: const Text(
+                          'Ya tengo una cuenta',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: brandNavy,
+                          ),
+                        ),
                       ),
                     ],
                   ),

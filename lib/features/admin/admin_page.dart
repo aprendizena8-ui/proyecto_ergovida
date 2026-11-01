@@ -4,6 +4,7 @@ import '../../data/models/user_model.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/usuario_service.dart';
 import '../../main.dart';
+import '../../widgets/user_avatar.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -37,11 +38,12 @@ class _AdminPageState extends State<AdminPage> {
     if (!mounted) return;
 
     setState(() {
-      _usuarios = data
-          .whereType<Map>()
-          .map((e) => UserModel.fromJson(Map<String, dynamic>.from(e)))
-          .toList()
-        ..sort((a, b) => a.id.compareTo(b.id));
+      _usuarios =
+          data
+              .whereType<Map>()
+              .map((e) => UserModel.fromJson(Map<String, dynamic>.from(e)))
+              .toList()
+            ..sort((a, b) => a.id.compareTo(b.id));
       _cargando = false;
       if (data.isEmpty) {
         _error = 'No se pudieron cargar los usuarios. Verifica el backend.';
@@ -60,9 +62,7 @@ class _AdminPageState extends State<AdminPage> {
 
     if (!mounted) return;
     _mensaje(
-      ok
-          ? '${usuario.nombre} ahora es $nuevoRol'
-          : 'No se pudo cambiar el rol',
+      ok ? '${usuario.nombre} ahora es $nuevoRol' : 'No se pudo cambiar el rol',
       ok: ok,
     );
     if (ok) _cargar();
@@ -307,19 +307,15 @@ class _AdminPageState extends State<AdminPage> {
       ),
       child: Row(
         children: [
-          CircleAvatar(
+          UserAvatar(
+            usuario: usuario,
             radius: 23,
             backgroundColor: usuario.esAdmin
                 ? brandTeal.withValues(alpha: 0.2)
                 : const Color(0xFFE1F2FF),
-            child: Text(
-              usuario.inicial,
-              style: TextStyle(
-                color: usuario.esAdmin ? const Color(0xFF12897B) : brandBlue,
-                fontWeight: FontWeight.w800,
-                fontSize: 18,
-              ),
-            ),
+            foregroundColor: usuario.esAdmin
+                ? const Color(0xFF12897B)
+                : brandBlue,
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -381,8 +377,7 @@ class _AdminPageState extends State<AdminPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
                   color: usuario.esAdmin
                       ? brandTeal.withValues(alpha: 0.16)

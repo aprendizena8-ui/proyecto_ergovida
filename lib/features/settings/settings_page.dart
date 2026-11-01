@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../main.dart';
 import '../../data/models/user_model.dart';
 import '../../data/services/horario_service.dart';
+import '../../data/services/profile_preferences.dart';
 
 class SettingsPage extends StatefulWidget {
   final AppThemeController? themeController;
@@ -25,7 +26,34 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void initState() {
     super.initState();
+    _cargarPreferencias();
     _cargarHorarios();
+  }
+
+  Future<void> _cargarPreferencias() async {
+    final usuario = widget.usuario;
+    if (usuario == null) return;
+
+    final perfil = await ProfilePreferences.load(usuario.id);
+    if (!mounted) return;
+    setState(() {
+      notificaciones = perfil.notificaciones;
+      recordatorios = perfil.recordatorios;
+    });
+  }
+
+  Future<void> _guardarPreferencias() async {
+    final usuario = widget.usuario;
+    if (usuario == null) return;
+
+    final perfil = await ProfilePreferences.load(usuario.id);
+    await ProfilePreferences.save(
+      usuario.id,
+      perfil.copyWith(
+        notificaciones: notificaciones,
+        recordatorios: recordatorios,
+      ),
+    );
   }
 
   Future<void> _cargarHorarios() async {
@@ -147,7 +175,10 @@ class _SettingsPageState extends State<SettingsPage> {
               title: const Text('Notificaciones'),
               subtitle: const Text('Recibir notificaciones en el sistema'),
               value: notificaciones,
-              onChanged: (v) => setState(() => notificaciones = v),
+              onChanged: (v) {
+                setState(() => notificaciones = v);
+                _guardarPreferencias();
+              },
             ),
           ),
           Material(
@@ -158,7 +189,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 'Activar o desactivar todos los recordatorios',
               ),
               value: recordatorios,
-              onChanged: (v) => setState(() => recordatorios = v),
+              onChanged: (v) {
+                setState(() => recordatorios = v);
+                _guardarPreferencias();
+              },
             ),
           ),
           Material(
@@ -170,7 +204,6 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               value: isDark,
               onChanged: (v) {
-
                 AppThemeController.instance.setTheme(v);
               },
             ),

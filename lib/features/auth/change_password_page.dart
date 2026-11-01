@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../data/services/auth_service.dart';
 import '../../main.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -23,35 +22,73 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     setState(() => cargando = true);
 
     try {
-      final res = await http.post(
-        Uri.parse('${ApiClient.baseUrl}/auth/cambiar-password'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'correo': widget.correo, 'nuevaPassword': passwordCtrl.text.trim()}),
-      );
-
-      print("Status: ${res.statusCode}");
-      print("Body: ${res.body}");
+      final res = await http
+          .post(
+            Uri.parse('${ApiClient.baseUrl}/auth/cambiar-password'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'correo': widget.correo,
+              'nuevaPassword': passwordCtrl.text.trim(),
+            }),
+          )
+          .timeout(const Duration(seconds: 25));
 
       if (!mounted) return;
       setState(() => cargando = false);
 
       if (res.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: brandBlue, content: Text('Contraseña actualizada. Inicia sesión.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: brandBlue,
+            content: Text('Contraseña actualizada. Inicia sesión.'),
+          ),
+        );
         Navigator.pop(context, widget.correo); // Devuelve el correo al login
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Color(0xFFCF3A3A), content: Text('Error al actualizar contraseña')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFFCF3A3A),
+            content: Text(_mensajeError(res.body)),
+          ),
+        );
       }
     } catch (e) {
       if (!mounted) return;
       setState(() => cargando = false);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Color(0xFFCF3A3A), content: Text('Error de conexión')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Color(0xFFCF3A3A),
+          content: Text('No se pudo conectar con el servidor'),
+        ),
+      );
     }
+  }
+
+  String _mensajeError(String body) {
+    final texto = body.trim();
+    if (texto.isEmpty) return 'No se pudo actualizar la contraseña';
+    try {
+      final data = jsonDecode(texto);
+      if (data is Map) {
+        final mensaje = data['mensaje'] ?? data['message'] ?? data['error'];
+        if (mensaje != null && mensaje.toString().trim().isNotEmpty) {
+          return mensaje.toString();
+        }
+      }
+    } catch (_) {
+      // El backend respondió texto plano.
+    }
+    return texto.replaceAll('"', '');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nueva contraseña'), backgroundColor: brandNavy, foregroundColor: Colors.white),
+      appBar: AppBar(
+        title: const Text('Nueva contraseña'),
+        backgroundColor: brandNavy,
+        foregroundColor: Colors.white,
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -60,13 +97,30 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             child: Container(
               width: 460,
               padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(28), boxShadow: const [BoxShadow(color: Color(0x1A0E2238), blurRadius: 30, offset: Offset(0, 15))]),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x1A0E2238),
+                    blurRadius: 30,
+                    offset: Offset(0, 15),
+                  ),
+                ],
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.lock_reset_rounded, size: 80, color: brandBlue),
+                  const Icon(
+                    Icons.lock_reset_rounded,
+                    size: 80,
+                    color: brandBlue,
+                  ),
                   const SizedBox(height: 16),
-                  const Text('Crea una nueva contraseña', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                  const Text(
+                    'Crea una nueva contraseña',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                  ),
                   const SizedBox(height: 24),
                   TextFormField(
                     controller: passwordCtrl,
@@ -74,12 +128,22 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     decoration: InputDecoration(
                       labelText: 'Nueva contraseña',
                       prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(icon: Icon(ocultar ? Icons.visibility_outlined : Icons.visibility_off_outlined), onPressed: () => setState(() => ocultar = !ocultar)),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          ocultar
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                        ),
+                        onPressed: () => setState(() => ocultar = !ocultar),
+                      ),
                     ),
                     validator: (v) {
-                      if (v == null || v.length < 8) return 'Mínimo 8 caracteres';
-                      if (!RegExp(r'[A-Z]').hasMatch(v)) return 'Falta una mayúscula';
-                      if (!RegExp(r'[0-9]').hasMatch(v)) return 'Falta un número';
+                      if (v == null || v.length < 8)
+                        return 'Mínimo 8 caracteres';
+                      if (!RegExp(r'[A-Z]').hasMatch(v))
+                        return 'Falta una mayúscula';
+                      if (!RegExp(r'[0-9]').hasMatch(v))
+                        return 'Falta un número';
                       return null;
                     },
                   ),
@@ -88,8 +152,16 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: cargando ? null : _cambiarPassword,
-                      style: ElevatedButton.styleFrom(backgroundColor: brandBlue, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
-                      child: cargando ? const CircularProgressIndicator(color: Colors.white) : const Text('Actualizar contraseña'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: brandBlue,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                      child: cargando
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text('Actualizar contraseña'),
                     ),
                   ),
                 ],

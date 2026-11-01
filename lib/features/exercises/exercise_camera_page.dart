@@ -207,6 +207,8 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
 
     try {
       final rotation = _rotationForImage(image);
+      // Tamaño de respaldo mientras llega la primera detección. Después se
+      // reemplaza por el tamaño real que reporta cada [Pose].
       _imageSize = detectionSize(
         width: image.width,
         height: image.height,
@@ -214,7 +216,6 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         maxDim: detectionMaxDim,
       );
 
-      final sw = Stopwatch()..start();
       final poses = await _poseDetector!.detectFromCameraImage(
         image,
         rotation: rotation,
@@ -222,7 +223,6 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         // camera_desktop entrega BGRA; el paquete asume RGBA salvo macOS.
         isBgra: Platform.isWindows,
       );
-      debugPrint('inferencia: ${sw.elapsedMilliseconds} ms');
       if (!mounted) return;
 
       final now = DateTime.now();
@@ -246,6 +246,14 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       }
 
       final pose = _bestPose(poses);
+      // El tamaño real del frame analizado es la fuente de verdad para
+      // normalizar los landmarks y ajustar el aspecto del overlay.
+      if (pose.imageWidth > 0 && pose.imageHeight > 0) {
+        _imageSize = Size(
+          pose.imageWidth.toDouble(),
+          pose.imageHeight.toDouble(),
+        );
+      }
       if (!pose.hasLandmarks) {
         _personVisible = false;
         _pts.clear();
@@ -261,7 +269,10 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
 
       _clock += dt;
       _personVisible = true;
-      _updatePoints(pose);
+      final imageSize = _imageSize;
+      if (imageSize != null) {
+        _updatePoints(pose, imageSize);
+      }
 
       // Si el ejercicio NO está corriendo y ya está "positioned",
       //    no hacemos setState cada frame (ahorra CPU)
@@ -319,14 +330,14 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     return pose.boundingBox.width * pose.boundingBox.height;
   }
 
-  void _updatePoints(Pose pose) {
+  void _updatePoints(Pose pose, Size imageSize) {
     for (final t in usedTypes) {
       final lm = pose.getLandmark(t);
       if (lm == null) {
         _pts.remove(t);
         continue;
       }
-      final n = normalizedPoint(lm, _imageSize);
+      final n = normalizedPoint(lm, imageSize);
       final prev = _pts[t];
       if (prev == null || prev.v < minVis || lm.visibility < minVis) {
         _pts[t] = BodyPoint(n.dx, n.dy, lm.visibility);
@@ -336,6 +347,14 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       final dx = n.dx - prev.x;
       final dy = n.dy - prev.y;
       final speed = math.sqrt(dx * dx + dy * dy);
+
+      // Un salto grande suele indicar que cambió la persona o el encuadre.
+      // Reiniciar el punto evita que el esqueleto quede "arrastrándose".
+      if (speed > smoothResetDistance) {
+        _pts[t] = BodyPoint(n.dx, n.dy, lm.visibility);
+        continue;
+      }
+
       final t01 =
           ((speed - smoothLowSpeed) / (smoothHighSpeed - smoothLowSpeed)).clamp(
             0.0,
@@ -1005,8 +1024,10 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
           fit: StackFit.expand,
           children: [
             CameraPreview(_cameraController!),
-            if (_personVisible && _pts.isNotEmpty)
-              CustomPaint(painter: PosePainter(_pts, _mirrorOverlay)),
+            if (_personVisible && _pts.isNotEmpty && frameSize != null)
+              CustomPaint(
+                painter: PosePainter(_pts, frameSize, _mirrorOverlay),
+              ),
           ],
         ),
       ),

@@ -16,27 +16,68 @@ class _RecoverPasswordPageState extends State<RecoverPasswordPage> {
 
   Future<void> _enviarEnlace() async {
     final correo = correoController.text.trim();
-    if (correo.isEmpty || !correo.contains('@')) return;
+    if (correo.isEmpty || !correo.contains('@')) {
+      _mostrarMensaje('Ingresa un correo válido', esError: true);
+      return;
+    }
+    if (cargando) return;
 
     setState(() => cargando = true);
-    final enviado = await AuthService.enviarCodigoVerificacion(correo);
+    final envio = await AuthService.enviarCodigoVerificacion(
+      correo,
+      tipo: 'recuperacion',
+    );
     if (!mounted) return;
     setState(() => cargando = false);
 
-    if (enviado) {
-      final verificado = await Navigator.push<bool>(context, MaterialPageRoute(
-        builder: (context) => VerificarCorreoPage(correo: correo),
-      ));
-      
-      // Si verificó el código, va a cambiar la contraseña
-      if (verificado == true && mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(
-          builder: (context) => ChangePasswordPage(correo: correo),
-        ));
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(backgroundColor: Color(0xFFCF3A3A), content: Text('Error al enviar el código')));
+    if (!envio.exito) {
+      _mostrarMensaje(envio.mensaje, esError: true);
+      return;
     }
+
+    if (envio.codigo != null) {
+      _mostrarMensaje(
+        'No se pudo enviar el correo. Tu código es ${envio.codigo}',
+        esError: true,
+      );
+    } else {
+      _mostrarMensaje(envio.mensaje);
+    }
+
+    final verificado = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VerificarCorreoPage(
+          correo: correo,
+          codigoInicial: envio.codigo,
+          tipo: 'recuperacion',
+        ),
+      ),
+    );
+
+    // Si verificó el código, va a cambiar la contraseña y devuelve el correo
+    // al login para que el usuario solo tenga que escribir la nueva clave.
+    if (verificado == true && mounted) {
+      final correoActualizado = await Navigator.push<String>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChangePasswordPage(correo: correo),
+        ),
+      );
+
+      if (correoActualizado != null && mounted) {
+        Navigator.pop(context, correoActualizado);
+      }
+    }
+  }
+
+  void _mostrarMensaje(String texto, {bool esError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: esError ? const Color(0xFFCF3A3A) : brandBlue,
+        content: Text(texto),
+      ),
+    );
   }
 
   @override
@@ -67,8 +108,11 @@ class _RecoverPasswordPageState extends State<RecoverPasswordPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.lock_reset_rounded,
-                    size: 80, color: brandBlue),
+                const Icon(
+                  Icons.lock_reset_rounded,
+                  size: 80,
+                  color: brandBlue,
+                ),
                 const SizedBox(height: 16),
                 const Text(
                   '¿Olvidaste tu contraseña?',
@@ -81,7 +125,7 @@ class _RecoverPasswordPageState extends State<RecoverPasswordPage> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Ingresa tu correo y te enviaremos un enlace para restablecerla.',
+                  'Ingresa tu correo y te enviaremos un código para restablecerla.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 15, color: brandMuted),
                 ),
@@ -98,7 +142,7 @@ class _RecoverPasswordPageState extends State<RecoverPasswordPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _enviarEnlace,
+                    onPressed: cargando ? null : _enviarEnlace,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: brandBlue,
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -106,13 +150,22 @@ class _RecoverPasswordPageState extends State<RecoverPasswordPage> {
                         borderRadius: BorderRadius.circular(18),
                       ),
                     ),
-                    child: const Text(
-                      'Enviar enlace',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    child: cargando
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.4,
+                            ),
+                          )
+                        : const Text(
+                            'Enviar código',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                   ),
                 ),
               ],
