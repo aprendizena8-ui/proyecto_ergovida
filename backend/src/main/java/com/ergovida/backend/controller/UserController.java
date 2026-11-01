@@ -41,7 +41,9 @@ public class UserController {
             if (userDetails.getRol() != null) user.setRol(userDetails.getRol());
             if (userDetails.getFotoPerfil() != null) user.setFotoPerfil(userDetails.getFotoPerfil());
             if (userDetails.getActivo() != null) user.setActivo(userDetails.getActivo());
-            
+            if (userDetails.getNotificaciones() != null) user.setNotificaciones(userDetails.getNotificaciones());
+            if (userDetails.getRecordatorios() != null) user.setRecordatorios(userDetails.getRecordatorios());
+
             User updatedUser = userRepository.save(user);
             return ResponseEntity.ok(updatedUser);
         }).orElse(ResponseEntity.notFound().build());

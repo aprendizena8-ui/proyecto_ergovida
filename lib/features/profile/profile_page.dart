@@ -10,6 +10,7 @@ import '../../data/services/auth_service.dart';
 import '../../data/services/estadisticas_service.dart';
 import '../../data/services/pausa_service.dart';
 import '../../data/services/profile_preferences.dart';
+import '../../data/services/reminder_service.dart';
 import '../../data/services/usuario_service.dart';
 import '../../main.dart';
 import '../../widgets/user_avatar.dart';
@@ -359,6 +360,12 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _actualizarPreferencias(ProfileData nuevo) async {
     setState(() => _perfil = nuevo);
     await ProfilePreferences.save(_usuario.id, nuevo);
+    await ReminderService.instance.refresh();
+    await ReminderService.instance.checkNow();
+    await _usuarioService.actualizarUsuario(_usuario.id, {
+      'notificaciones': nuevo.notificaciones,
+      'recordatorios': nuevo.recordatorios,
+    });
   }
 
   Future<void> _cambiarPassword() async {

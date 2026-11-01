@@ -69,11 +69,43 @@ const double wristTargetSec = 20; // segundos de movimiento
 const int visualCycleSec = 30; // 20 s mirando lejos + 10 s ojos cerrados
 const int visualFarSec = 20;
 
+// Elevación de brazos
+const int armsUpTargetReps = 8; // repeticiones completas
+const double armsUpHeadMargin = 0.05; // altura extra sobre la cabeza
+const double armsUpDownMargin = 0.15; // debajo de los hombros para cerrar rep
+
+// Flexión de codos
+const double curlBentDeg = 75; // codo claramente flexionado
+const double curlExtendedDeg = 145; // codo casi extendido
+const int curlTargetReps = 10;
+
+// Apertura de pecho
+const double chestSpreadMin = 1.9; // separación de manos / ancho de hombros
+const double chestSpreadRelease = 1.5; // volver a esta separación para repetir
+const double chestHoldSec = 5; // segundos manteniendo el pecho abierto
+const int chestTargetReps = 4;
+
+// Inclinación lateral de tronco
+const double trunkKeepDeg = 7; // inclinación mínima para mantener
+const double trunkCenterDeg = 6; // ángulo para considerar que volvió al centro
+const double trunkHoldSec = 5; // segundos por lado
+const int trunkTargetSides = 6; // lados completados
+
 // ============================================================
 //  Tipos auxiliares
 // ============================================================
 
-enum ExerciseKind { neck, shoulders, wrists, visual, other }
+enum ExerciseKind {
+  neck,
+  shoulders,
+  wrists,
+  visual,
+  armsUp,
+  curls,
+  chest,
+  sideBend,
+  other,
+}
 
 /// Punto del cuerpo ya normalizado (0 a 1) y suavizado.
 class BodyPoint {

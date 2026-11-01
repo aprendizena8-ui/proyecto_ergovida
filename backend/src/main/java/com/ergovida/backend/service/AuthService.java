@@ -61,6 +61,8 @@ public class AuthService {
         user.setPassword(encoder.encode(user.getPassword()));
         user.setRol("USUARIO");
         user.setActivo(true);
+        if (user.getNotificaciones() == null) user.setNotificaciones(true);
+        if (user.getRecordatorios() == null) user.setRecordatorios(true);
 
         return repository.save(user);
     }

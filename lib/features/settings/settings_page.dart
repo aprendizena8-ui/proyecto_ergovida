@@ -3,6 +3,8 @@ import '../../main.dart';
 import '../../data/models/user_model.dart';
 import '../../data/services/horario_service.dart';
 import '../../data/services/profile_preferences.dart';
+import '../../data/services/reminder_service.dart';
+import '../../data/services/usuario_service.dart';
 
 class SettingsPage extends StatefulWidget {
   final AppThemeController? themeController;
@@ -54,6 +56,12 @@ class _SettingsPageState extends State<SettingsPage> {
         recordatorios: recordatorios,
       ),
     );
+    await ReminderService.instance.refresh();
+    await ReminderService.instance.checkNow();
+    await UsuarioService().actualizarUsuario(usuario.id, {
+      'notificaciones': notificaciones,
+      'recordatorios': recordatorios,
+    });
   }
 
   Future<void> _cargarHorarios() async {
@@ -102,10 +110,14 @@ class _SettingsPageState extends State<SettingsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: brandBlue,
-          content: Text('Recordatorio creado a las $horaStr'),
+          content: Text(
+            'Recordatorio creado a las $horaStr. Te avisaremos en la app y por correo.',
+          ),
         ),
       );
       await _cargarHorarios();
+      await ReminderService.instance.refresh();
+      await ReminderService.instance.checkNow();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -146,7 +158,8 @@ class _SettingsPageState extends State<SettingsPage> {
           content: Text('Recordatorio eliminado'),
         ),
       );
-      _cargarHorarios();
+      await _cargarHorarios();
+      await ReminderService.instance.refresh();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -185,9 +198,7 @@ class _SettingsPageState extends State<SettingsPage> {
             color: Colors.transparent,
             child: SwitchListTile(
               title: const Text('Recordatorios activos'),
-              subtitle: const Text(
-                'Activar o desactivar todos los recordatorios',
-              ),
+              subtitle: const Text('Avisos en la app y correo electrónico'),
               value: recordatorios,
               onChanged: (v) {
                 setState(() => recordatorios = v);
@@ -262,6 +273,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: ListTile(
                   leading: const Icon(Icons.alarm_on, color: brandBlue),
                   title: Text('Recordatorio a las $horaCorta'),
+                  subtitle: const Text('Aviso en la app y por correo'),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
                     onPressed: () => _eliminarHorario(h['id'], horaCorta),

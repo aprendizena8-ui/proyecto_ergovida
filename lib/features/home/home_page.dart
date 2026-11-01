@@ -4,6 +4,7 @@ import '../../data/models/user_model.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/estadisticas_service.dart';
 import '../../data/services/pausa_service.dart';
+import '../../data/services/reminder_service.dart';
 import '../../main.dart';
 import '../../widgets/ergovida_logo.dart';
 import '../../widgets/user_avatar.dart';
@@ -25,7 +26,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   final EstadisticasService _estadisticasService = EstadisticasService();
   final PausaService _pausaService = PausaService();
 
@@ -43,8 +44,29 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _usuario = widget.usuario ?? AuthService.currentUser;
+    final usuario = _usuario;
+    if (usuario != null && usuario.id > 0) {
+      ReminderService.instance.start(usuario);
+    }
     _cargarResumen();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    ReminderService.instance.stop();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ReminderService.instance.refresh().then((_) {
+        ReminderService.instance.checkNow();
+      });
+    }
   }
 
   Future<void> _cargarResumen() async {
@@ -124,6 +146,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _cerrarSesion() async {
+    await ReminderService.instance.stop();
     await AuthService.clearSession();
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(

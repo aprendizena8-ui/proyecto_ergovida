@@ -23,6 +23,10 @@ public class User {
 
     private Boolean activo;
 
+    private Boolean notificaciones = true;
+
+    private Boolean recordatorios = true;
+
     public User() {
     }
 
@@ -80,5 +84,21 @@ public class User {
 
     public void setActivo(Boolean activo) {
         this.activo=activo;
+    }
+
+    public Boolean getNotificaciones() {
+        return notificaciones;
+    }
+
+    public void setNotificaciones(Boolean notificaciones) {
+        this.notificaciones=notificaciones;
+    }
+
+    public Boolean getRecordatorios() {
+        return recordatorios;
+    }
+
+    public void setRecordatorios(Boolean recordatorios) {
+        this.recordatorios=recordatorios;
     }
 }

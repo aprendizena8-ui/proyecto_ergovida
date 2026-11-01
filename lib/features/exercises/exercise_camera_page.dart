@@ -104,6 +104,21 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   final MotionSeries _rightWristX = MotionSeries(2.0);
   final MotionSeries _rightWristY = MotionSeries(2.0);
 
+  // Elevación de brazos
+  bool _armsRaised = false;
+
+  // Flexión de codos
+  bool _curlBent = false;
+
+  // Apertura de pecho
+  bool _chestOpen = false;
+  bool _chestRest = false;
+  double _chestHold = 0;
+
+  // Inclinación lateral de tronco
+  final List<double> _trunkCalib = [];
+  double? _baseTrunkAngle;
+
   DateTime? _lastDetection;
   // Más muestras cuando el ejercicio está activo; menos en espera para ahorrar CPU.
   Duration get _detectionInterval => _isRunning
@@ -132,9 +147,6 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
 
   Future<void> _initCameraAndDetector() async {
     try {
-      // Reutilizar el detector global (mucho más rápido)
-      _poseDetector = await getPoseDetector();
-
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
         if (!mounted) return;
@@ -172,7 +184,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       setState(() {
         _isCameraReady = true;
         if (_kind != ExerciseKind.visual) {
-          _feedback = "Cámara lista. Colócate frente a ella";
+          _feedback = "Cámara lista. Cargando detector de movimiento...";
           _feedbackColor = Colors.green;
         }
       });
@@ -180,6 +192,27 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       if (!mounted) return;
       setState(() {
         _feedback = "Error al iniciar cámara: $e";
+        _feedbackColor = Colors.red;
+      });
+      return;
+    }
+
+    if (_kind == ExerciseKind.visual) return;
+
+    try {
+      // Reutilizar el detector global (mucho más rápido)
+      _poseDetector = await getPoseDetector();
+      if (!mounted) return;
+      setState(() {
+        if (!_isRunning) {
+          _feedback = "Detector listo. Colócate frente a la cámara";
+          _feedbackColor = Colors.green;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _feedback = "No se pudo cargar el detector de movimiento: $e";
         _feedbackColor = Colors.red;
       });
     }
@@ -456,12 +489,40 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     if (ls == null || rs == null || head == null) return false;
 
     // Los hombros deben verse claramente más anchos que la cabeza.
-    return _dist(ls, rs) >= _dist(head[0], head[1]) * 1.25;
+    final torsoOk = _dist(ls, rs) >= _dist(head[0], head[1]) * 1.25;
+    if (!torsoOk) return false;
+
+    switch (_kind) {
+      case ExerciseKind.armsUp:
+      case ExerciseKind.chest:
+        return _p(PoseLandmarkType.leftWrist) != null &&
+            _p(PoseLandmarkType.rightWrist) != null;
+      case ExerciseKind.curls:
+        final left =
+            _p(PoseLandmarkType.leftElbow) != null &&
+            _p(PoseLandmarkType.leftWrist) != null;
+        final right =
+            _p(PoseLandmarkType.rightElbow) != null &&
+            _p(PoseLandmarkType.rightWrist) != null;
+        return left || right;
+      default:
+        return true;
+    }
   }
 
-  String get _positionHint => _kind == ExerciseKind.wrists
-      ? 'Levanta los antebrazos frente al pecho y aléjate hasta que se vean tus codos y manos'
-      : 'Aléjate un poco: deben verse tu cabeza, tus hombros completos y tus codos';
+  String get _positionHint {
+    switch (_kind) {
+      case ExerciseKind.wrists:
+        return 'Levanta los antebrazos frente al pecho y aléjate hasta que se vean tus codos y manos';
+      case ExerciseKind.armsUp:
+      case ExerciseKind.chest:
+        return 'Aléjate un poco: deben verse tu cabeza, hombros, codos y ambas manos';
+      case ExerciseKind.curls:
+        return 'Muestra tus hombros, codos y manos; mantén los brazos dentro del encuadre';
+      default:
+        return 'Aléjate un poco: deben verse tu cabeza, tus hombros completos y tus codos';
+    }
+  }
 
   // ------------------------------------------------------------
   //  Evaluación por ejercicio
@@ -514,6 +575,18 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         break;
       case ExerciseKind.wrists:
         _evalWrists(dt);
+        break;
+      case ExerciseKind.armsUp:
+        _evalArmsUp(dt);
+        break;
+      case ExerciseKind.curls:
+        _evalCurls(dt);
+        break;
+      case ExerciseKind.chest:
+        _evalChest(dt);
+        break;
+      case ExerciseKind.sideBend:
+        _evalSideBend(dt);
         break;
       default:
         break;
@@ -824,6 +897,289 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     }
   }
 
+  // ---------- Elevación de brazos ----------
+  void _evalArmsUp(double dt) {
+    final lw = _p(PoseLandmarkType.leftWrist);
+    final rw = _p(PoseLandmarkType.rightWrist);
+    final ls = _p(PoseLandmarkType.leftShoulder);
+    final rs = _p(PoseLandmarkType.rightShoulder);
+    final head = _headAnchor();
+    if (lw == null || rw == null || ls == null || rs == null || head == null) {
+      return;
+    }
+
+    final sw = _bodyScale;
+    final shY = (ls.y + rs.y) / 2;
+    final above =
+        lw.y < head.y - sw * armsUpHeadMargin &&
+        rw.y < head.y - sw * armsUpHeadMargin;
+    final below =
+        lw.y > shY + sw * armsUpDownMargin &&
+        rw.y > shY + sw * armsUpDownMargin;
+
+    _progressLabel = 'Elevaciones: $_reps / $armsUpTargetReps';
+    _progress = (_reps / armsUpTargetReps).clamp(0.0, 1.0);
+
+    if (_armsRaised) {
+      if (below) {
+        _armsRaised = false;
+        _reps++;
+        _progressLabel = 'Elevaciones: $_reps / $armsUpTargetReps';
+        _progress = (_reps / armsUpTargetReps).clamp(0.0, 1.0);
+        if (_reps >= armsUpTargetReps) {
+          _finish(timeUp: false);
+          return;
+        }
+        _setFeedback('✅ Repetición completada. Sube otra vez', Colors.green);
+      } else {
+        _setFeedback('Ahora baja los brazos con control', Colors.green);
+      }
+      return;
+    }
+
+    if (above) {
+      _armsRaised = true;
+      _setFeedback('¡Arriba! Baja los brazos lentamente', Colors.green);
+    } else {
+      _setFeedback(
+        'Sube ambos brazos estirados por encima de la cabeza',
+        Colors.orange,
+      );
+    }
+  }
+
+  // ---------- Flexión de codos ----------
+  double? _elbowAngle(
+    PoseLandmarkType shoulder,
+    PoseLandmarkType elbow,
+    PoseLandmarkType wrist,
+  ) {
+    final ps = _p(shoulder);
+    final pe = _p(elbow);
+    final pw = _p(wrist);
+    if (ps == null || pe == null || pw == null) return null;
+
+    final a = _u(pe) - _u(ps);
+    final b = _u(pe) - _u(pw);
+    final denom = a.distance * b.distance;
+    if (denom <= 0) return null;
+
+    final cos = ((a.dx * b.dx + a.dy * b.dy) / denom).clamp(-1.0, 1.0);
+    return math.acos(cos) * 180 / math.pi;
+  }
+
+  void _evalCurls(double dt) {
+    final left = _elbowAngle(
+      PoseLandmarkType.leftShoulder,
+      PoseLandmarkType.leftElbow,
+      PoseLandmarkType.leftWrist,
+    );
+    final right = _elbowAngle(
+      PoseLandmarkType.rightShoulder,
+      PoseLandmarkType.rightElbow,
+      PoseLandmarkType.rightWrist,
+    );
+    final angles = [left, right].whereType<double>().toList();
+    if (angles.isEmpty) return;
+
+    final angle = angles.reduce((a, b) => a + b) / angles.length;
+    final bent = angle <= curlBentDeg;
+    final extended = angle >= curlExtendedDeg;
+
+    _progressLabel = 'Flexiones: $_reps / $curlTargetReps';
+    _progress = (_reps / curlTargetReps).clamp(0.0, 1.0);
+
+    if (_curlBent) {
+      if (extended) {
+        _curlBent = false;
+        _reps++;
+        _progressLabel = 'Flexiones: $_reps / $curlTargetReps';
+        _progress = (_reps / curlTargetReps).clamp(0.0, 1.0);
+        if (_reps >= curlTargetReps) {
+          _finish(timeUp: false);
+          return;
+        }
+        _setFeedback(
+          '✅ Repetición completada. Flexiona otra vez',
+          Colors.green,
+        );
+      } else {
+        _setFeedback('Extiende los brazos lentamente', Colors.green);
+      }
+      return;
+    }
+
+    if (bent) {
+      _curlBent = true;
+      _setFeedback('Ahora extiende los brazos con control', Colors.green);
+    } else {
+      _setFeedback(
+        'Flexiona los codos llevando las manos hacia los hombros',
+        Colors.orange,
+      );
+    }
+  }
+
+  // ---------- Apertura de pecho ----------
+  void _evalChest(double dt) {
+    final lw = _p(PoseLandmarkType.leftWrist);
+    final rw = _p(PoseLandmarkType.rightWrist);
+    final ls = _p(PoseLandmarkType.leftShoulder);
+    final rs = _p(PoseLandmarkType.rightShoulder);
+    if (lw == null || rw == null || ls == null || rs == null) return;
+
+    final sw = _bodyScale;
+    final shY = (ls.y + rs.y) / 2;
+    final spread = (_u(lw).dx - _u(rw).dx).abs() / sw;
+    final heightOk = (lw.y - shY).abs() <= sw && (rw.y - shY).abs() <= sw;
+    final open = spread >= chestSpreadMin && heightOk;
+
+    _progressLabel = 'Aperturas: $_reps / $chestTargetReps';
+    _progress = (_reps / chestTargetReps).clamp(0.0, 1.0);
+
+    if (_chestRest) {
+      if (spread < chestSpreadRelease) _chestRest = false;
+      _setFeedback('Baja los brazos y relaja los hombros', Colors.orange);
+      return;
+    }
+
+    if (!_chestOpen) {
+      if (open) {
+        _chestOpen = true;
+        _chestHold = 0;
+        _setFeedback(
+          'Mantén el pecho abierto y los omóplatos juntos',
+          Colors.green,
+        );
+      } else {
+        _setFeedback(
+          'Abre ambos brazos a la altura de los hombros',
+          Colors.orange,
+        );
+      }
+      return;
+    }
+
+    if (!open) {
+      _chestOpen = false;
+      _chestHold = 0;
+      _setFeedback('No cierres los brazos: mantén la apertura', Colors.orange);
+      return;
+    }
+
+    _chestHold += dt;
+    if (_chestHold >= chestHoldSec) {
+      _chestOpen = false;
+      _chestHold = 0;
+      _chestRest = true;
+      _reps++;
+      _progressLabel = 'Aperturas: $_reps / $chestTargetReps';
+      _progress = (_reps / chestTargetReps).clamp(0.0, 1.0);
+      if (_reps >= chestTargetReps) {
+        _finish(timeUp: false);
+        return;
+      }
+      _setFeedback('✅ Apertura completada. Baja los brazos', Colors.green);
+    } else {
+      final left = (chestHoldSec - _chestHold).ceil();
+      _setFeedback('✅ Buen estiramiento. Mantén $left s', Colors.green);
+    }
+  }
+
+  // ---------- Inclinación lateral de tronco ----------
+  void _evalSideBend(double dt) {
+    final ls = _p(PoseLandmarkType.leftShoulder);
+    final rs = _p(PoseLandmarkType.rightShoulder);
+    if (ls == null || rs == null) return;
+
+    final a = ls.x <= rs.x ? ls : rs;
+    final b = ls.x <= rs.x ? rs : ls;
+    final ua = _u(a);
+    final ub = _u(b);
+    final angle = math.atan2(ub.dy - ua.dy, ub.dx - ua.dx) * 180 / math.pi;
+
+    if (_baseTrunkAngle == null) {
+      _trunkCalib.add(angle);
+      if (_trunkCalib.length >= 12) {
+        final sorted = [..._trunkCalib]..sort();
+        _baseTrunkAngle = sorted[sorted.length ~/ 2];
+      }
+      _progressLabel = 'Lados completados: $_reps / $trunkTargetSides';
+      _progress = (_reps / trunkTargetSides).clamp(0.0, 1.0);
+      _setFeedback(
+        'Siéntate recto y quédate quieto un momento... midiendo tu postura',
+        Colors.orange,
+      );
+      return;
+    }
+
+    final rel = angle - _baseTrunkAngle!;
+    final absA = rel.abs();
+    final side = rel > 0 ? 1 : -1;
+
+    _progressLabel = 'Lados completados: $_reps / $trunkTargetSides';
+    _progress = (_reps / trunkTargetSides).clamp(0.0, 1.0);
+
+    if (_needCenter) {
+      if (absA < trunkCenterDeg) {
+        _needCenter = false;
+        _setFeedback(
+          'Muy bien. Ahora inclina hacia el otro lado',
+          Colors.green,
+        );
+      } else {
+        _setFeedback('Regresa el tronco al centro', Colors.orange);
+      }
+      return;
+    }
+
+    if (absA < trunkKeepDeg) {
+      _holdSide = 0;
+      _holdTime = 0;
+      _setFeedback('Inclina suavemente el tronco hacia un lado', Colors.orange);
+      return;
+    }
+
+    if (absA > 45) {
+      _setFeedback(
+        'Inclínate con suavidad, sin forzar la espalda',
+        Colors.orange,
+      );
+      return;
+    }
+
+    if (side == _lastDoneSide) {
+      _holdTime = 0;
+      _holdSide = 0;
+      _setFeedback('Ahora inclínate hacia el otro lado', Colors.orange);
+      return;
+    }
+
+    if (_holdSide != side) {
+      _holdSide = side;
+      _holdTime = 0;
+    }
+
+    _holdTime += dt;
+    if (_holdTime >= trunkHoldSec) {
+      _reps++;
+      _lastDoneSide = side;
+      _holdSide = 0;
+      _holdTime = 0;
+      _needCenter = true;
+      _progressLabel = 'Lados completados: $_reps / $trunkTargetSides';
+      _progress = (_reps / trunkTargetSides).clamp(0.0, 1.0);
+      if (_reps >= trunkTargetSides) {
+        _finish(timeUp: false);
+        return;
+      }
+      _setFeedback('¡Lado completado! Regresa al centro', Colors.green);
+    } else {
+      final left = (trunkHoldSec - _holdTime).ceil();
+      _setFeedback('✅ Buen estiramiento. Mantén $left s', Colors.green);
+    }
+  }
+
   // ---------- Descanso visual (guiado por tiempo) ----------
   void _updateVisual() {
     final elapsed = _totalSeconds - _remainingSeconds;
@@ -872,6 +1228,13 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     _leftWristY.clear();
     _rightWristX.clear();
     _rightWristY.clear();
+    _armsRaised = false;
+    _curlBent = false;
+    _chestOpen = false;
+    _chestRest = false;
+    _chestHold = 0;
+    _trunkCalib.clear();
+    _baseTrunkAngle = null;
     _progress = 0;
     _progressLabel = '';
   }
@@ -916,6 +1279,14 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
             : 'Encogimientos: $_reps de $shrugTarget.';
       case ExerciseKind.wrists:
         return 'Movimiento detectado: ${_motionSeconds.floor()} s de ${wristTargetSec.toInt()} s.';
+      case ExerciseKind.armsUp:
+        return 'Elevaciones completadas: $_reps de $armsUpTargetReps.';
+      case ExerciseKind.curls:
+        return 'Flexiones completadas: $_reps de $curlTargetReps.';
+      case ExerciseKind.chest:
+        return 'Aperturas completadas: $_reps de $chestTargetReps.';
+      case ExerciseKind.sideBend:
+        return 'Lados completados: $_reps de $trunkTargetSides.';
       case ExerciseKind.visual:
         return 'Completaste tu pausa visual.';
       case ExerciseKind.other:

@@ -1,6 +1,7 @@
 package com.ergovida.backend.model;
 
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
@@ -16,6 +17,9 @@ public class Horario {
 
     private LocalTime hora;
 
+    @Column(name = "ultimo_envio")
+    private LocalDate ultimoEnvio;
+
     public Horario() {}
 
     public Long getId() { return id; }
@@ -26,4 +30,7 @@ public class Horario {
 
     public LocalTime getHora() { return hora; }
     public void setHora(LocalTime hora) { this.hora = hora; }
+
+    public LocalDate getUltimoEnvio() { return ultimoEnvio; }
+    public void setUltimoEnvio(LocalDate ultimoEnvio) { this.ultimoEnvio = ultimoEnvio; }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data/services/auth_service.dart';
+import 'data/services/reminder_service.dart';
 import 'features/auth/login_page.dart';
 import 'features/home/home_page.dart';
 
@@ -18,9 +19,9 @@ class AppThemeController extends ChangeNotifier {
   static const String _themeKey = 'theme_dark_mode';
 
   static final AppThemeController instance = AppThemeController._internal();
-  
+
   factory AppThemeController() => instance;
-  
+
   AppThemeController._internal();
 
   ThemeMode _themeMode = ThemeMode.light;
@@ -30,7 +31,9 @@ class AppThemeController extends ChangeNotifier {
 
   Future<void> loadTheme() async {
     final prefs = await SharedPreferences.getInstance();
-    _themeMode = prefs.getBool(_themeKey) == true ? ThemeMode.dark : ThemeMode.light;
+    _themeMode = prefs.getBool(_themeKey) == true
+        ? ThemeMode.dark
+        : ThemeMode.light;
     notifyListeners();
   }
 
@@ -74,7 +77,10 @@ class _MyAppState extends State<MyApp> {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: const Color(0xFFF7FAFC),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: Color(0xFFD9E4EF)),
@@ -98,10 +104,7 @@ class _MyAppState extends State<MyApp> {
             borderRadius: BorderRadius.circular(18),
           ),
           padding: const EdgeInsets.symmetric(vertical: 18),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
       ),
     );
@@ -124,7 +127,10 @@ class _MyAppState extends State<MyApp> {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: const Color(0xFF1E293B),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: Color(0xFF334155)),
@@ -148,10 +154,7 @@ class _MyAppState extends State<MyApp> {
             borderRadius: BorderRadius.circular(18),
           ),
           padding: const EdgeInsets.symmetric(vertical: 18),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
       ),
     );
@@ -171,6 +174,7 @@ class _MyAppState extends State<MyApp> {
         return MaterialApp(
           title: 'ErgoVida',
           debugShowCheckedModeBanner: false,
+          scaffoldMessengerKey: ReminderService.messengerKey,
           scrollBehavior: const MaterialScrollBehavior().copyWith(
             scrollbars: false,
           ),

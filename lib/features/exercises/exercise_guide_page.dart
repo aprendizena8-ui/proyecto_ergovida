@@ -108,6 +108,42 @@ class _ExerciseGuidePageState extends State<ExerciseGuidePage> {
           "Entrelaza los dedos y estira suavemente hacia adelante.",
           "Sacude las manos suavemente al terminar.",
         ];
+      case "Elevación de Brazos":
+        return [
+          "Siéntate derecho y deja los brazos a los lados.",
+          "Sube ambos brazos estirados por encima de la cabeza.",
+          "Mantén la espalda recta y los hombros relajados.",
+          "Baja los brazos con control hasta pasarlos por debajo de los hombros.",
+          "Completa 8 elevaciones sin arquear la espalda.",
+          "Respira de forma constante durante el ejercicio.",
+        ];
+      case "Flexión de Codos":
+        return [
+          "Siéntate derecho con los brazos junto al cuerpo.",
+          "Mantén los codos cerca del torso y visibles para la cámara.",
+          "Lleva ambas manos hacia los hombros flexionando los codos.",
+          "Haz una pequeña pausa arriba sin mover los hombros.",
+          "Extiende los brazos lentamente para completar la repetición.",
+          "Completa 10 repeticiones con control.",
+        ];
+      case "Apertura de Pecho":
+        return [
+          "Siéntate derecho y separa los brazos del cuerpo.",
+          "Abre los brazos hacia los lados a la altura de los hombros.",
+          "Junta ligeramente los omóplatos y saca el pecho.",
+          "Mantén la apertura 5 segundos sin arquear la espalda.",
+          "Baja los brazos y relaja antes de repetir.",
+          "Completa 4 aperturas controladas.",
+        ];
+      case "Inclinación Lateral de Tronco":
+        return [
+          "Siéntate derecho con los hombros y la cabeza visibles.",
+          "Quédate recto un momento para medir tu postura.",
+          "Inclina el tronco suavemente hacia un lado.",
+          "Mantén el estiramiento 5 segundos sin mover las caderas.",
+          "Vuelve al centro y repite hacia el otro lado.",
+          "Completa 3 inclinaciones por cada lado.",
+        ];
       default:
         return ["Sigue las indicaciones del ejercicio."];
     }
@@ -122,10 +158,7 @@ class _ExerciseGuidePageState extends State<ExerciseGuidePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.nombre),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text(widget.nombre), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -137,30 +170,20 @@ class _ExerciseGuidePageState extends State<ExerciseGuidePage> {
                 color: Colors.green.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                widget.icono,
-                size: 80,
-                color: Colors.green,
-              ),
+              child: Icon(widget.icono, size: 80, color: Colors.green),
             ),
             const SizedBox(height: 20),
 
             // Nombre
             Text(
               widget.nombre,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               "Duración: ${widget.duracion}",
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
             const SizedBox(height: 30),
 
@@ -196,7 +219,10 @@ class _ExerciseGuidePageState extends State<ExerciseGuidePage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),

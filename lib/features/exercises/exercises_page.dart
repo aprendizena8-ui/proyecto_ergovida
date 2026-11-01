@@ -73,6 +73,50 @@ class _ExercisesPageState extends State<ExercisesPage> {
       instrucciones:
           'Gira las muñecas con suavidad y mantén codos flexionados.',
     ),
+    _EjercicioDef(
+      nombre: 'Elevación de Brazos',
+      duracionMin: 2,
+      categoria: 'Brazos',
+      icono: Icons.arrow_upward_rounded,
+      color: brandBlue,
+      descripcion:
+          'Moviliza hombros y brazos con elevaciones completas por encima de la cabeza.',
+      instrucciones:
+          'Sube ambos brazos estirados y bájalos con control, sin arquear la espalda.',
+    ),
+    _EjercicioDef(
+      nombre: 'Flexión de Codos',
+      duracionMin: 2,
+      categoria: 'Brazos',
+      icono: Icons.fitness_center_rounded,
+      color: brandNavy,
+      descripcion:
+          'Activa brazos y antebrazos con flexiones de codo controladas junto al cuerpo.',
+      instrucciones:
+          'Lleva las manos hacia los hombros y extiende los brazos sin separar los codos.',
+    ),
+    _EjercicioDef(
+      nombre: 'Apertura de Pecho',
+      duracionMin: 3,
+      categoria: 'Espalda',
+      icono: Icons.open_in_full_rounded,
+      color: brandTeal,
+      descripcion:
+          'Contrarresta la postura encorvada abriendo el pecho y juntando los omóplatos.',
+      instrucciones:
+          'Abre los brazos a la altura de los hombros y mantén la apertura unos segundos.',
+    ),
+    _EjercicioDef(
+      nombre: 'Inclinación Lateral de Tronco',
+      duracionMin: 3,
+      categoria: 'Espalda',
+      icono: Icons.swap_horiz_rounded,
+      color: brandCyan,
+      descripcion:
+          'Estira la espalda y los costados con inclinaciones laterales suaves del tronco.',
+      instrucciones:
+          'Inclina el tronco hacia un lado sin mover las caderas, mantén y cambia de lado.',
+    ),
   ];
 
   @override
@@ -137,10 +181,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
 
   Future<void> _iniciar(_EjercicioItem ejercicio) async {
     if (_usuarioId <= 0) {
-      _mensaje(
-        'Inicia sesión para registrar tus pausas.',
-        ok: false,
-      );
+      _mensaje('Inicia sesión para registrar tus pausas.', ok: false);
       return;
     }
     if (ejercicio.id <= 0) {
@@ -345,10 +386,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
               style: TextStyle(color: brandNavy, fontSize: 13),
             ),
           ),
-          TextButton(
-            onPressed: _cargar,
-            child: const Text('Reintentar'),
-          ),
+          TextButton(onPressed: _cargar, child: const Text('Reintentar')),
         ],
       ),
     );
@@ -474,7 +512,11 @@ class _ExercisesPageState extends State<ExercisesPage> {
                       value: 'eliminar',
                       child: Row(
                         children: [
-                          Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                          Icon(
+                            Icons.delete_outline,
+                            size: 18,
+                            color: Colors.red,
+                          ),
                           SizedBox(width: 8),
                           Text('Eliminar', style: TextStyle(color: Colors.red)),
                         ],
@@ -699,13 +741,14 @@ class _EjercicioItem {
   }) {
     final nombre = (def?.nombre ?? data['nombre'] ?? 'Ejercicio').toString();
     final minutos = _int(data['duracion']) ?? def?.duracionMin ?? 2;
-    final categoria =
-        (def?.categoria ?? data['categoria'] ?? 'General').toString();
-    final color = def?.color ?? _colorPara(categoria);
-    final descripcion = (data['descripcion'] ??
-            def?.descripcion ??
-            'Ejercicio de pausa activa para tu bienestar laboral.')
+    final categoria = (def?.categoria ?? data['categoria'] ?? 'General')
         .toString();
+    final color = def?.color ?? _colorPara(categoria);
+    final descripcion =
+        (data['descripcion'] ??
+                def?.descripcion ??
+                'Ejercicio de pausa activa para tu bienestar laboral.')
+            .toString();
 
     return _EjercicioItem(
       id: _int(data['id']) ?? 0,
@@ -736,6 +779,12 @@ class _EjercicioItem {
     if (n.contains('muñeca') || n.contains('muneca') || n.contains('mano')) {
       return Icons.pan_tool_rounded;
     }
+    if (n.contains('brazo')) return Icons.arrow_upward_rounded;
+    if (n.contains('codo')) return Icons.fitness_center_rounded;
+    if (n.contains('pecho')) return Icons.open_in_full_rounded;
+    if (n.contains('tronco') || n.contains('lateral')) {
+      return Icons.swap_horiz_rounded;
+    }
     return Icons.self_improvement_rounded;
   }
 
@@ -749,6 +798,8 @@ class _EjercicioItem {
     if (c.contains('muñeca') || c.contains('muneca')) {
       return brandCyan;
     }
+    if (c.contains('brazo')) return brandBlue;
+    if (c.contains('espalda')) return brandTeal;
     return brandBlue;
   }
 }
