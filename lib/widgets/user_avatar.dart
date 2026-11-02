@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../data/models/user_model.dart';
+import 'avatar_badge.dart';
 
 class UserAvatar extends StatelessWidget {
   final UserModel? usuario;
@@ -43,43 +44,42 @@ class UserAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = radius * 2;
-    final bg =
-        backgroundColor ?? Theme.of(context).colorScheme.primaryContainer;
-    final fg =
-        foregroundColor ?? Theme.of(context).colorScheme.onPrimaryContainer;
+    final provider = _photoProvider();
 
-    final fallback = ColoredBox(
-      color: bg,
-      child: Center(
-        child: Text(
-          usuario?.inicial ?? '?',
-          style: TextStyle(
-            color: fg,
-            fontWeight: FontWeight.w800,
-            fontSize: radius * 0.75,
+    if (provider != null) {
+      final avatar = SizedBox(
+        width: size,
+        height: size,
+        child: ClipOval(
+          child: Image(
+            image: provider,
+            fit: BoxFit.cover,
+            width: size,
+            height: size,
+            errorBuilder: (context, error, stackTrace) =>
+                AvatarBadge(avatarId: usuario?.avatar, size: size),
           ),
         ),
-      ),
-    );
+      );
 
-    final provider = _photoProvider();
-    final avatar = SizedBox(
-      width: size,
-      height: size,
-      child: ClipOval(
-        child: provider == null
-            ? fallback
-            : Image(
-                image: provider,
-                fit: BoxFit.cover,
-                width: size,
-                height: size,
-                errorBuilder: (context, error, stackTrace) => fallback,
-              ),
-      ),
-    );
+      if (ringWidth <= 0 && ringColor == null) return avatar;
 
-    if (ringWidth <= 0 && ringColor == null) return avatar;
+      return Container(
+        padding: EdgeInsets.all(ringWidth),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: ringColor ?? Theme.of(context).colorScheme.primary,
+            width: ringWidth,
+          ),
+        ),
+        child: avatar,
+      );
+    }
+
+    final avatarBadge = AvatarBadge(avatarId: usuario?.avatar, size: size);
+
+    if (ringWidth <= 0 && ringColor == null) return avatarBadge;
 
     return Container(
       padding: EdgeInsets.all(ringWidth),
@@ -90,7 +90,7 @@ class UserAvatar extends StatelessWidget {
           width: ringWidth,
         ),
       ),
-      child: avatar,
+      child: avatarBadge,
     );
   }
 }

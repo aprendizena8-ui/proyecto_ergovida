@@ -21,11 +21,16 @@ public class User {
 
     private String fotoPerfil;
 
+    private String avatar;
+
     private Boolean activo;
 
     private Boolean notificaciones = true;
 
     private Boolean recordatorios = true;
+
+    @Column(name = "recordatorios_correo")
+    private Boolean recordatoriosCorreo = true;
 
     public User() {
     }
@@ -78,6 +83,14 @@ public class User {
         this.fotoPerfil=fotoPerfil;
     }
 
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar=avatar;
+    }
+
     public Boolean getActivo() {
         return activo;
     }
@@ -100,5 +113,13 @@ public class User {
 
     public void setRecordatorios(Boolean recordatorios) {
         this.recordatorios=recordatorios;
+    }
+
+    public Boolean getRecordatoriosCorreo() {
+        return recordatoriosCorreo;
+    }
+
+    public void setRecordatoriosCorreo(Boolean recordatoriosCorreo) {
+        this.recordatoriosCorreo=recordatoriosCorreo;
     }
 }

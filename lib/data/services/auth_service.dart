@@ -13,6 +13,7 @@ class AuthService {
   static const String _sessionNameKey = 'session_user_name';
   static const String _sessionRoleKey = 'session_user_role';
   static const String _sessionPhotoKey = 'session_user_photo';
+  static const String _sessionAvatarKey = 'session_user_avatar';
 
   static String nombreGuardado = '';
   static String correoGuardado = '';
@@ -23,8 +24,10 @@ class AuthService {
   static String usuarioCorreo = '';
   static String usuarioRol = 'USUARIO';
   static String usuarioFotoPerfil = '';
+  static String usuarioAvatar = '';
 
   static String _photoKey(int id) => 'profile_photo_$id';
+  static String _avatarKey(int id) => 'profile_avatar_$id';
 
   static bool get isAdmin => usuarioRol.toUpperCase() == 'ADMINISTRADOR';
 
@@ -36,6 +39,7 @@ class AuthService {
       correo: usuarioCorreo,
       rol: usuarioRol,
       fotoPerfil: usuarioFotoPerfil.trim().isEmpty ? null : usuarioFotoPerfil,
+      avatar: usuarioAvatar.trim().isEmpty ? null : usuarioAvatar,
     );
   }
 
@@ -126,6 +130,8 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     final foto = (user.fotoPerfil ?? '').trim();
     usuarioFotoPerfil = foto.isNotEmpty ? foto : _prefsPhoto(prefs, usuarioId);
+    final avatar = (user.avatar ?? '').trim();
+    usuarioAvatar = avatar.isNotEmpty ? avatar : _prefsAvatar(prefs, usuarioId);
 
     await prefs.setString(_sessionEmailKey, usuarioCorreo);
     await prefs.setString(_sessionPasswordKey, password);
@@ -133,14 +139,23 @@ class AuthService {
     await prefs.setString(_sessionNameKey, usuarioNombre);
     await prefs.setString(_sessionRoleKey, usuarioRol);
     await prefs.setString(_sessionPhotoKey, usuarioFotoPerfil);
+    await prefs.setString(_sessionAvatarKey, usuarioAvatar);
     if (usuarioFotoPerfil.isNotEmpty) {
       await prefs.setString(_photoKey(usuarioId), usuarioFotoPerfil);
+    }
+    if (usuarioAvatar.isNotEmpty) {
+      await prefs.setString(_avatarKey(usuarioId), usuarioAvatar);
     }
   }
 
   static String _prefsPhoto(SharedPreferences prefs, int id) {
     if (id <= 0) return '';
     return (prefs.getString(_photoKey(id)) ?? '').trim();
+  }
+
+  static String _prefsAvatar(SharedPreferences prefs, int id) {
+    if (id <= 0) return '';
+    return (prefs.getString(_avatarKey(id)) ?? '').trim();
   }
 
   static Future<void> _loadCachedUser(SharedPreferences prefs) async {
@@ -150,6 +165,9 @@ class AuthService {
     usuarioRol = prefs.getString(_sessionRoleKey) ?? 'USUARIO';
     usuarioFotoPerfil =
         (prefs.getString(_sessionPhotoKey) ?? _prefsPhoto(prefs, usuarioId))
+            .trim();
+    usuarioAvatar =
+        (prefs.getString(_sessionAvatarKey) ?? _prefsAvatar(prefs, usuarioId))
             .trim();
     correoGuardado = usuarioCorreo;
     nombreGuardado = usuarioNombre;
@@ -178,6 +196,7 @@ class AuthService {
     usuarioCorreo = user.correo;
     usuarioRol = user.rol;
     usuarioFotoPerfil = (user.fotoPerfil ?? '').trim();
+    usuarioAvatar = (user.avatar ?? '').trim();
     nombreGuardado = user.nombre;
     correoGuardado = user.correo;
 
@@ -187,10 +206,16 @@ class AuthService {
     await prefs.setString(_sessionEmailKey, usuarioCorreo);
     await prefs.setString(_sessionRoleKey, usuarioRol);
     await prefs.setString(_sessionPhotoKey, usuarioFotoPerfil);
+    await prefs.setString(_sessionAvatarKey, usuarioAvatar);
     if (usuarioFotoPerfil.isEmpty) {
       await prefs.remove(_photoKey(usuarioId));
     } else {
       await prefs.setString(_photoKey(usuarioId), usuarioFotoPerfil);
+    }
+    if (usuarioAvatar.isEmpty) {
+      await prefs.remove(_avatarKey(usuarioId));
+    } else {
+      await prefs.setString(_avatarKey(usuarioId), usuarioAvatar);
     }
   }
 
@@ -202,6 +227,7 @@ class AuthService {
     await prefs.remove(_sessionNameKey);
     await prefs.remove(_sessionRoleKey);
     await prefs.remove(_sessionPhotoKey);
+    await prefs.remove(_sessionAvatarKey);
 
     nombreGuardado = '';
     correoGuardado = '';
@@ -211,6 +237,7 @@ class AuthService {
     usuarioCorreo = '';
     usuarioRol = 'USUARIO';
     usuarioFotoPerfil = '';
+    usuarioAvatar = '';
   }
 
   static Future<bool> isLoggedIn() async {

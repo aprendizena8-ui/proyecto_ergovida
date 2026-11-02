@@ -42,9 +42,7 @@ class RecordatorioSchedulerTest {
         Horario horario = horario(2L, hora);
         User usuario = usuario(2L, true);
 
-        when(horarioRepository.findByHoraBetween(
-                any(LocalTime.class),
-                any(LocalTime.class))).thenReturn(List.of(horario));
+        when(horarioRepository.findAll()).thenReturn(List.of(horario));
         when(userRepository.findById(2L)).thenReturn(Optional.of(usuario));
 
         scheduler.enviarRecordatoriosPendientes();
@@ -64,9 +62,24 @@ class RecordatorioSchedulerTest {
                 LocalTime.now().withSecond(0).withNano(0));
         User usuario = usuario(2L, false);
 
-        when(horarioRepository.findByHoraBetween(
-                any(LocalTime.class),
-                any(LocalTime.class))).thenReturn(List.of(horario));
+        when(horarioRepository.findAll()).thenReturn(List.of(horario));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(usuario));
+
+        scheduler.enviarRecordatoriosPendientes();
+
+        verifyNoInteractions(emailService);
+        verify(horarioRepository, never()).save(any(Horario.class));
+    }
+
+    @Test
+    void omiteUsuariosConRecordatoriosPorCorreoDesactivados() {
+        Horario horario = horario(
+                2L,
+                LocalTime.now().withSecond(0).withNano(0));
+        User usuario = usuario(2L, true);
+        usuario.setRecordatoriosCorreo(false);
+
+        when(horarioRepository.findAll()).thenReturn(List.of(horario));
         when(userRepository.findById(2L)).thenReturn(Optional.of(usuario));
 
         scheduler.enviarRecordatoriosPendientes();
@@ -82,9 +95,7 @@ class RecordatorioSchedulerTest {
                 LocalTime.now().withSecond(0).withNano(0));
         horario.setUltimoEnvio(LocalDate.now());
 
-        when(horarioRepository.findByHoraBetween(
-                any(LocalTime.class),
-                any(LocalTime.class))).thenReturn(List.of(horario));
+        when(horarioRepository.findAll()).thenReturn(List.of(horario));
 
         scheduler.enviarRecordatoriosPendientes();
 

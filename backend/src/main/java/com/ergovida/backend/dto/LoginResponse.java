@@ -6,6 +6,8 @@ public class LoginResponse {
     private String nombre;
     private String correo;
     private String rol;
+    private String avatar;
+    private String fotoPerfil;
 
     public LoginResponse() {
     }
@@ -15,6 +17,15 @@ public class LoginResponse {
         this.nombre = nombre;
         this.correo = correo;
         this.rol = rol;
+    }
+
+    public LoginResponse(Long id, String nombre, String correo, String rol, String avatar, String fotoPerfil) {
+        this.id = id;
+        this.nombre = nombre;
+        this.correo = correo;
+        this.rol = rol;
+        this.avatar = avatar;
+        this.fotoPerfil = fotoPerfil;
     }
 
     public Long getId() {
@@ -47,5 +58,21 @@ public class LoginResponse {
 
     public void setRol(String rol) {
         this.rol = rol;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
+    }
+
+    public String getFotoPerfil() {
+        return fotoPerfil;
+    }
+
+    public void setFotoPerfil(String fotoPerfil) {
+        this.fotoPerfil = fotoPerfil;
     }
 }

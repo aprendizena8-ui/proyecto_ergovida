@@ -6,6 +6,9 @@ import 'data/services/reminder_service.dart';
 import 'features/auth/login_page.dart';
 import 'features/home/home_page.dart';
 
+final RouteObserver<PageRoute<dynamic>> appRouteObserver =
+    RouteObserver<PageRoute<dynamic>>();
+
 const Color brandNavy = Color(0xFF0E2238);
 const Color brandBlue = Color(0xFF1F7FC0);
 const Color brandCyan = Color(0xFF39C7D5);
@@ -174,6 +177,7 @@ class _MyAppState extends State<MyApp> {
         return MaterialApp(
           title: 'ErgoVida',
           debugShowCheckedModeBanner: false,
+          navigatorObservers: [appRouteObserver],
           scaffoldMessengerKey: ReminderService.messengerKey,
           scrollBehavior: const MaterialScrollBehavior().copyWith(
             scrollbars: false,

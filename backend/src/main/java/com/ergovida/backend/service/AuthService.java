@@ -61,8 +61,12 @@ public class AuthService {
         user.setPassword(encoder.encode(user.getPassword()));
         user.setRol("USUARIO");
         user.setActivo(true);
+        if (user.getAvatar() == null || user.getAvatar().isBlank()) {
+            user.setAvatar("a01");
+        }
         if (user.getNotificaciones() == null) user.setNotificaciones(true);
         if (user.getRecordatorios() == null) user.setRecordatorios(true);
+        if (user.getRecordatoriosCorreo() == null) user.setRecordatoriosCorreo(true);
 
         return repository.save(user);
     }
@@ -107,7 +111,9 @@ public class AuthService {
                 user.getId(),
                 user.getNombre(),
                 user.getCorreo(),
-                user.getRol()
+                user.getRol(),
+                user.getAvatar(),
+                user.getFotoPerfil()
         );
     }
 

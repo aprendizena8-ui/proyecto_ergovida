@@ -1,5 +1,6 @@
 package com.ergovida.backend.service;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -27,6 +28,9 @@ public class RecordatorioScheduler {
     private static final Logger logger =
             LoggerFactory.getLogger(RecordatorioScheduler.class);
 
+    /** Margen para enviar un recordatorio aunque el servidor arranque un poco tarde. */
+    private static final long VENTANA_MINUTOS = 10;
+
     private final HorarioRepository horarioRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
@@ -44,15 +48,20 @@ public class RecordatorioScheduler {
     public void enviarRecordatoriosPendientes() {
         LocalDateTime ahora = LocalDateTime.now();
         LocalDate hoy = ahora.toLocalDate();
-        LocalTime inicioMinuto = ahora.toLocalTime().withSecond(0).withNano(0);
-        LocalTime finMinuto = inicioMinuto.plusSeconds(59).withNano(999_999_999);
+        LocalTime horaActual = ahora.toLocalTime();
 
-        List<Horario> horarios =
-                horarioRepository.findByHoraBetween(inicioMinuto, finMinuto);
+        List<Horario> horarios = horarioRepository.findAll();
 
         for (Horario horario : horarios) {
-            if (horario.getUsuarioId() == null
+            LocalTime hora = horario.getHora();
+            if (hora == null
+                    || horario.getUsuarioId() == null
                     || hoy.equals(horario.getUltimoEnvio())) {
+                continue;
+            }
+
+            long minutosTarde = Duration.between(hora, horaActual).toMinutes();
+            if (minutosTarde < 0 || minutosTarde > VENTANA_MINUTOS) {
                 continue;
             }
 
@@ -64,7 +73,8 @@ public class RecordatorioScheduler {
 
             User usuario = usuarioOpt.get();
             if (Boolean.FALSE.equals(usuario.getActivo())
-                    || Boolean.FALSE.equals(usuario.getRecordatorios())) {
+                    || Boolean.FALSE.equals(usuario.getRecordatorios())
+                    || Boolean.FALSE.equals(usuario.getRecordatoriosCorreo())) {
                 continue;
             }
 
@@ -77,13 +87,13 @@ public class RecordatorioScheduler {
                 emailService.enviarRecordatorioPausa(
                         correo,
                         usuario.getNombre(),
-                        horario.getHora());
+                        hora);
                 horario.setUltimoEnvio(hoy);
                 horarioRepository.save(horario);
                 logger.info(
-                        "Recordatorio enviado a {} para las {}",
+                        "Recordatorio diario enviado a {} para las {}",
                         correo,
-                        horario.getHora());
+                        hora);
             } catch (Exception error) {
                 logger.error(
                         "No se pudo enviar el recordatorio a {}: {}",

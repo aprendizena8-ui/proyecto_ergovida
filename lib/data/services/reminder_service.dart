@@ -153,8 +153,12 @@ class _ReminderTime {
 
   const _ReminderTime(this.hour, this.minute);
 
-  String get label =>
-      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+  String get label {
+    final sufijo = hour >= 12 ? 'PM' : 'AM';
+    final hora12 = hour % 12 == 0 ? 12 : hour % 12;
+    final minutos = minute.toString().padLeft(2, '0');
+    return '$hora12:$minutos $sufijo';
+  }
 
   static _ReminderTime? fromJson(Map<String, dynamic> json) {
     final hora = json['hora']?.toString() ?? '';

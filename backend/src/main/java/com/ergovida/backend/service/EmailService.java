@@ -2,6 +2,7 @@ package com.ergovida.backend.service;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -47,18 +48,22 @@ public class EmailService {
                 ? "¡Hola!"
                 : "¡Hola, " + nombre.trim() + "!";
 
+        String horaAmPm = hora.format(
+                DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH));
+
         SimpleMailMessage mensaje = new SimpleMailMessage();
         if (remitente != null && !remitente.isBlank()) {
             mensaje.setFrom(remitente);
         }
         mensaje.setTo(destinatario);
-        mensaje.setSubject("ErgoVida - Es momento de tu pausa activa");
+        mensaje.setSubject("ErgoVida - Tu recordatorio diario de pausa activa");
         mensaje.setText(
             saludo + "\n\n" +
-            "Es momento de tu pausa activa de las " +
-            hora.format(DateTimeFormatter.ofPattern("HH:mm")) + ".\n\n" +
-            "Levántate, estira el cuerpo y descansa la vista unos minutos.\n" +
+            "Este es tu recordatorio diario de las " + horaAmPm + ".\n\n" +
+            "Es momento de tu pausa activa: levántate, estira el cuerpo " +
+            "y descansa la vista unos minutos.\n" +
             "Puedes abrir ErgoVida y realizar uno de tus ejercicios guiados.\n\n" +
+            "Recibirás este correo todos los días a las " + horaAmPm + ".\n\n" +
             "Equipo ErgoVida"
         );
         mailSender.send(mensaje);

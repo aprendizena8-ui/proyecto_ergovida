@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 
+import '../../data/models/avatar_catalog.dart';
 import '../../data/models/user_model.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/estadisticas_service.dart';
@@ -13,6 +14,7 @@ import '../../data/services/profile_preferences.dart';
 import '../../data/services/reminder_service.dart';
 import '../../data/services/usuario_service.dart';
 import '../../main.dart';
+import '../../widgets/avatar_badge.dart';
 import '../../widgets/user_avatar.dart';
 import '../auth/login_page.dart';
 import '../settings/settings_page.dart';
@@ -295,6 +297,49 @@ class _ProfilePageState extends State<ProfilePage> {
       _subiendoFoto = false;
     });
     _mensaje('Foto de perfil eliminada');
+  }
+
+  Future<void> _mostrarGaleriaAvatares() async {
+    if (_guardando) return;
+
+    final seleccion = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _AvatarGallerySheet(seleccionado: _usuario.avatar),
+    );
+
+    if (seleccion == null || seleccion == _usuario.avatar) return;
+    await _guardarAvatar(seleccion);
+  }
+
+  Future<void> _guardarAvatar(String avatarId) async {
+    setState(() => _guardando = true);
+
+    if (_usuario.id > 0) {
+      final ok = await _usuarioService.actualizarUsuario(_usuario.id, {
+        'avatar': avatarId,
+        'fotoPerfil': '',
+      });
+      if (!ok) {
+        if (mounted) setState(() => _guardando = false);
+        _mensaje(
+          'No se pudo guardar el avatar. Verifica que el backend esté activo.',
+          error: true,
+        );
+        return;
+      }
+    }
+
+    final actualizado = _usuario.copyWith(avatar: avatarId, fotoPerfil: '');
+    await AuthService.actualizarUsuarioActual(actualizado);
+
+    if (!mounted) return;
+    setState(() {
+      _usuario = actualizado;
+      _guardando = false;
+    });
+    _mensaje('Avatar actualizado correctamente');
   }
 
   Future<void> _mostrarEditarPerfil() async {
@@ -694,6 +739,8 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
             _buildHeader(context),
             const SizedBox(height: 16),
+            _buildAvatar(context),
+            const SizedBox(height: 16),
             _buildActividad(context),
             const SizedBox(height: 16),
             _buildInformacion(context),
@@ -909,6 +956,72 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAvatar(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary = isDark ? const Color(0xFFAFC1D4) : brandMuted;
+    final opcion = AvatarCatalog.byId(_usuario.avatar);
+
+    return _SectionCard(
+      title: 'Mi avatar',
+      icon: Icons.face_retouching_natural_rounded,
+      trailing: TextButton.icon(
+        onPressed: _guardando ? null : _mostrarGaleriaAvatares,
+        icon: const Icon(Icons.grid_view_rounded, size: 16),
+        label: const Text('Cambiar'),
+      ),
+      children: [
+        Row(
+          children: [
+            AvatarBadge(
+              avatarId: opcion.id,
+              size: 64,
+              ringColor: AvatarBadge.colorFor(opcion.id),
+              ringWidth: 2,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Elige entre 40 avatares',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : brandText,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Tu avatar aparecerá en tu perfil y en el ranking de usuarios.',
+                    style: TextStyle(color: textSecondary, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _guardando ? null : _mostrarGaleriaAvatares,
+            icon: const Icon(Icons.emoji_people_rounded),
+            label: Text(
+              _guardando ? 'Guardando...' : 'Ver galería de avatares',
+            ),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1226,6 +1339,209 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         const SizedBox(height: 8),
       ],
+    );
+  }
+}
+
+class _AvatarGallerySheet extends StatefulWidget {
+  final String? seleccionado;
+
+  const _AvatarGallerySheet({this.seleccionado});
+
+  @override
+  State<_AvatarGallerySheet> createState() => _AvatarGallerySheetState();
+}
+
+class _AvatarGallerySheetState extends State<_AvatarGallerySheet> {
+  late String _seleccionado;
+
+  @override
+  void initState() {
+    super.initState();
+    _seleccionado = AvatarCatalog.byId(widget.seleccionado).id;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF111D2E) : Colors.white;
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.82,
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 42,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(22, 14, 12, 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Galería de avatares',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Selecciona un avatar de los 40 disponibles',
+                          style: TextStyle(
+                            color: isDark
+                                ? const Color(0xFFAFC1D4)
+                                : brandMuted,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: GridView.builder(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 100,
+                  mainAxisSpacing: 14,
+                  crossAxisSpacing: 14,
+                  childAspectRatio: 0.92,
+                ),
+                itemCount: AvatarCatalog.all.length,
+                itemBuilder: (context, index) {
+                  final opcion = AvatarCatalog.all[index];
+                  return _avatarTile(opcion, isDark);
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              child: SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.pop(context, _seleccionado),
+                  icon: const Icon(Icons.check_circle_outline_rounded),
+                  label: const Text('Guardar avatar'),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _avatarTile(AvatarOption opcion, bool isDark) {
+    final seleccionado = opcion.id == _seleccionado;
+    final colors = AvatarBadge.gradientFor(opcion.id);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () => setState(() => _seleccionado = opcion.id),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: seleccionado
+                ? [
+                    colors.first.withValues(alpha: 0.22),
+                    colors.last.withValues(alpha: 0.10),
+                  ]
+                : (isDark
+                      ? [
+                          Colors.white.withValues(alpha: 0.06),
+                          Colors.white.withValues(alpha: 0.02),
+                        ]
+                      : [const Color(0xFFF7FBFE), const Color(0xFFEDF5FB)]),
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: seleccionado
+                ? colors.first.withValues(alpha: 0.85)
+                : (isDark ? const Color(0xFF24364C) : const Color(0xFFE2EDF5)),
+            width: seleccionado ? 2 : 1,
+          ),
+          boxShadow: seleccionado
+              ? [
+                  BoxShadow(
+                    color: colors.first.withValues(alpha: 0.22),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
+              : null,
+        ),
+        child: Stack(
+          children: [
+            Center(
+              child: AnimatedScale(
+                scale: seleccionado ? 1.07 : 1,
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutBack,
+                child: AvatarBadge(
+                  avatarId: opcion.id,
+                  size: 50,
+                  showGlow: seleccionado,
+                ),
+              ),
+            ),
+            if (seleccionado)
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: colors.first,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.first.withValues(alpha: 0.4),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    size: 13,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

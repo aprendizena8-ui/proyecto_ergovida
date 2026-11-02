@@ -49,6 +49,7 @@ class ProfileData {
   final DateTime? miembroDesde;
   final bool notificaciones;
   final bool recordatorios;
+  final bool recordatoriosCorreo;
 
   const ProfileData({
     this.telefono = '',
@@ -59,6 +60,7 @@ class ProfileData {
     this.miembroDesde,
     this.notificaciones = true,
     this.recordatorios = true,
+    this.recordatoriosCorreo = true,
   });
 
   factory ProfileData.empty() => const ProfileData();
@@ -77,6 +79,9 @@ class ProfileData {
       recordatorios: json['recordatorios'] is bool
           ? json['recordatorios'] as bool
           : true,
+      recordatoriosCorreo: json['recordatoriosCorreo'] is bool
+          ? json['recordatoriosCorreo'] as bool
+          : true,
     );
   }
 
@@ -90,6 +95,7 @@ class ProfileData {
       'miembroDesde': miembroDesde?.toIso8601String() ?? '',
       'notificaciones': notificaciones,
       'recordatorios': recordatorios,
+      'recordatoriosCorreo': recordatoriosCorreo,
     };
   }
 
@@ -102,6 +108,7 @@ class ProfileData {
     DateTime? miembroDesde,
     bool? notificaciones,
     bool? recordatorios,
+    bool? recordatoriosCorreo,
   }) {
     return ProfileData(
       telefono: telefono ?? this.telefono,
@@ -112,6 +119,7 @@ class ProfileData {
       miembroDesde: miembroDesde ?? this.miembroDesde,
       notificaciones: notificaciones ?? this.notificaciones,
       recordatorios: recordatorios ?? this.recordatorios,
+      recordatoriosCorreo: recordatoriosCorreo ?? this.recordatoriosCorreo,
     );
   }
 }

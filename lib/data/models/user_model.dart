@@ -8,6 +8,9 @@ class UserModel {
   /// Puede ser una URL, una ruta local o una imagen en base64.
   final String? fotoPerfil;
 
+  /// Identificador del avatar de la galería (por ejemplo `a01`).
+  final String? avatar;
+
   const UserModel({
     this.id = 0,
     required this.nombre,
@@ -15,6 +18,7 @@ class UserModel {
     this.rol = 'USUARIO',
     this.activo = true,
     this.fotoPerfil,
+    this.avatar,
   });
 
   bool get esAdmin => rol.toUpperCase() == 'ADMINISTRADOR';
@@ -33,6 +37,7 @@ class UserModel {
     String? rol,
     bool? activo,
     String? fotoPerfil,
+    String? avatar,
   }) {
     final foto = fotoPerfil == null
         ? this.fotoPerfil
@@ -45,6 +50,7 @@ class UserModel {
       rol: rol ?? this.rol,
       activo: activo ?? this.activo,
       fotoPerfil: foto,
+      avatar: avatar ?? this.avatar,
     );
   }
 
@@ -68,6 +74,7 @@ class UserModel {
                 '')
             .toString()
             .trim();
+    final avatar = (json['avatar'] ?? json['avatarId'] ?? '').toString().trim();
 
     return UserModel(
       id: _asInt(json['id']),
@@ -76,6 +83,7 @@ class UserModel {
       rol: rol.isEmpty ? 'USUARIO' : rol,
       activo: json['activo'] is bool ? json['activo'] as bool : true,
       fotoPerfil: foto.isEmpty ? null : foto,
+      avatar: avatar.isEmpty ? null : avatar,
     );
   }
 
@@ -87,6 +95,7 @@ class UserModel {
       'rol': rol,
       'activo': activo,
       if (tieneFoto) 'fotoPerfil': fotoPerfil,
+      if ((avatar ?? '').trim().isNotEmpty) 'avatar': avatar,
     };
   }
 

@@ -21,6 +21,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   bool notificaciones = true;
   bool recordatorios = true;
+  bool recordatoriosCorreo = true;
 
   List<dynamic> _horarios = [];
   bool _cargandoHorarios = true;
@@ -41,6 +42,7 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() {
       notificaciones = perfil.notificaciones;
       recordatorios = perfil.recordatorios;
+      recordatoriosCorreo = perfil.recordatoriosCorreo;
     });
   }
 
@@ -54,6 +56,7 @@ class _SettingsPageState extends State<SettingsPage> {
       perfil.copyWith(
         notificaciones: notificaciones,
         recordatorios: recordatorios,
+        recordatoriosCorreo: recordatoriosCorreo,
       ),
     );
     await ReminderService.instance.refresh();
@@ -61,7 +64,22 @@ class _SettingsPageState extends State<SettingsPage> {
     await UsuarioService().actualizarUsuario(usuario.id, {
       'notificaciones': notificaciones,
       'recordatorios': recordatorios,
+      'recordatoriosCorreo': recordatoriosCorreo,
     });
+  }
+
+  String _horaAmPm(String hora) {
+    final partes = hora.split(':');
+    if (partes.isEmpty) return hora;
+
+    final hora24 = int.tryParse(partes[0]);
+    final minuto = partes.length > 1 ? int.tryParse(partes[1]) : 0;
+    if (hora24 == null || hora24 < 0 || hora24 > 23) return hora;
+
+    final sufijo = hora24 >= 12 ? 'PM' : 'AM';
+    final hora12 = hora24 % 12 == 0 ? 12 : hora24 % 12;
+    final minutos = (minuto ?? 0).toString().padLeft(2, '0');
+    return '$hora12:$minutos $sufijo';
   }
 
   Future<void> _cargarHorarios() async {
@@ -72,14 +90,12 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() => _cargandoHorarios = true);
     try {
       final data = await _horarioService.obtenerPorUsuario(widget.usuario!.id);
-      print("Recordatorios obtenidos: $data");
       if (!mounted) return;
       setState(() {
         _horarios = data;
         _cargandoHorarios = false;
       });
-    } catch (e) {
-      print("Error al cargar recordatorios: $e");
+    } catch (_) {
       if (!mounted) return;
       setState(() {
         _horarios = [];
@@ -92,13 +108,18 @@ class _SettingsPageState extends State<SettingsPage> {
     final horaSeleccionada = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
-      helpText: 'Selecciona la hora del recordatorio',
+      helpText: 'Selecciona la hora del recordatorio (AM/PM)',
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: false),
+        child: child ?? const SizedBox.shrink(),
+      ),
     );
 
     if (horaSeleccionada == null) return;
 
     final horaStr =
         '${horaSeleccionada.hour.toString().padLeft(2, '0')}:${horaSeleccionada.minute.toString().padLeft(2, '0')}:00';
+    final horaAmPm = _horaAmPm(horaStr);
 
     final creado = await _horarioService.crearHorario(
       usuarioId: widget.usuario!.id,
@@ -111,7 +132,7 @@ class _SettingsPageState extends State<SettingsPage> {
         SnackBar(
           backgroundColor: brandBlue,
           content: Text(
-            'Recordatorio creado a las $horaStr. Te avisaremos en la app y por correo.',
+            'Recordatorio diario creado a las $horaAmPm. Te avisaremos en la app y por correo.',
           ),
         ),
       );
@@ -198,12 +219,28 @@ class _SettingsPageState extends State<SettingsPage> {
             color: Colors.transparent,
             child: SwitchListTile(
               title: const Text('Recordatorios activos'),
-              subtitle: const Text('Avisos en la app y correo electrónico'),
+              subtitle: const Text('Activa o desactiva tus pausas programadas'),
               value: recordatorios,
               onChanged: (v) {
                 setState(() => recordatorios = v);
                 _guardarPreferencias();
               },
+            ),
+          ),
+          Material(
+            color: Colors.transparent,
+            child: SwitchListTile(
+              title: const Text('Recordatorios por correo'),
+              subtitle: const Text(
+                'Enviar un correo diario a la hora que elijas',
+              ),
+              value: recordatorios && recordatoriosCorreo,
+              onChanged: recordatorios
+                  ? (v) {
+                      setState(() => recordatoriosCorreo = v);
+                      _guardarPreferencias();
+                    }
+                  : null,
             ),
           ),
           Material(
@@ -268,15 +305,20 @@ class _SettingsPageState extends State<SettingsPage> {
             ..._horarios.map((h) {
               final hora = h['hora']?.toString() ?? '';
               final horaCorta = hora.length >= 5 ? hora.substring(0, 5) : hora;
+              final horaAmPm = _horaAmPm(horaCorta);
               return Material(
                 color: Colors.transparent,
                 child: ListTile(
                   leading: const Icon(Icons.alarm_on, color: brandBlue),
-                  title: Text('Recordatorio a las $horaCorta'),
-                  subtitle: const Text('Aviso en la app y por correo'),
+                  title: Text('Recordatorio diario a las $horaAmPm'),
+                  subtitle: Text(
+                    recordatoriosCorreo
+                        ? 'Aviso en la app y correo electrónico'
+                        : 'Solo aviso dentro de la app',
+                  ),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    onPressed: () => _eliminarHorario(h['id'], horaCorta),
+                    onPressed: () => _eliminarHorario(h['id'], horaAmPm),
                   ),
                 ),
               );

@@ -71,7 +71,8 @@ public class AuthController {
                     "id", saved.getId(),
                     "nombre", saved.getNombre(),
                     "correo", saved.getCorreo(),
-                    "rol", saved.getRol()
+                    "rol", saved.getRol(),
+                    "avatar", saved.getAvatar() == null ? "a01" : saved.getAvatar()
             ));
 
         } catch (DataIntegrityViolationException e) {

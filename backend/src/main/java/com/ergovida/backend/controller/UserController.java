@@ -40,9 +40,11 @@ public class UserController {
             if (userDetails.getCorreo() != null) user.setCorreo(userDetails.getCorreo());
             if (userDetails.getRol() != null) user.setRol(userDetails.getRol());
             if (userDetails.getFotoPerfil() != null) user.setFotoPerfil(userDetails.getFotoPerfil());
+            if (userDetails.getAvatar() != null) user.setAvatar(userDetails.getAvatar());
             if (userDetails.getActivo() != null) user.setActivo(userDetails.getActivo());
             if (userDetails.getNotificaciones() != null) user.setNotificaciones(userDetails.getNotificaciones());
             if (userDetails.getRecordatorios() != null) user.setRecordatorios(userDetails.getRecordatorios());
+            if (userDetails.getRecordatoriosCorreo() != null) user.setRecordatoriosCorreo(userDetails.getRecordatoriosCorreo());
 
             User updatedUser = userRepository.save(user);
             return ResponseEntity.ok(updatedUser);
