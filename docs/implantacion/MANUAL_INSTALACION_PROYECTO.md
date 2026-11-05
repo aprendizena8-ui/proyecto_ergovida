@@ -15,6 +15,9 @@ Antes de iniciar, asegúrese de tener instalado:
 * **Java JDK 17**
 * **Maven** (incluido en el proyecto con `mvnw`)
 * **MySQL 8.0** (con MySQL Workbench o phpMyAdmin)
+* **Visual Studio 2022 Community** (Obligatorio). Descárguelo de [https://visualstudio.microsoft.com/es/downloads/](https://visualstudio.microsoft.com/es/downloads/).
+  - ** Importante:** Durante la instalación, asegúrese de seleccionar la carga de trabajo **"Desarrollo para el escritorio con C++"** (Desktop development with C++). Sin esto, Flutter no podrá compilar la app para Windows.
+* **Visual Studio Code** (Recomendado) con la extensión de Flutter y Dart.
 * **Git**
 * Sistema Operativo: Windows 10 / 11
 
