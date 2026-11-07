@@ -1,5 +1,7 @@
 package com.ergovida.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -15,6 +17,7 @@ public class User {
     @Column(unique = true)
     private String correo;
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     private String rol;

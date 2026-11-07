@@ -21,7 +21,29 @@ class UserModel {
     this.avatar,
   });
 
-  bool get esAdmin => rol.toUpperCase() == 'ADMINISTRADOR';
+  static String normalizarRol(String valor) {
+    final rol = valor.trim().toUpperCase().replaceAll('-', '_');
+    final compacto = rol.replaceAll(RegExp(r'\s+'), '_');
+    if (compacto == 'LIDER_SST' || compacto == 'LÍDER_SST') {
+      return 'LIDER_SST';
+    }
+    return compacto;
+  }
+
+  bool get esAdmin => normalizarRol(rol) == 'ADMINISTRADOR';
+
+  bool get esLiderSst => normalizarRol(rol) == 'LIDER_SST';
+
+  String get rolEtiqueta {
+    switch (normalizarRol(rol)) {
+      case 'ADMINISTRADOR':
+        return 'Administrador';
+      case 'LIDER_SST':
+        return 'Líder SST';
+      default:
+        return 'Usuario';
+    }
+  }
 
   bool get tieneFoto => (fotoPerfil ?? '').trim().isNotEmpty;
 

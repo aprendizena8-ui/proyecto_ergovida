@@ -23,10 +23,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
   bool _sinConexion = false;
 
   int get _usuarioId => widget.usuarioId ?? AuthService.usuarioId;
-  bool get _esAdmin {
-    final rol = (AuthService.usuarioRol).toUpperCase();
-    return widget.esAdmin ?? (rol == 'ADMINISTRADOR');
-  }
+  bool get _esAdmin => widget.esAdmin ?? AuthService.isAdmin;
 
   static const List<_EjercicioDef> _definiciones = [
     _EjercicioDef(

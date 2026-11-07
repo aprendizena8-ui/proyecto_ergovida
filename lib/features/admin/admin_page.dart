@@ -54,18 +54,30 @@ class _AdminPageState extends State<AdminPage> {
   int get _admins => _usuarios.where((u) => u.esAdmin).length;
   int get _activos => _usuarios.where((u) => u.activo).length;
 
-  Future<void> _cambiarRol(UserModel usuario) async {
-    final nuevoRol = usuario.esAdmin ? 'USUARIO' : 'ADMINISTRADOR';
+  Future<void> _cambiarRol(UserModel usuario, String nuevoRol) async {
     final ok = await _usuarioService.actualizarUsuario(usuario.id, {
       'rol': nuevoRol,
     });
 
     if (!mounted) return;
     _mensaje(
-      ok ? '${usuario.nombre} ahora es $nuevoRol' : 'No se pudo cambiar el rol',
+      ok
+          ? '${usuario.nombre} ahora es ${_etiquetaRol(nuevoRol)}'
+          : 'No se pudo cambiar el rol',
       ok: ok,
     );
     if (ok) _cargar();
+  }
+
+  String _etiquetaRol(String rol) {
+    switch (UserModel.normalizarRol(rol)) {
+      case 'ADMINISTRADOR':
+        return 'Administrador';
+      case 'LIDER_SST':
+        return 'Líder SST';
+      default:
+        return 'Usuario';
+    }
   }
 
   Future<void> _cambiarActivo(UserModel usuario) async {
@@ -134,6 +146,21 @@ class _AdminPageState extends State<AdminPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!AuthService.isAdmin) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Panel administrador')),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+              'Esta sección está disponible únicamente para administradores.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+    }
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isDark ? const Color(0xFF0B1424) : const Color(0xFFEAF3F8);
     final textPrimary = isDark ? Colors.white : brandText;
@@ -385,9 +412,11 @@ class _AdminPageState extends State<AdminPage> {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  usuario.rol,
+                  usuario.rolEtiqueta,
                   style: TextStyle(
                     color: usuario.esAdmin
+                        ? const Color(0xFF0F766E)
+                        : usuario.esLiderSst
                         ? const Color(0xFF0F766E)
                         : brandMuted,
                     fontSize: 10,
@@ -411,19 +440,26 @@ class _AdminPageState extends State<AdminPage> {
           PopupMenuButton<String>(
             tooltip: 'Acciones',
             onSelected: (value) {
-              if (value == 'rol') _cambiarRol(usuario);
+              if (value.startsWith('rol:')) {
+                _cambiarRol(usuario, value.substring(4));
+              }
               if (value == 'activo') _cambiarActivo(usuario);
               if (value == 'eliminar') _eliminar(usuario);
             },
             itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'rol',
-                child: Text(
-                  usuario.esAdmin
-                      ? 'Quitar rol administrador'
-                      : 'Hacer administrador',
-                ),
+              const PopupMenuItem(
+                value: 'rol:USUARIO',
+                child: Text('Rol: Usuario'),
               ),
+              const PopupMenuItem(
+                value: 'rol:LIDER_SST',
+                child: Text('Rol: Líder SST'),
+              ),
+              const PopupMenuItem(
+                value: 'rol:ADMINISTRADOR',
+                child: Text('Rol: Administrador'),
+              ),
+              const PopupMenuDivider(),
               PopupMenuItem(
                 value: 'activo',
                 child: Text(

@@ -911,9 +911,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       children: [
                         _HeaderChip(
                           icon: Icons.badge_outlined,
-                          label: _usuario.rol.toUpperCase() == 'ADMINISTRADOR'
-                              ? 'Administrador'
-                              : 'Usuario',
+                          label: _usuario.rolEtiqueta,
                         ),
                         _HeaderChip(
                           icon: Icons.calendar_month_outlined,
@@ -2100,7 +2098,7 @@ class _SectionCard extends StatelessWidget {
     this.accentColor,
   });
 
-    @override
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDark ? const Color(0xFF111D2E) : Colors.white;

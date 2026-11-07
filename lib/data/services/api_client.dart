@@ -4,6 +4,11 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 class ApiClient {
+  /// Identidad de la sesión activa. AuthService la actualiza al iniciar,
+  /// restaurar o cerrar sesión. El backend usa estos datos para validar roles.
+  static int currentUserId = 0;
+  static String currentUserEmail = '';
+
   // URL base dinámica según plataforma
   static String get baseUrl {
     if (kIsWeb) {
@@ -28,9 +33,12 @@ class ApiClient {
 
   // Headers comunes
   static Map<String, String> get headers => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    if (currentUserId > 0) 'X-Usuario-Id': '$currentUserId',
+    if (currentUserEmail.trim().isNotEmpty)
+      'X-Usuario-Correo': currentUserEmail.trim(),
+  };
 
   // GET genérico
   static Future<dynamic> get(String endpoint) async {
@@ -46,7 +54,10 @@ class ApiClient {
   }
 
   // POST genérico
-  static Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
+  static Future<dynamic> post(
+    String endpoint,
+    Map<String, dynamic> body,
+  ) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl$endpoint'),

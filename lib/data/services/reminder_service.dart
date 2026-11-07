@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/recordatorio_global_model.dart';
 import '../models/user_model.dart';
 import 'horario_service.dart';
 import 'profile_preferences.dart';
+import 'recordatorio_global_service.dart';
 
 class ReminderService {
   ReminderService._();
@@ -15,6 +17,8 @@ class ReminderService {
       GlobalKey<ScaffoldMessengerState>();
 
   final HorarioService _horarioService = HorarioService();
+  final RecordatorioGlobalService _recordatorioGlobalService =
+      RecordatorioGlobalService();
 
   Timer? _timer;
   int? _usuarioId;
@@ -23,6 +27,7 @@ class ReminderService {
   int _ticks = 0;
   int _bannerToken = 0;
   List<_ReminderTime> _horarios = const [];
+  List<RecordatorioGlobal> _globales = const [];
   Future<void> _refreshChain = Future<void>.value();
 
   Future<void> start(UserModel usuario) async {
@@ -38,6 +43,7 @@ class ReminderService {
     _timer = null;
     _usuarioId = null;
     _horarios = const [];
+    _globales = const [];
     _ticks = 0;
   }
 
@@ -56,6 +62,15 @@ class ReminderService {
 
     _notificaciones = perfil.notificaciones;
     _recordatorios = perfil.recordatorios;
+
+    try {
+      _globales = await _recordatorioGlobalService.obtenerTodos(
+        soloActivos: true,
+      );
+    } catch (_) {
+      _globales = const [];
+    }
+    if (_usuarioId != usuarioId) return;
 
     if (!_recordatorios) {
       _horarios = const [];
@@ -81,34 +96,89 @@ class ReminderService {
       if (usuarioId == null) return;
 
       _ticks++;
-      if (_ticks % 20 == 0) {
+      if (_ticks % 4 == 0) {
         await refresh();
       }
 
-      if (!_notificaciones || !_recordatorios || _horarios.isEmpty) return;
+      if (!_notificaciones) return;
+      if (_horarios.isEmpty && _globales.isEmpty) return;
 
       final ahora = DateTime.now();
-      _ReminderTime? vencido;
-      for (final horario in _horarios) {
-        if (horario.hour == ahora.hour && horario.minute == ahora.minute) {
-          vencido = horario;
-          break;
-        }
-      }
-      if (vencido == null) return;
-
       final marca =
           '${ahora.year}-${ahora.month}-${ahora.day}-'
           '${ahora.hour}-${ahora.minute}';
       final prefs = await SharedPreferences.getInstance();
-      final storageKey = 'reminder_shown_$usuarioId';
-      if (prefs.getString(storageKey) == marca) return;
-      await prefs.setString(storageKey, marca);
 
-      _mostrarNotificacion(vencido);
+      if (_recordatorios) {
+        _ReminderTime? vencido;
+        for (final horario in _horarios) {
+          if (horario.hour == ahora.hour && horario.minute == ahora.minute) {
+            vencido = horario;
+            break;
+          }
+        }
+
+        if (vencido != null) {
+          final storageKey = 'reminder_shown_$usuarioId';
+          if (prefs.getString(storageKey) != marca) {
+            await prefs.setString(storageKey, marca);
+            _mostrarNotificacion(vencido);
+            return;
+          }
+        }
+      }
+
+      for (final global in _globales) {
+        if (!global.esHoy) continue;
+        final partes = global.hora.split(':');
+        if (partes.length < 2) continue;
+        final hora = int.tryParse(partes[0]);
+        final minuto = int.tryParse(partes[1]);
+        if (hora != ahora.hour || minuto != ahora.minute) continue;
+
+        final storageKey = 'global_reminder_shown_${usuarioId}_${global.id}';
+        if (prefs.getString(storageKey) == marca) continue;
+        await prefs.setString(storageKey, marca);
+        _mostrarNotificacionGlobal(global);
+        return;
+      }
     } catch (error) {
       debugPrint('No se pudo comprobar el recordatorio: $error');
     }
+  }
+
+  void _mostrarNotificacionGlobal(RecordatorioGlobal recordatorio) {
+    final messenger = messengerKey.currentState;
+    if (messenger == null) return;
+
+    final token = ++_bannerToken;
+    messenger.hideCurrentMaterialBanner();
+    messenger.showMaterialBanner(
+      MaterialBanner(
+        backgroundColor: const Color(0xFFEAF6FF),
+        leading: const Icon(Icons.campaign_rounded, color: Color(0xFF1F7FC0)),
+        content: Text(
+          recordatorio.mensaje,
+          style: const TextStyle(color: Color(0xFF10243A)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              if (token == _bannerToken) {
+                messenger.hideCurrentMaterialBanner();
+              }
+            },
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
+
+    Timer(const Duration(seconds: 30), () {
+      if (token == _bannerToken) {
+        messenger.hideCurrentMaterialBanner();
+      }
+    });
   }
 
   void _mostrarNotificacion(_ReminderTime horario) {

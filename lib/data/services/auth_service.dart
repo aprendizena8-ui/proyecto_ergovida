@@ -29,7 +29,16 @@ class AuthService {
   static String _photoKey(int id) => 'profile_photo_$id';
   static String _avatarKey(int id) => 'profile_avatar_$id';
 
-  static bool get isAdmin => usuarioRol.toUpperCase() == 'ADMINISTRADOR';
+  static bool get isAdmin =>
+      UserModel.normalizarRol(usuarioRol) == 'ADMINISTRADOR';
+
+  static bool get isLiderSst =>
+      UserModel.normalizarRol(usuarioRol) == 'LIDER_SST';
+
+  static void _syncApiContext() {
+    ApiClient.currentUserId = usuarioId;
+    ApiClient.currentUserEmail = usuarioCorreo;
+  }
 
   static UserModel? get currentUser {
     if (usuarioCorreo.trim().isEmpty) return null;
@@ -122,10 +131,11 @@ class AuthService {
     usuarioId = user.id;
     usuarioNombre = user.nombre;
     usuarioCorreo = user.correo.trim().isEmpty ? correo.trim() : user.correo;
-    usuarioRol = user.rol;
+    usuarioRol = UserModel.normalizarRol(user.rol);
     correoGuardado = usuarioCorreo;
     nombreGuardado = user.nombre;
     passwordGuardada = password;
+    _syncApiContext();
 
     final prefs = await SharedPreferences.getInstance();
     final foto = (user.fotoPerfil ?? '').trim();
@@ -162,7 +172,9 @@ class AuthService {
     usuarioId = prefs.getInt(_sessionIdKey) ?? 0;
     usuarioNombre = prefs.getString(_sessionNameKey) ?? '';
     usuarioCorreo = prefs.getString(_sessionEmailKey) ?? '';
-    usuarioRol = prefs.getString(_sessionRoleKey) ?? 'USUARIO';
+    usuarioRol = UserModel.normalizarRol(
+      prefs.getString(_sessionRoleKey) ?? 'USUARIO',
+    );
     usuarioFotoPerfil =
         (prefs.getString(_sessionPhotoKey) ?? _prefsPhoto(prefs, usuarioId))
             .trim();
@@ -172,6 +184,7 @@ class AuthService {
     correoGuardado = usuarioCorreo;
     nombreGuardado = usuarioNombre;
     passwordGuardada = prefs.getString(_sessionPasswordKey) ?? '';
+    _syncApiContext();
   }
 
   static Future<void> saveSession(String correo, String password) async {
@@ -194,11 +207,12 @@ class AuthService {
     usuarioId = user.id;
     usuarioNombre = user.nombre;
     usuarioCorreo = user.correo;
-    usuarioRol = user.rol;
+    usuarioRol = UserModel.normalizarRol(user.rol);
     usuarioFotoPerfil = (user.fotoPerfil ?? '').trim();
     usuarioAvatar = (user.avatar ?? '').trim();
     nombreGuardado = user.nombre;
     correoGuardado = user.correo;
+    _syncApiContext();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_sessionIdKey, usuarioId);
@@ -238,6 +252,7 @@ class AuthService {
     usuarioRol = 'USUARIO';
     usuarioFotoPerfil = '';
     usuarioAvatar = '';
+    _syncApiContext();
   }
 
   static Future<bool> isLoggedIn() async {

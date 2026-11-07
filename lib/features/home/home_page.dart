@@ -15,6 +15,7 @@ import '../../widgets/user_avatar.dart';
 import '../admin/admin_page.dart';
 import '../auth/login_page.dart';
 import '../exercises/exercises_page.dart';
+import '../leader/leader_page.dart';
 import '../pauses/guided_pause_page.dart';
 import '../profile/profile_page.dart';
 import '../routines/routine_page.dart';
@@ -50,13 +51,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   int get _usuarioId => _usuario?.id ?? AuthService.usuarioId;
   bool get _esAdmin =>
-      (_usuario?.rol ?? AuthService.usuarioRol).toUpperCase() ==
+      UserModel.normalizarRol(_usuario?.rol ?? AuthService.usuarioRol) ==
       'ADMINISTRADOR';
+  bool get _esLiderSst =>
+      UserModel.normalizarRol(_usuario?.rol ?? AuthService.usuarioRol) ==
+      'LIDER_SST';
 
   int get _metaDiaria => _bienestar.dailyGoal;
-  double get _progresoMeta => _metaDiaria <= 0
-      ? 0
-      : (_pausasHoy / _metaDiaria).clamp(0.0, 1.0);
+  double get _progresoMeta =>
+      _metaDiaria <= 0 ? 0 : (_pausasHoy / _metaDiaria).clamp(0.0, 1.0);
   int get _rachaTotal {
     final local = _bienestar.streak;
     return local > _racha ? local : _racha;
@@ -160,8 +163,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     if ((porDia[WellnessService.dateKey(cursor)] ?? 0) == 0) {
       cursor = cursor.subtract(const Duration(days: 1));
     }
-    while (racha < 365 &&
-        (porDia[WellnessService.dateKey(cursor)] ?? 0) > 0) {
+    while (racha < 365 && (porDia[WellnessService.dateKey(cursor)] ?? 0) > 0) {
       racha++;
       cursor = cursor.subtract(const Duration(days: 1));
     }
@@ -302,10 +304,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 const SizedBox(height: 18),
                 const Text(
                   'Tu resumen de hoy',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 14),
                 _sheetRow(
@@ -366,10 +365,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -383,15 +379,15 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       animation: AppThemeController.instance,
       builder: (context, _) {
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final pageBg = isDark ? AppPalette.darkBackground : AppPalette.background;
+        final pageBg = isDark
+            ? AppPalette.darkBackground
+            : AppPalette.background;
 
         return LayoutBuilder(
           builder: (context, constraints) {
             final wide = constraints.maxWidth >= 1040;
             final contentWidth =
-                constraints.maxWidth -
-                (wide ? 288 : 0) -
-                (wide ? 68 : 36);
+                constraints.maxWidth - (wide ? 288 : 0) - (wide ? 68 : 36);
 
             return Scaffold(
               backgroundColor: pageBg,
@@ -408,11 +404,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ),
                 child: Row(
                   children: [
-                    if (wide)
-                      SizedBox(
-                        width: 288,
-                        child: _sidebar(false),
-                      ),
+                    if (wide) SizedBox(width: 288, child: _sidebar(false)),
                     Expanded(
                       child: CustomScrollView(
                         slivers: [
@@ -541,17 +533,20 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return _Sidebar(
       usuario: _usuario,
       esAdmin: _esAdmin,
+      esLiderSst: _esLiderSst,
       isDark: Theme.of(context).brightness == Brightness.dark,
       onDashboard: () {
         if (closeOnTap) Navigator.pop(context);
       },
       onPausa: () => go(() => _abrirPausaGuiada()),
-      onEjercicios: () => go(() => _abrir(ExercisesPage(usuarioId: _usuarioId))),
+      onEjercicios: () =>
+          go(() => _abrir(ExercisesPage(usuarioId: _usuarioId))),
       onRutinas: () => go(() => _abrir(const RoutinePage())),
       onEstadisticas: () =>
           go(() => _abrir(StatisticsPage(usuarioId: _usuarioId))),
       onBienestar: () => go(() => _abrir(WellnessPage(usuarioId: _usuarioId))),
       onPerfil: () => go(_abrirPerfil),
+      onLiderSst: () => go(() => _abrir(const LeaderPage())),
       onAdmin: () => go(() => _abrir(const AdminPage())),
       onConfiguracion: () => go(
         () => _abrir(
@@ -706,10 +701,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     Icons.check_circle_rounded,
                     '$_pausasHoy/$_metaDiaria hoy',
                   ),
-                  _heroChip(
-                    Icons.access_time_rounded,
-                    _tiempoActivo,
-                  ),
+                  _heroChip(Icons.access_time_rounded, _tiempoActivo),
                 ],
               ),
               const SizedBox(height: 22),
@@ -737,8 +729,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     child: _heroSecondaryButton(
                       icon: Icons.spa_rounded,
                       label: 'Mi bienestar',
-                      onTap: () =>
-                          _abrir(WellnessPage(usuarioId: _usuarioId)),
+                      onTap: () => _abrir(WellnessPage(usuarioId: _usuarioId)),
                     ),
                   ),
                 ],
@@ -792,11 +783,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                color: Colors.white.withValues(alpha: 0.9),
-                size: 19,
-              ),
+              Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 19),
               const SizedBox(width: 9),
               Flexible(
                 child: Text(
@@ -863,9 +850,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return Wrap(
       spacing: spacing,
       runSpacing: spacing,
-      children: [
-        for (final card in cards) SizedBox(width: ancho, child: card),
-      ],
+      children: [for (final card in cards) SizedBox(width: ancho, child: card)],
     );
   }
 
@@ -919,6 +904,14 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ),
         ),
       ),
+      if (_esLiderSst)
+        _AccionRapida(
+          titulo: 'Líder SST',
+          descripcion: 'Usuarios y recordatorios globales',
+          icono: Icons.health_and_safety_rounded,
+          color: const Color(0xFF0F766E),
+          onTap: () => _abrir(const LeaderPage()),
+        ),
       if (_esAdmin)
         _AccionRapida(
           titulo: 'Administración',
@@ -1013,13 +1006,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final animo = _tarjetaAnimo(isDark);
 
     if (!wide) {
-      return Column(
-        children: [
-          recomendada,
-          const SizedBox(height: 16),
-          animo,
-        ],
-      );
+      return Column(children: [recomendada, const SizedBox(height: 16), animo]);
     }
 
     return IntrinsicHeight(
@@ -1069,10 +1056,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     SizedBox(height: 2),
                     Text(
                       'Ideal para este momento del día',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: AppPalette.muted,
-                      ),
+                      style: TextStyle(fontSize: 11.5, color: AppPalette.muted),
                     ),
                   ],
                 ),
@@ -1111,9 +1095,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                   label: 'Comenzar ahora',
                   icon: Icons.play_arrow_rounded,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  onPressed: () => _abrirPausaGuiada(
-                    nombre: 'Respiración consciente',
-                  ),
+                  onPressed: () =>
+                      _abrirPausaGuiada(nombre: 'Respiración consciente'),
                 ),
               ),
               const SizedBox(width: 10),
@@ -1153,10 +1136,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               Expanded(
                 child: Text(
                   '¿Cómo te sientes hoy?',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
                 ),
               ),
             ],
@@ -1168,10 +1148,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: _miniMood(
-                      option,
-                      seleccion?.score == option.score,
-                    ),
+                    child: _miniMood(option, seleccion?.score == option.score),
                   ),
                 ),
             ],
@@ -1206,10 +1183,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: () async {
-        await _wellnessService.saveMood(
-          option.score,
-          userId: _usuarioId,
-        );
+        await _wellnessService.saveMood(option.score, userId: _usuarioId);
         if (mounted) {
           setState(() {
             final moods = Map<String, MoodEntry>.from(_bienestar.moods);
@@ -1253,8 +1227,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             subtitle: 'Últimas pausas registradas',
             icon: Icons.history_rounded,
             trailing: TextButton(
-              onPressed: () =>
-                  _abrir(StatisticsPage(usuarioId: _usuarioId)),
+              onPressed: () => _abrir(StatisticsPage(usuarioId: _usuarioId)),
               child: const Text('Ver todo'),
             ),
           ),
@@ -1302,13 +1275,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
               ),
               const SizedBox(height: 2),
               Text(
-                item.fecha == null
-                    ? 'Sin fecha'
-                    : _fechaRelativa(item.fecha!),
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppPalette.muted,
-                ),
+                item.fecha == null ? 'Sin fecha' : _fechaRelativa(item.fecha!),
+                style: const TextStyle(fontSize: 11, color: AppPalette.muted),
               ),
             ],
           ),
@@ -1468,6 +1436,7 @@ class _AccionRapida {
 class _Sidebar extends StatelessWidget {
   final UserModel? usuario;
   final bool esAdmin;
+  final bool esLiderSst;
   final bool isDark;
   final VoidCallback onDashboard;
   final VoidCallback onPausa;
@@ -1476,6 +1445,7 @@ class _Sidebar extends StatelessWidget {
   final VoidCallback onEstadisticas;
   final VoidCallback onBienestar;
   final VoidCallback onPerfil;
+  final VoidCallback onLiderSst;
   final VoidCallback onAdmin;
   final VoidCallback onConfiguracion;
   final VoidCallback onSalir;
@@ -1484,6 +1454,7 @@ class _Sidebar extends StatelessWidget {
   const _Sidebar({
     required this.usuario,
     required this.esAdmin,
+    required this.esLiderSst,
     required this.isDark,
     required this.onDashboard,
     required this.onPausa,
@@ -1492,6 +1463,7 @@ class _Sidebar extends StatelessWidget {
     required this.onEstadisticas,
     required this.onBienestar,
     required this.onPerfil,
+    required this.onLiderSst,
     required this.onAdmin,
     required this.onConfiguracion,
     required this.onSalir,
@@ -1562,13 +1534,34 @@ class _Sidebar extends StatelessWidget {
                 onPausa,
                 destacado: true,
               ),
-              _item(Icons.fitness_center_rounded, 'Ejercicios', false, onEjercicios),
+              _item(
+                Icons.fitness_center_rounded,
+                'Ejercicios',
+                false,
+                onEjercicios,
+              ),
               _item(Icons.repeat_rounded, 'Rutinas', false, onRutinas),
               const SizedBox(height: 14),
               _grupo('BIENESTAR'),
-              _item(Icons.bar_chart_rounded, 'Estadísticas', false, onEstadisticas),
+              _item(
+                Icons.bar_chart_rounded,
+                'Estadísticas',
+                false,
+                onEstadisticas,
+              ),
               _item(Icons.spa_rounded, 'Bienestar', false, onBienestar),
               _item(Icons.person_rounded, 'Mi perfil', false, onPerfil),
+              if (esLiderSst) ...[
+                const SizedBox(height: 14),
+                _grupo('GESTIÓN SST'),
+                _item(
+                  Icons.health_and_safety_rounded,
+                  'Panel líder SST',
+                  false,
+                  onLiderSst,
+                  destacado: true,
+                ),
+              ],
               if (esAdmin) ...[
                 const SizedBox(height: 14),
                 _grupo('ADMINISTRACIÓN'),
@@ -1644,7 +1637,8 @@ class _Sidebar extends StatelessWidget {
   Widget _perfil(UserModel? usuario) {
     final nombre = usuario?.nombre ?? 'Invitado';
     final correo = usuario?.correo ?? 'Sin sesión';
-    final rol = usuario?.rol ?? 'USUARIO';
+    final rol = usuario?.rolEtiqueta ?? 'Usuario';
+    final rolEspecial = (usuario?.esAdmin ?? false) || (usuario?.esLiderSst ?? false);
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1693,7 +1687,7 @@ class _Sidebar extends StatelessWidget {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: rol.toUpperCase() == 'ADMINISTRADOR'
+                    color: rolEspecial
                         ? AppPalette.teal.withValues(alpha: 0.2)
                         : Colors.white.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(999),
@@ -1701,7 +1695,7 @@ class _Sidebar extends StatelessWidget {
                   child: Text(
                     rol,
                     style: TextStyle(
-                      color: rol.toUpperCase() == 'ADMINISTRADOR'
+                      color: rolEspecial
                           ? const Color(0xFF7FF3E1)
                           : const Color(0xFFCBD5E1),
                       fontSize: 9,

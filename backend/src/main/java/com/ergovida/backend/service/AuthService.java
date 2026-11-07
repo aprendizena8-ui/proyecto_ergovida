@@ -21,15 +21,18 @@ public class AuthService {
     private final UserRepository repository;
     private final BCryptPasswordEncoder encoder;
     private final SystemLogService systemLogService;
+    private final RoleService roleService;
 
     public AuthService(
             UserRepository repository,
             BCryptPasswordEncoder encoder,
-            SystemLogService systemLogService) {
+            SystemLogService systemLogService,
+            RoleService roleService) {
 
         this.repository = repository;
         this.encoder = encoder;
         this.systemLogService = systemLogService;
+        this.roleService = roleService;
     }
 
     /**
@@ -59,7 +62,7 @@ public class AuthService {
         user.setNombre(user.getNombre().trim());
         user.setCorreo(correo);
         user.setPassword(encoder.encode(user.getPassword()));
-        user.setRol("USUARIO");
+        user.setRol(roleService.rolParaCorreo(correo));
         user.setActivo(true);
         if (user.getAvatar() == null || user.getAvatar().isBlank()) {
             user.setAvatar("a01");
@@ -105,6 +108,20 @@ public class AuthService {
             );
 
             throw new RuntimeException("Credenciales inválidas.");
+        }
+
+        // Los correos configurados como administrador o lider SST siempre
+        // recuperan su rol al iniciar sesion. Para el resto de cuentas se
+        // respeta el rol guardado en MySQL (puede haber sido cambiado desde
+        // el panel administrador).
+        String rolEsperado = roleService.rolParaCorreo(correoNormalizado);
+        if (user.getRol() == null || user.getRol().isBlank()) {
+            user.setRol(rolEsperado);
+            repository.save(user);
+        } else if (!RoleService.USUARIO.equals(rolEsperado)
+                && !RoleService.esRol(user.getRol(), rolEsperado)) {
+            user.setRol(rolEsperado);
+            repository.save(user);
         }
 
         return new LoginResponse(
