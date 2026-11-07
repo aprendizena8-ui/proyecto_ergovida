@@ -50,3 +50,7 @@ replay_pid*
 *.hprof
 
 **/application.properties
+
+db.properties
+
+backend/db.properties
