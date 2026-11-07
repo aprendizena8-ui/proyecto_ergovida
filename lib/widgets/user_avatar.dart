@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 
 import '../data/models/user_model.dart';
@@ -80,7 +79,10 @@ class UserAvatar extends StatelessWidget {
       );
     }
 
-    final avatarBadge = AvatarBadge(avatarId: usuario?.avatar, size: size);
+    final avatarBadge = AvatarBadge(
+      avatarId: usuario?.avatar,
+      correo: usuario?.correo,
+      size: size);
 
     if (ringWidth <= 0 && ringColor == null) return avatarBadge;
 

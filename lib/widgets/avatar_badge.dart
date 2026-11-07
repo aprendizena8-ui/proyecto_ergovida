@@ -1,6 +1,4 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:simple_gravatar_fetch/simple_gravatar_fetch.dart';
 
 import '../data/models/avatar_catalog.dart';
 
@@ -45,57 +43,6 @@ class AvatarBadge extends StatelessWidget {
   static Color colorFor(String id) => gradientFor(id).first;
 
   Widget _core(BuildContext context) {
-    // 1. Si hay correo, usamos Gravatar (Foto real o identicon)
-    if (correo != null && correo!.isNotEmpty) {
-      return FutureBuilder<Uint8List?>(
-        future: getGravatar(correo!, size: 200, defaultImage: 'identicon'),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return _buildLoading();
-          }
-          if (snapshot.hasData && snapshot.data != null) {
-            return ClipOval(
-              child: Image.memory(
-                snapshot.data!,
-                width: size,
-                height: size,
-                fit: BoxFit.cover,
-              ),
-            );
-          }
-          // Si falla, mostramos el avatar de DiceBear como respaldo
-          return _buildDiceBear();
-        },
-      );
-    }
-
-    // 2. Si no hay correo, usamos DiceBear directamente
-    return _buildDiceBear();
-  }
-
-  Widget _buildLoading() {
-    final colors = gradientFor('a01');
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: colors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: const Center(
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDiceBear() {
     final option = AvatarCatalog.byId(avatarId);
     final colors = gradientFor(option.id);
     final ring = (size * 0.055).clamp(1.6, 4.5);
@@ -159,22 +106,11 @@ class AvatarBadge extends StatelessWidget {
               ),
             ),
             ClipOval(
-              child: Image.network(
-                option.imageUrl,
+              child: Image.asset(
+                option.assetPath,
                 width: size * 0.92,
                 height: size * 0.92,
                 fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    width: size * 0.92,
-                    height: size * 0.92,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                  );
-                },
                 errorBuilder: (context, error, stackTrace) => Icon(
                   Icons.person_rounded,
                   size: size * 0.6,
