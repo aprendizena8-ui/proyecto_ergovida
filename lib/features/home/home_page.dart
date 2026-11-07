@@ -1509,114 +1509,118 @@ class _Sidebar extends StatelessWidget {
         ),
       ),
       child: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: Colors.white,
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: ErgoVidaLogo(width: 38),
+        child: Material(
+          type: MaterialType.transparency,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: Colors.white,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: ErgoVidaLogo(width: 38),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ErgoVida',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.3,
+                  const SizedBox(width: 12),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ErgoVida',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                        ),
                       ),
-                    ),
-                    Text(
-                      'Bienestar laboral',
-                      style: TextStyle(
-                        color: Color(0xFF8FA9C2),
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.4,
+                      Text(
+                        'Bienestar laboral',
+                        style: TextStyle(
+                          color: Color(0xFF8FA9C2),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.4,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 22),
-            _perfil(usuario),
-            const SizedBox(height: 20),
-            _grupo('PRINCIPAL'),
-            _item(Icons.dashboard_rounded, 'Dashboard', true, onDashboard),
-            _item(
-              Icons.timer_rounded,
-              'Pausa guiada',
-              false,
-              onPausa,
-              destacado: true,
-            ),
-            _item(Icons.fitness_center_rounded, 'Ejercicios', false, onEjercicios),
-            _item(Icons.repeat_rounded, 'Rutinas', false, onRutinas),
-            const SizedBox(height: 14),
-            _grupo('BIENESTAR'),
-            _item(Icons.bar_chart_rounded, 'Estadísticas', false, onEstadisticas),
-            _item(Icons.spa_rounded, 'Bienestar', false, onBienestar),
-            _item(Icons.person_rounded, 'Mi perfil', false, onPerfil),
-            if (esAdmin) ...[
-              const SizedBox(height: 14),
-              _grupo('ADMINISTRACIÓN'),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 22),
+              _perfil(usuario),
+              const SizedBox(height: 20),
+              _grupo('PRINCIPAL'),
+              _item(Icons.dashboard_rounded, 'Dashboard', true, onDashboard),
               _item(
-                Icons.admin_panel_settings_rounded,
-                'Panel administrador',
+                Icons.timer_rounded,
+                'Pausa guiada',
                 false,
-                onAdmin,
+                onPausa,
                 destacado: true,
               ),
-            ],
-            const SizedBox(height: 14),
-            _grupo('SISTEMA'),
-            _item(
-              Icons.settings_rounded,
-              'Configuración',
-              false,
-              onConfiguracion,
-            ),
-            _item(
-              isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-              isDark ? 'Tema claro' : 'Tema oscuro',
-              false,
-              onTema,
-            ),
-            const SizedBox(height: 14),
-            Material(
-              color: Colors.transparent,
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                leading: const Icon(
-                  Icons.logout_rounded,
-                  color: Color(0xFFFF8A8A),
-                  size: 21,
+              _item(Icons.fitness_center_rounded, 'Ejercicios', false, onEjercicios),
+              _item(Icons.repeat_rounded, 'Rutinas', false, onRutinas),
+              const SizedBox(height: 14),
+              _grupo('BIENESTAR'),
+              _item(Icons.bar_chart_rounded, 'Estadísticas', false, onEstadisticas),
+              _item(Icons.spa_rounded, 'Bienestar', false, onBienestar),
+              _item(Icons.person_rounded, 'Mi perfil', false, onPerfil),
+              if (esAdmin) ...[
+                const SizedBox(height: 14),
+                _grupo('ADMINISTRACIÓN'),
+                _item(
+                  Icons.admin_panel_settings_rounded,
+                  'Panel administrador',
+                  false,
+                  onAdmin,
+                  destacado: true,
                 ),
-                title: const Text(
-                  'Cerrar sesión',
-                  style: TextStyle(
-                    color: Color(0xFFFFB4B4),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13.5,
-                  ),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                onTap: onSalir,
+              ],
+              const SizedBox(height: 14),
+              _grupo('SISTEMA'),
+              _item(
+                Icons.settings_rounded,
+                'Configuración',
+                false,
+                onConfiguracion,
               ),
-            ),
-          ],
+              _item(
+                isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                isDark ? 'Tema claro' : 'Tema oscuro',
+                false,
+                onTema,
+              ),
+              const SizedBox(height: 14),
+              Material(
+                type: MaterialType.transparency,
+                color: Colors.transparent,
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  leading: const Icon(
+                    Icons.logout_rounded,
+                    color: Color(0xFFFF8A8A),
+                    size: 21,
+                  ),
+                  title: const Text(
+                    'Cerrar sesión',
+                    style: TextStyle(
+                      color: Color(0xFFFFB4B4),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13.5,
+                    ),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  onTap: onSalir,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1722,44 +1726,47 @@ class _Sidebar extends StatelessWidget {
     bool destacado = false,
   }) {
     final color = destacado ? const Color(0xFF7FF3E1) : Colors.white;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 4),
-      child: Material(
-        color: active
-            ? AppPalette.blue.withValues(alpha: 0.28)
-            : destacado
-            ? AppPalette.teal.withValues(alpha: 0.12)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(13),
-        child: InkWell(
+    return Material(
+      type: MaterialType.transparency,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 4),
+        child: Material(
+          color: active
+              ? AppPalette.blue.withValues(alpha: 0.28)
+              : destacado
+              ? AppPalette.teal.withValues(alpha: 0.12)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(13),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-            child: Row(
-              children: [
-                Icon(icon, color: color, size: 20),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      color: color,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13.5,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(13),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+              child: Row(
+                children: [
+                  Icon(icon, color: color, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13.5,
+                      ),
                     ),
                   ),
-                ),
-                if (active)
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      color: AppPalette.teal,
-                      shape: BoxShape.circle,
+                  if (active)
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: AppPalette.teal,
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

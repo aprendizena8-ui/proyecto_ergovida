@@ -57,7 +57,10 @@ class UserAvatar extends StatelessWidget {
             width: size,
             height: size,
             errorBuilder: (context, error, stackTrace) =>
-                AvatarBadge(avatarId: usuario?.avatar, size: size),
+                AvatarBadge(
+                  avatarId: usuario?.avatar,
+                  correo: usuario?.correo,
+                  size: size),
           ),
         ),
       );
