@@ -12,6 +12,18 @@ CREATE TABLE IF NOT EXISTS recordatorios_globales (
     PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Controla que cada usuario reciba una sola vez al dia cada recordatorio global.
+CREATE TABLE IF NOT EXISTS recordatorios_globales_envios (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    recordatorio_id BIGINT NOT NULL,
+    usuario_id BIGINT NOT NULL,
+    fecha DATE NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_recordatorio_global_usuario_fecha (
+        recordatorio_id, usuario_id, fecha
+    )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Opcional: si alguna cuenta especial ya existía con otro rol, se puede
 -- corregir manualmente. No se ejecuta automáticamente para no sobrescribir
 -- cambios hechos por el administrador.

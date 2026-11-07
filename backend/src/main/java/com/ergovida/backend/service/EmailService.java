@@ -68,4 +68,33 @@ public class EmailService {
         );
         mailSender.send(mensaje);
     }
+
+    public void enviarRecordatorioGlobal(
+            String destinatario,
+            String nombre,
+            String mensajeRecordatorio,
+            LocalTime hora) {
+
+        String saludo = nombre == null || nombre.isBlank()
+                ? "¡Hola!"
+                : "¡Hola, " + nombre.trim() + "!";
+
+        String horaAmPm = hora.format(
+                DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH));
+
+        SimpleMailMessage mensaje = new SimpleMailMessage();
+        if (remitente != null && !remitente.isBlank()) {
+            mensaje.setFrom(remitente);
+        }
+        mensaje.setTo(destinatario);
+        mensaje.setSubject("ErgoVida - Recordatorio de bienestar");
+        mensaje.setText(
+            saludo + "\n\n" +
+            "Tienes un recordatorio de ErgoVida para las " + horaAmPm + ":\n\n" +
+            mensajeRecordatorio + "\n\n" +
+            "Recuerda realizar tu pausa activa y cuidar tu bienestar laboral.\n\n" +
+            "Equipo ErgoVida"
+        );
+        mailSender.send(mensaje);
+    }
 }

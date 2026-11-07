@@ -46,6 +46,16 @@ class RecordatorioGlobal {
     );
   }
 
+  String get horaEtiqueta {
+    final partes = hora.split(':');
+    if (partes.length < 2) return hora;
+    final h = int.tryParse(partes[0]) ?? 0;
+    final m = int.tryParse(partes[1]) ?? 0;
+    final sufijo = h >= 12 ? 'PM' : 'AM';
+    final hora12 = h % 12 == 0 ? 12 : h % 12;
+    return '$hora12:${m.toString().padLeft(2, '0')} $sufijo';
+  }
+
   String get diasEtiqueta {
     final dias = diasSemana
         .split(',')

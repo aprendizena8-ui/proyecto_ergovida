@@ -478,7 +478,7 @@ class _LeaderPageState extends State<LeaderPage>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${recordatorio.hora} · ${recordatorio.diasEtiqueta}',
+                  '${recordatorio.horaEtiqueta} · ${recordatorio.diasEtiqueta}',
                   style: TextStyle(
                     color: isDark ? const Color(0xFF9FB3C8) : brandMuted,
                     fontSize: 12,
@@ -574,6 +574,12 @@ class _RecordatorioDialogState extends State<_RecordatorioDialog> {
   String get _horaTexto =>
       '${_hora.hour.toString().padLeft(2, '0')}:${_hora.minute.toString().padLeft(2, '0')}';
 
+  String get _horaEtiqueta {
+    final sufijo = _hora.hour >= 12 ? 'PM' : 'AM';
+    final hora12 = _hora.hour % 12 == 0 ? 12 : _hora.hour % 12;
+    return '$hora12:${_hora.minute.toString().padLeft(2, '0')} $sufijo';
+  }
+
   @override
   Widget build(BuildContext context) {
     const dias = {
@@ -612,11 +618,17 @@ class _RecordatorioDialogState extends State<_RecordatorioDialog> {
                 final seleccion = await showTimePicker(
                   context: context,
                   initialTime: _hora,
+                  builder: (context, child) => MediaQuery(
+                    data: MediaQuery.of(
+                      context,
+                    ).copyWith(alwaysUse24HourFormat: false),
+                    child: child!,
+                  ),
                 );
                 if (seleccion != null) setState(() => _hora = seleccion);
               },
               icon: const Icon(Icons.schedule_rounded),
-              label: Text('Hora: $_horaTexto'),
+              label: Text('Hora: $_horaEtiqueta'),
             ),
             const SizedBox(height: 14),
             const Text(
