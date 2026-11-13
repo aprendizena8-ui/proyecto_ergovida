@@ -7,6 +7,7 @@ import '../../data/services/estadisticas_service.dart';
 import '../../data/services/pausa_service.dart';
 import '../../data/services/ranking_service.dart';
 import '../../main.dart';
+import '../../widgets/streak_mascot.dart';
 import '../../widgets/user_avatar.dart';
 
 class StatisticsPage extends StatefulWidget {
@@ -248,6 +249,8 @@ class _StatisticsPageState extends State<StatisticsPage> with RouteAware {
                     _heroHeader(isDark),
                     const SizedBox(height: 18),
                     _resumen(isDark),
+                    const SizedBox(height: 20),
+                    StreakMascotCard(streak: _racha),
                     const SizedBox(height: 20),
                     _rankingCard(isDark),
                     const SizedBox(height: 20),

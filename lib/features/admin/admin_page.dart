@@ -5,6 +5,7 @@ import '../../data/services/auth_service.dart';
 import '../../data/services/usuario_service.dart';
 import '../../main.dart';
 import '../../widgets/user_avatar.dart';
+import 'admin_alertas_page.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -176,6 +177,16 @@ class _AdminPageState extends State<AdminPage> {
         backgroundColor: Colors.transparent,
         foregroundColor: textPrimary,
         actions: [
+          IconButton(
+            tooltip: 'Alertas y soporte',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AdminAlertasPage(),
+              ),
+            ),
+            icon: const Icon(Icons.notifications_active_rounded),
+          ),
           IconButton(
             tooltip: 'Actualizar',
             onPressed: _cargar,

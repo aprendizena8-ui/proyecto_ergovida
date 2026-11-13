@@ -6,11 +6,13 @@ import '../../data/services/auth_service.dart';
 import '../../data/services/ejercicio_service.dart';
 import '../../data/services/estadisticas_service.dart';
 import '../../data/services/pausa_service.dart';
+import '../../data/services/push_service.dart';
 import '../../data/services/reminder_service.dart';
 import '../../data/services/wellness_service.dart';
 import '../../main.dart';
 import '../../widgets/design_system.dart';
 import '../../widgets/ergovida_logo.dart';
+import '../../widgets/streak_mascot.dart';
 import '../../widgets/user_avatar.dart';
 import '../admin/admin_page.dart';
 import '../auth/login_page.dart';
@@ -73,6 +75,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     final usuario = _usuario;
     if (usuario != null && usuario.id > 0) {
       ReminderService.instance.start(usuario);
+      PushService.instance.inicializar();
     }
     _cargarResumen();
   }
@@ -473,11 +476,19 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 const SizedBox(height: 20),
                                 AnimatedEntrance(
                                   index: 1,
+                                  child: StreakMascotCard(
+                                    streak: _rachaTotal,
+                                    onTap: _abrirPausaGuiada,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                AnimatedEntrance(
+                                  index: 2,
                                   child: _statsGrid(contentWidth),
                                 ),
                                 const SizedBox(height: 30),
                                 AnimatedEntrance(
-                                  index: 2,
+                                  index: 3,
                                   child: const SectionHeader(
                                     title: 'Acciones rápidas',
                                     subtitle:
@@ -487,12 +498,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 ),
                                 const SizedBox(height: 16),
                                 AnimatedEntrance(
-                                  index: 3,
+                                  index: 4,
                                   child: _accionesRapidas(),
                                 ),
                                 const SizedBox(height: 26),
                                 AnimatedEntrance(
-                                  index: 4,
+                                  index: 5,
                                   child: _filaBienestar(
                                     contentWidth >= 760,
                                     isDark,
@@ -500,12 +511,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                                 ),
                                 const SizedBox(height: 26),
                                 AnimatedEntrance(
-                                  index: 5,
+                                  index: 6,
                                   child: _actividadCard(isDark),
                                 ),
                                 const SizedBox(height: 20),
                                 AnimatedEntrance(
-                                  index: 6,
+                                  index: 7,
                                   child: _consejoCard(isDark),
                                 ),
                               ]),

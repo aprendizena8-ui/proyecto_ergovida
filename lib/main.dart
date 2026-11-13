@@ -1,8 +1,11 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/theme/app_theme.dart';
 import 'data/models/user_model.dart';
+import 'data/services/app_error_service.dart';
 import 'data/services/auth_service.dart';
 import 'data/services/reminder_service.dart';
 import 'features/auth/login_page.dart';
@@ -52,6 +55,26 @@ class AppThemeController extends ChangeNotifier {
 }
 
 void main() {
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    AppErrorService.reportar(
+      tipo: details.exception.runtimeType.toString(),
+      modulo: details.library ?? 'Flutter',
+      mensaje: details.exceptionAsString(),
+      stack: details.stack?.toString(),
+    );
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    AppErrorService.reportar(
+      tipo: error.runtimeType.toString(),
+      modulo: 'Plataforma',
+      mensaje: error.toString(),
+      stack: stack.toString(),
+    );
+    return false;
+  };
+
   runApp(const MyApp());
 }
 

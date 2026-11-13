@@ -34,16 +34,23 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.textContaining('Hola, Ana'), findsOneWidget);
-    expect(find.text('Acciones rápidas'), findsOneWidget);
 
-    final accionesAntes = tester.getTopLeft(find.text('Acciones rápidas'));
-    await tester.drag(
-      find.byType(CustomScrollView),
-      const Offset(0, -220),
+    final scrollView = find.byType(CustomScrollView);
+    final scrollable = find
+        .descendant(of: scrollView, matching: find.byType(Scrollable))
+        .first;
+    final position = tester.state<ScrollableState>(scrollable).position;
+    await tester.scrollUntilVisible(
+      find.text('Acciones rápidas'),
+      220,
+      scrollable: scrollable,
     );
-    await tester.pumpAndSettle();
-    final accionesDespues = tester.getTopLeft(find.text('Acciones rápidas'));
-    expect(accionesDespues.dy, lessThan(accionesAntes.dy));
+    await tester.pump();
+    expect(find.text('Acciones rápidas'), findsOneWidget);
+    expect(position.pixels, greaterThan(0));
+
+    position.jumpTo(0);
+    await tester.pump();
 
     await tester.tap(find.byTooltip('Cambiar tema'));
     await tester.pump();
@@ -51,7 +58,6 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.textContaining('Hola, Ana'), findsOneWidget);
-    expect(find.text('Acciones rápidas'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(seconds: 1));

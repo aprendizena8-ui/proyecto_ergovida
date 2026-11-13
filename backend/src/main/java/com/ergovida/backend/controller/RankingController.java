@@ -11,10 +11,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ergovida.backend.config.RoleGuard;
 import com.ergovida.backend.dto.RankingEntry;
 import com.ergovida.backend.model.User;
 import com.ergovida.backend.repository.PausaRealizadaRepository;
 import com.ergovida.backend.repository.UserRepository;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/ranking")
@@ -23,16 +26,21 @@ public class RankingController {
 
     private final PausaRealizadaRepository pausaRepository;
     private final UserRepository userRepository;
+    private final RoleGuard roleGuard;
 
     public RankingController(
             PausaRealizadaRepository pausaRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            RoleGuard roleGuard) {
         this.pausaRepository = pausaRepository;
         this.userRepository = userRepository;
+        this.roleGuard = roleGuard;
     }
 
     @GetMapping
-    public List<RankingEntry> getRanking() {
+    public List<RankingEntry> getRanking(HttpServletRequest request) {
+        roleGuard.requireUser(request);
+
         Map<Long, User> usuarios = userRepository.findAll().stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
 

@@ -1,0 +1,12 @@
+services:
+  ergovida-backend:
+    build: .
+    container_name: ergovida-backend
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      TZ: America/Bogota
+      RECORDATORIOS_SCHEDULER_ENABLED: "true"

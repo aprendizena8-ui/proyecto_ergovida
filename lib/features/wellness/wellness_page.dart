@@ -5,6 +5,7 @@ import '../../data/services/estadisticas_service.dart';
 import '../../data/services/pausa_service.dart';
 import '../../data/services/wellness_service.dart';
 import '../../widgets/design_system.dart';
+import '../../widgets/streak_mascot.dart';
 import '../pauses/guided_pause_page.dart';
 
 class WellnessPage extends StatefulWidget {
@@ -242,6 +243,8 @@ class _WellnessPageState extends State<WellnessPage> {
                         _hero(),
                         const SizedBox(height: 18),
                         _metaDiaria(),
+                        const SizedBox(height: 18),
+                        StreakMascotCard(streak: _racha),
                         const SizedBox(height: 18),
                         _checkIn(),
                         const SizedBox(height: 18),

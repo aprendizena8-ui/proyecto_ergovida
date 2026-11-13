@@ -76,6 +76,204 @@ class _RoutinePageState extends State<RoutinePage> {
       icono: Icons.nightlight_round,
       color: Color(0xFF7C3AED),
     ),
+    RoutineItem(
+      nombre: 'Sentadillas con silla',
+      descripcion:
+          'Colócate frente a una silla, baja flexionando rodillas y caderas como si fueras a sentarte, y sube empujando con los talones. Fortalece piernas y glúteos.',
+      ejercicios: 1,
+      minutos: 5,
+      nivel: 'Moderado',
+      categoria: 'Casa',
+      icono: Icons.chair_rounded,
+      color: AppPalette.teal,
+    ),
+    RoutineItem(
+      nombre: 'Puente de glúteos',
+      descripcion:
+          'Acostado boca arriba con rodillas flexionadas y pies apoyados, eleva la cadera hasta alinear rodillas, cadera y hombros. Activa glúteos y zona lumbar.',
+      ejercicios: 1,
+      minutos: 5,
+      nivel: 'Fácil',
+      categoria: 'Casa',
+      icono: Icons.fitness_center_rounded,
+      color: AppPalette.blue,
+    ),
+    RoutineItem(
+      nombre: 'Flexiones de pared',
+      descripcion:
+          'Apoya las manos en la pared a la altura del pecho, inclina el cuerpo llevando el pecho hacia la pared y empuja para volver. Trabaja pecho y brazos con bajo impacto.',
+      ejercicios: 1,
+      minutos: 4,
+      nivel: 'Fácil',
+      categoria: 'Casa',
+      icono: Icons.open_in_full_rounded,
+      color: AppPalette.cyan,
+    ),
+    RoutineItem(
+      nombre: 'Estiramiento de isquiotibiales sentado',
+      descripcion:
+          'Siéntate en el borde de una silla, extiende una pierna con talón apoyado y flexiona el tronco hacia adelante desde la cadera. Alivia tensión en la parte posterior del muslo.',
+      ejercicios: 1,
+      minutos: 4,
+      nivel: 'Leve',
+      categoria: 'Casa',
+      icono: Icons.airline_seat_legroom_extra_rounded,
+      color: AppPalette.teal,
+    ),
+    RoutineItem(
+      nombre: 'Gato-vaca en silla',
+      descripcion:
+          'Sentado con pies firmes, alterna curvar la espalda hacia adelante llevando el mentón al pecho y luego abrir el pecho arqueando suavemente. Mejora movilidad de columna.',
+      ejercicios: 1,
+      minutos: 4,
+      nivel: 'Leve',
+      categoria: 'Casa',
+      icono: Icons.event_seat_rounded,
+      color: AppPalette.blue,
+    ),
+    RoutineItem(
+      nombre: 'Elevación de talones de pie',
+      descripcion:
+          'De pie con apoyo en una silla, eleva los talones hasta quedar de puntillas, sostén un segundo y baja con control. Fortalece pantorrillas y mejora equilibrio.',
+      ejercicios: 1,
+      minutos: 4,
+      nivel: 'Fácil',
+      categoria: 'Casa',
+      icono: Icons.directions_walk_rounded,
+      color: AppPalette.cyan,
+    ),
+    RoutineItem(
+      nombre: 'Marcha en el sitio',
+      descripcion:
+          'De pie, eleva alternativamente las rodillas a una altura cómoda mientras balanceas los brazos. Activa circulación y eleva la energía al inicio o mitad del día.',
+      ejercicios: 1,
+      minutos: 5,
+      nivel: 'Fácil',
+      categoria: 'Día',
+      icono: Icons.directions_run_rounded,
+      color: Color(0xFFF59E0B),
+    ),
+    RoutineItem(
+      nombre: 'Estiramiento lateral de tronco de pie',
+      descripcion:
+          'De pie con pies al ancho de caderas, eleva un brazo y inclina el cuerpo hacia el lado contrario sin rotar el tronco. Estira costados y mejora respiración.',
+      ejercicios: 1,
+      minutos: 4,
+      nivel: 'Leve',
+      categoria: 'Día',
+      icono: Icons.swap_horiz_rounded,
+      color: AppPalette.blue,
+    ),
+    RoutineItem(
+      nombre: 'Rotación torácica de pie',
+      descripcion:
+          'De pie con rodillas suaves y brazos al frente, gira el tronco hacia un lado y luego al otro manteniendo la cadera estable. Aumenta movilidad de la espalda media.',
+      ejercicios: 1,
+      minutos: 4,
+      nivel: 'Leve',
+      categoria: 'Día',
+      icono: Icons.sync_alt_rounded,
+      color: AppPalette.teal,
+    ),
+    RoutineItem(
+      nombre: 'Círculos de brazos amplios',
+      descripcion:
+          'De pie, extiende los brazos a los lados y realiza círculos amplios hacia adelante y hacia atrás. Calienta hombros y mejora la postura durante el día.',
+      ejercicios: 1,
+      minutos: 4,
+      nivel: 'Fácil',
+      categoria: 'Día',
+      icono: Icons.autorenew_rounded,
+      color: AppPalette.cyan,
+    ),
+    RoutineItem(
+      nombre: 'Balanceo de piernas',
+      descripcion:
+          'Apóyate en una silla y balancea una pierna hacia adelante y atrás con movimiento controlado, luego cambia de lado. Moviliza cadera y activa la zona inferior.',
+      ejercicios: 1,
+      minutos: 5,
+      nivel: 'Fácil',
+      categoria: 'Día',
+      icono: Icons.airline_seat_recline_normal_rounded,
+      color: AppPalette.blue,
+    ),
+    RoutineItem(
+      nombre: 'Extensión de espalda de pie',
+      descripcion:
+          'De pie con manos en la zona lumbar, lleva el pecho hacia arriba y atrás suavemente sin forzar el cuello. Contrarresta la postura encorvada y alivia rigidez.',
+      ejercicios: 1,
+      minutos: 3,
+      nivel: 'Leve',
+      categoria: 'Día',
+      icono: Icons.accessibility_rounded,
+      color: Color(0xFFF59E0B),
+    ),
+    RoutineItem(
+      nombre: 'Estiramiento de cuello lateral suave',
+      descripcion:
+          'Sentado o de pie, inclina la oreja hacia el hombro manteniendo ambos hombros relajados; sostén y cambia de lado. Libera tensión cervical antes de dormir.',
+      ejercicios: 1,
+      minutos: 4,
+      nivel: 'Leve',
+      categoria: 'Noche',
+      icono: Icons.accessibility_new_rounded,
+      color: Color(0xFF7C3AED),
+    ),
+    RoutineItem(
+      nombre: 'Respiración diafragmática lenta',
+      descripcion:
+          'Acostado o sentado, coloca una mano en el abdomen, inhala por la nariz inflando el abdomen y exhala lento por la boca. Favorece la relajación y el descanso.',
+      ejercicios: 1,
+      minutos: 5,
+      nivel: 'Leve',
+      categoria: 'Noche',
+      icono: Icons.air_rounded,
+      color: AppPalette.teal,
+    ),
+    RoutineItem(
+      nombre: 'Postura del niño',
+      descripcion:
+          'Arrodíllate, apoya los glúteos sobre los talones y extiende los brazos hacia adelante bajando el pecho. Estira espalda, hombros y ayuda a soltar tensión.',
+      ejercicios: 1,
+      minutos: 4,
+      nivel: 'Fácil',
+      categoria: 'Noche',
+      icono: Icons.self_improvement_rounded,
+      color: AppPalette.blue,
+    ),
+    RoutineItem(
+      nombre: 'Flexión hacia adelante sentado',
+      descripcion:
+          'Sentado con pies apoyados, inclina el tronco hacia adelante dejando caer brazos y cabeza con suavidad. Relaja espalda y cuello para cerrar el día.',
+      ejercicios: 1,
+      minutos: 4,
+      nivel: 'Leve',
+      categoria: 'Noche',
+      icono: Icons.weekend_rounded,
+      color: AppPalette.cyan,
+    ),
+    RoutineItem(
+      nombre: 'Torsión suave acostado',
+      descripcion:
+          'Acostado boca arriba, lleva ambas rodillas flexionadas hacia un lado manteniendo hombros apoyados, luego cambia de lado. Libera tensión lumbar con movimiento controlado.',
+      ejercicios: 1,
+      minutos: 5,
+      nivel: 'Leve',
+      categoria: 'Noche',
+      icono: Icons.bedtime_rounded,
+      color: Color(0xFF7C3AED),
+    ),
+    RoutineItem(
+      nombre: 'Estiramiento de pantorrillas en pared',
+      descripcion:
+          'Apoya las manos en la pared, lleva una pierna atrás con talón en el suelo y flexiona la pierna adelantada. Estira pantorrillas y favorece la relajación de piernas.',
+      ejercicios: 1,
+      minutos: 4,
+      nivel: 'Fácil',
+      categoria: 'Noche',
+      icono: Icons.directions_walk_rounded,
+      color: AppPalette.teal,
+    ),
   ];
 
   List<RoutineItem> get _visibles {
@@ -93,7 +291,7 @@ class _RoutinePageState extends State<RoutinePage> {
           duracionMin: rutina.minutos,
           categoria: rutina.categoria,
           descripcion:
-              '${rutina.descripcion} Incluye ${rutina.ejercicios} ejercicios guiados.',
+              '${rutina.descripcion} Incluye ${rutina.ejercicios} ${rutina.ejercicios == 1 ? 'ejercicio guiado' : 'ejercicios guiados'}.',
         ),
       ),
     );
@@ -220,7 +418,7 @@ class _RoutinePageState extends State<RoutinePage> {
                     outlined: true,
                   ),
                   AppPill(
-                    text: 'Desde 4 min',
+                    text: 'Desde 3 min',
                     color: AppPalette.teal,
                     icon: Icons.schedule_rounded,
                   ),
@@ -235,7 +433,7 @@ class _RoutinePageState extends State<RoutinePage> {
 
   Widget _filtros() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    const filtros = ['Todas', 'Oficina', 'Casa', 'Mañana', 'Noche'];
+    const filtros = ['Todas', 'Oficina', 'Casa', 'Día', 'Mañana', 'Noche'];
 
     return SizedBox(
       height: 38,
@@ -338,7 +536,8 @@ class _RoutinePageState extends State<RoutinePage> {
                 icon: Icons.schedule_rounded,
               ),
               AppPill(
-                text: '${rutina.ejercicios} ejercicios',
+                text:
+                    '${rutina.ejercicios} ${rutina.ejercicios == 1 ? 'ejercicio' : 'ejercicios'}',
                 color: AppPalette.teal,
                 icon: Icons.fitness_center_rounded,
               ),

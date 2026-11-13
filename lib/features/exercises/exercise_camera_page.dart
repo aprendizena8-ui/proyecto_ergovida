@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:pose_detection/pose_detection.dart';
 import '../../data/services/ejercicio_service.dart';
+import 'exercise_avatar.dart';
 import 'exercise_camera_models.dart';
 import 'exercise_camera_logic.dart';
 import 'exercise_camera_painter.dart';
@@ -127,6 +128,11 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
 
   // En Windows la vista previa va en espejo, pero los frames del stream no.
   bool get _mirrorOverlay => Platform.isWindows;
+
+  /// El avatar solo tiene sentido en ejercicios cuya cámara identifica el
+  /// movimiento. El descanso visual y los ejercicios genéricos no lo usan.
+  bool get _showsAvatar =>
+      _kind != ExerciseKind.visual && _kind != ExerciseKind.other;
 
   @override
   void initState() {
@@ -1398,6 +1404,46 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
             if (_personVisible && _pts.isNotEmpty && frameSize != null)
               CustomPaint(
                 painter: PosePainter(_pts, frameSize, _mirrorOverlay),
+              ),
+            if (_showsAvatar)
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Container(
+                    width: 132,
+                    height: 196,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.30),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.26),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(6, 6, 6, 0),
+                            child: ExerciseAvatar(kind: _kind),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            'GUÍA',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.55),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
           ],
         ),

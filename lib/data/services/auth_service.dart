@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/user_model.dart';
 import 'api_client.dart';
+import 'push_service.dart';
 
 class AuthService {
   static const String _sessionEmailKey = 'session_email';
@@ -234,6 +235,8 @@ class AuthService {
   }
 
   static Future<void> clearSession() async {
+    await PushService.instance.eliminarTokenActual();
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_sessionEmailKey);
     await prefs.remove(_sessionPasswordKey);

@@ -8,6 +8,7 @@ import '../../data/services/reminder_service.dart';
 import '../../data/services/usuario_service.dart';
 import '../../main.dart';
 import '../../widgets/design_system.dart';
+import '../support/support_page.dart';
 import '../wellness/wellness_page.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -382,6 +383,37 @@ class _SettingsPageState extends State<SettingsPage> {
                           builder: (_) => WellnessPage(
                             usuarioId: widget.usuario!.id,
                           ),
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            _seccion('Ayuda y soporte'),
+            AppSurface(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: ListTile(
+                leading: const IconBadge(
+                  icon: Icons.support_agent_rounded,
+                  color: AppPalette.blue,
+                  size: 42,
+                ),
+                title: const Text(
+                  'Ayuda y soporte',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: const Text(
+                  'Describe tu problema y envía una solicitud al administrador',
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                onTap: widget.usuario == null
+                    ? null
+                    : () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SupportPage(),
                         ),
                       ),
               ),

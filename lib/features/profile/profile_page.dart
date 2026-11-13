@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../data/models/avatar_catalog.dart';
 import '../../data/models/user_model.dart';
+import '../../data/services/admin_alerta_service.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/estadisticas_service.dart';
 import '../../data/services/pausa_service.dart';
@@ -16,8 +17,10 @@ import '../../data/services/usuario_service.dart';
 import '../../main.dart';
 import '../../widgets/avatar_badge.dart';
 import '../../widgets/user_avatar.dart';
+import '../admin/admin_alertas_page.dart';
 import '../auth/login_page.dart';
 import '../settings/settings_page.dart';
+import '../support/support_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final UserModel usuario;
@@ -42,6 +45,12 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _eliminando = false;
   bool _subiendoFoto = false;
   bool _cambiandoPassword = false;
+  bool _cargandoAdmin = false;
+  bool _probandoAlerta = false;
+  bool _errorAdmin = false;
+
+  List<AlertaErrorAdmin> _alertasAdmin = const [];
+  List<SolicitudAyudaAdmin> _solicitudesAdmin = const [];
 
   int _totalPausas = 0;
   int _pausasCompletadas = 0;
@@ -54,6 +63,7 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     _usuario = widget.usuario;
     _cargar();
+    if (AuthService.isAdmin) _cargarAdmin();
   }
 
   Future<void> _cargar() async {
@@ -159,6 +169,39 @@ class _ProfilePageState extends State<ProfilePage> {
       _racha = racha;
       _cargando = false;
     });
+  }
+
+  Future<void> _cargarAdmin() async {
+    if (!AuthService.isAdmin) return;
+    if (mounted) {
+      setState(() {
+        _cargandoAdmin = true;
+        _errorAdmin = false;
+      });
+    }
+
+    try {
+      final resultados = await Future.wait<dynamic>([
+        AdminAlertaService.alertas(),
+        AdminAlertaService.solicitudes(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _alertasAdmin = resultados[0] as List<AlertaErrorAdmin>;
+        _solicitudesAdmin = resultados[1] as List<SolicitudAyudaAdmin>;
+        _cargandoAdmin = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _cargandoAdmin = false;
+        _errorAdmin = true;
+      });
+    }
+  }
+
+  Future<void> _refrescar() async {
+    await Future.wait([_cargar(), _cargarAdmin()]);
   }
 
   void _mensaje(String texto, {bool error = false}) {
@@ -410,6 +453,7 @@ class _ProfilePageState extends State<ProfilePage> {
     await _usuarioService.actualizarUsuario(_usuario.id, {
       'notificaciones': nuevo.notificaciones,
       'recordatorios': nuevo.recordatorios,
+      'recordatoriosCorreo': nuevo.recordatoriosCorreo,
     });
   }
 
@@ -713,14 +757,14 @@ class _ProfilePageState extends State<ProfilePage> {
         actions: [
           IconButton(
             tooltip: 'Actualizar',
-            onPressed: _cargando ? null : _cargar,
+            onPressed: _cargando || _cargandoAdmin ? null : _refrescar,
             icon: const Icon(Icons.refresh_rounded),
           ),
           const SizedBox(width: 8),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _cargar,
+        onRefresh: _refrescar,
         color: brandBlue,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -745,6 +789,10 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 16),
             _buildInformacion(context),
             const SizedBox(height: 16),
+            if (AuthService.isAdmin) ...[
+              _buildAdminMonitoreo(context),
+              const SizedBox(height: 16),
+            ],
             _buildPreferencias(context),
             const SizedBox(height: 16),
             _buildSeguridad(context),
@@ -1179,6 +1227,369 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Widget _buildAdminMonitoreo(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary = isDark ? const Color(0xFFAFC1D4) : brandMuted;
+    final pendientes = _solicitudesAdmin.where((s) => s.pendiente).length;
+    final alertas = _alertasAdmin.take(3).toList();
+    final solicitudes = [
+      ..._solicitudesAdmin.where((s) => s.pendiente),
+      ..._solicitudesAdmin.where((s) => !s.pendiente),
+    ].take(3).toList();
+
+    return _SectionCard(
+      title: 'Monitoreo y soporte',
+      icon: Icons.monitor_heart_outlined,
+      accentColor: brandTeal,
+      trailing: TextButton(
+        onPressed: _abrirAdminAlertas,
+        child: const Text('Ver todo'),
+      ),
+      children: [
+        Text(
+          'ErgoVida reporta automáticamente los errores graves al correo de '
+          'los administradores. Aquí ves el resumen de errores y las ayudas '
+          'de usuarios y SST.',
+          style: TextStyle(color: textSecondary, fontSize: 12, height: 1.4),
+        ),
+        if (_errorAdmin) ...[
+          const SizedBox(height: 10),
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: _cargarAdmin,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE05C5C).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'No se pudo actualizar el monitoreo. Toca para reintentar.',
+                style: TextStyle(
+                  color: isDark ? const Color(0xFFF2B8B8) : const Color(0xFF9B2C2C),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              child: _MetricTile(
+                icon: Icons.bug_report_outlined,
+                value: '${_alertasAdmin.length}',
+                label: 'Errores detectados',
+                color: const Color(0xFFE05C5C),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _MetricTile(
+                icon: Icons.support_agent_rounded,
+                value: '$pendientes',
+                label: 'Ayudas pendientes',
+                color: const Color(0xFFF59E0B),
+              ),
+            ),
+          ],
+        ),
+        if (_cargandoAdmin) ...[
+          const SizedBox(height: 12),
+          const LinearProgressIndicator(minHeight: 2, color: brandBlue),
+        ],
+        const SizedBox(height: 16),
+        _adminSubtitulo('Últimos errores', Icons.warning_amber_rounded),
+        const SizedBox(height: 8),
+        if (alertas.isEmpty)
+          _adminVacio('Sin errores registrados. La app está estable.')
+        else
+          ...alertas.map((alerta) => _adminAlertaTile(context, alerta)),
+        const SizedBox(height: 16),
+        _adminSubtitulo('Solicitudes de ayuda', Icons.help_center_outlined),
+        const SizedBox(height: 8),
+        if (solicitudes.isEmpty)
+          _adminVacio('Sin solicitudes de ayuda por ahora.')
+        else
+          ...solicitudes.map(
+            (solicitud) => _adminSolicitudTile(context, solicitud),
+          ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _probandoAlerta ? null : _probarAlertaError,
+                icon: _probandoAlerta
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.send_outlined, size: 18),
+                label: Text(
+                  _probandoAlerta ? 'Enviando...' : 'Probar alerta',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _abrirAdminAlertas,
+                icon: const Icon(Icons.dashboard_customize_outlined, size: 18),
+                label: const Text(
+                  'Abrir centro',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Si el servidor completo deja de responder, usa un monitor externo '
+          'sobre /api/health.',
+          style: TextStyle(color: textSecondary, fontSize: 11, height: 1.4),
+        ),
+      ],
+    );
+  }
+
+  Widget _adminSubtitulo(String texto, IconData icono) {
+    return Row(
+      children: [
+        Icon(icono, size: 16, color: brandBlue),
+        const SizedBox(width: 6),
+        Text(
+          texto,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+        ),
+      ],
+    );
+  }
+
+  Widget _adminVacio(String texto) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.04)
+            : const Color(0xFFF5F9FC),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Text(
+        texto,
+        style: TextStyle(
+          color: isDark ? const Color(0xFFAFC1D4) : brandMuted,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+
+  Widget _adminAlertaTile(BuildContext context, AlertaErrorAdmin alerta) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary = isDark ? const Color(0xFFAFC1D4) : brandMuted;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.04)
+            : const Color(0xFFF5F9FC),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE05C5C).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.bug_report_outlined,
+              size: 16,
+              color: Color(0xFFE05C5C),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  alerta.tipo.isEmpty ? 'Error' : alerta.tipo,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  alerta.modulo,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: textSecondary, fontSize: 11),
+                ),
+                if (alerta.mensaje.trim().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    alerta.mensaje,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: textSecondary,
+                      fontSize: 11,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 4),
+                Text(
+                  '${alerta.veces} vez(ces) · '
+                  '${_fechaHoraTexto(alerta.ultimoEnvio)}',
+                  style: TextStyle(color: textSecondary, fontSize: 10),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _adminSolicitudTile(
+    BuildContext context,
+    SolicitudAyudaAdmin solicitud,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textSecondary = isDark ? const Color(0xFFAFC1D4) : brandMuted;
+    final rol = solicitud.rol.toUpperCase();
+    final esSst = rol.contains('SST') || rol.contains('LIDER');
+    final color = esSst ? brandTeal : brandBlue;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.04)
+            : const Color(0xFFF5F9FC),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: Text(
+                  esSst ? 'SST' : 'Usuario',
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  solicitud.nombre.isEmpty
+                      ? solicitud.correo
+                      : solicitud.nombre,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                solicitud.pendiente ? 'Pendiente' : 'Resuelta',
+                style: TextStyle(
+                  color: solicitud.pendiente
+                      ? const Color(0xFFF59E0B)
+                      : brandTeal,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            solicitud.asunto,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${_fechaHoraTexto(solicitud.fechaCreacion)} · ${solicitud.correo}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: textSecondary, fontSize: 10),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _abrirAdminAlertas() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AdminAlertasPage()),
+    );
+    if (mounted) await _cargarAdmin();
+  }
+
+  Future<void> _probarAlertaError() async {
+    if (_probandoAlerta) return;
+    setState(() => _probandoAlerta = true);
+
+    try {
+      final respuesta = await AdminAlertaService.probarAlertaError();
+      final recibido = respuesta['recibido'] == true;
+      if (!mounted) return;
+      _mensaje(
+        recibido
+            ? 'Alerta de prueba registrada. Revisa el correo de administradores.'
+            : 'El backend no pudo registrar la alerta de prueba.',
+        error: !recibido,
+      );
+      if (recibido) await _cargarAdmin();
+    } catch (_) {
+      if (!mounted) return;
+      _mensaje(
+        'No se pudo enviar la alerta de prueba. Verifica el backend.',
+        error: true,
+      );
+    } finally {
+      if (mounted) setState(() => _probandoAlerta = false);
+    }
+  }
+
   Widget _buildPreferencias(BuildContext context) {
     final isDark = AppThemeController.instance.isDark;
 
@@ -1212,6 +1623,18 @@ class _ProfilePageState extends State<ProfilePage> {
           value: _perfil.recordatorios,
           onChanged: (valor) =>
               _actualizarPreferencias(_perfil.copyWith(recordatorios: valor)),
+        ),
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          secondary: const Icon(Icons.mark_email_read_outlined),
+          title: const Text('Recordatorios por correo'),
+          subtitle: const Text('Recibe tus pausas también en tu correo'),
+          value: _perfil.recordatorios && _perfil.recordatoriosCorreo,
+          onChanged: _perfil.recordatorios
+              ? (valor) => _actualizarPreferencias(
+                    _perfil.copyWith(recordatoriosCorreo: valor),
+                  )
+              : null,
         ),
         ListTile(
           contentPadding: EdgeInsets.zero,
@@ -1264,6 +1687,17 @@ class _ProfilePageState extends State<ProfilePage> {
       title: 'Ayuda y soporte',
       icon: Icons.help_outline_rounded,
       children: [
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.support_agent_rounded),
+          title: const Text('Solicitar ayuda'),
+          subtitle: const Text('Envia tu problema al equipo administrador'),
+          trailing: const Icon(Icons.chevron_right_rounded),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SupportPage()),
+          ),
+        ),
         ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(Icons.quiz_outlined),
@@ -2404,6 +2838,18 @@ String _fechaNacimientoTexto(String valor) {
   final dia = fecha.day.toString().padLeft(2, '0');
   final mes = fecha.month.toString().padLeft(2, '0');
   return '$dia/$mes/${fecha.year}';
+}
+
+String _fechaHoraTexto(String valor) {
+  if (valor.trim().isEmpty) return 'sin fecha';
+  final fecha = DateTime.tryParse(valor);
+  if (fecha == null) return valor;
+  final local = fecha.toLocal();
+  final dia = local.day.toString().padLeft(2, '0');
+  final mes = local.month.toString().padLeft(2, '0');
+  final hora = local.hour.toString().padLeft(2, '0');
+  final minuto = local.minute.toString().padLeft(2, '0');
+  return '$dia/$mes/${local.year} $hora:$minuto';
 }
 
 int _asInt(dynamic valor) {

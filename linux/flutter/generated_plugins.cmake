@@ -5,7 +5,11 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   camera_desktop
   file_selector_linux
+  local_notifier
   pose_detection
+  screen_retriever_linux
+  tray_manager
+  window_manager
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

@@ -11,6 +11,12 @@ class ApiClient {
 
   // URL base dinámica según plataforma
   static String get baseUrl {
+    const configurada = String.fromEnvironment('API_BASE_URL');
+    if (configurada.trim().isNotEmpty) {
+      final normalizada = configurada.trim().replaceAll(RegExp(r'/+$'), '');
+      return normalizada.endsWith('/api') ? normalizada : '$normalizada/api';
+    }
+
     if (kIsWeb) {
       // Web (Chrome, Edge) → localhost funciona
       return 'http://localhost:8080/api';
@@ -85,11 +91,15 @@ class ApiClient {
   }
 
   // DELETE genérico
-  static Future<dynamic> delete(String endpoint) async {
+  static Future<dynamic> delete(
+    String endpoint, {
+    Map<String, dynamic>? body,
+  }) async {
     try {
       final response = await http.delete(
         Uri.parse('$baseUrl$endpoint'),
         headers: headers,
+        body: body == null ? null : jsonEncode(body),
       );
       return _handleResponse(response);
     } catch (e) {

@@ -14,13 +14,16 @@ public class HealthCheckService {
 
     private final DataSource dataSource;
     private final SystemLogService systemLogService;
+    private final AlertaErrorService alertaErrorService;
 
     public HealthCheckService(
         DataSource dataSource,
-        SystemLogService systemLogService) {
+        SystemLogService systemLogService,
+        AlertaErrorService alertaErrorService) {
 
         this.dataSource = dataSource;
         this.systemLogService = systemLogService;
+        this.alertaErrorService = alertaErrorService;
     }
 
     public boolean comprobarBaseDatos(String origenIp) {
@@ -49,6 +52,16 @@ public class HealthCheckService {
                 System.err.println(
                         "No fue posible guardar el error de conexión en system_logs: "
                                 + logException.getMessage()
+                );
+            }
+
+            if (alertaErrorService != null) {
+                alertaErrorService.registrarError(
+                        "Base de datos",
+                        "HealthCheckService",
+                        "Error de conexión a la base de datos",
+                        e,
+                        origenIp
                 );
             }
             

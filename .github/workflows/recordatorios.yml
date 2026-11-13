@@ -1,0 +1,35 @@
+name: Recordatorios ErgoVida
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: recordatorios-ergovida
+  cancel-in-progress: false
+
+jobs:
+  enviar-recordatorios:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar dependencias
+        run: pip install mysql-connector-python==9.1.0 tzdata
+      - name: Enviar recordatorios
+        env:
+          DB_URL: ${{ secrets.DB_URL }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          TZ_RECORDATORIOS: America/Bogota
+          VENTANA_MINUTOS: "20"
+        run: python backend/scripts/enviar_recordatorios.py

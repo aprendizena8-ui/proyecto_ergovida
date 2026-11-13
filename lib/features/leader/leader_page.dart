@@ -7,6 +7,7 @@ import '../../data/services/leader_service.dart';
 import '../../data/services/recordatorio_global_service.dart';
 import '../../main.dart';
 import '../../widgets/design_system.dart';
+import '../support/support_page.dart';
 
 class LeaderPage extends StatefulWidget {
   const LeaderPage({super.key});
@@ -192,6 +193,14 @@ class _LeaderPageState extends State<LeaderPage>
             onPressed: _cargar,
             icon: const Icon(Icons.refresh_rounded),
           ),
+          IconButton(
+            tooltip: 'Ayuda y soporte',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SupportPage()),
+            ),
+            icon: const Icon(Icons.help_outline_rounded),
+          ),
           const SizedBox(width: 8),
         ],
         bottom: TabBar(
@@ -322,6 +331,30 @@ class _LeaderPageState extends State<LeaderPage>
           Text(
             'Estos recordatorios se muestran a todos los usuarios de ErgoVida.',
             style: TextStyle(color: textSecondary),
+          ),
+          const SizedBox(height: 14),
+          AppSurface(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                const Icon(Icons.mark_email_read_rounded, color: brandBlue),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Los correos se envían automáticamente desde el servidor '
+                    'a la hora programada, sin necesidad de abrir la app.',
+                    style: TextStyle(color: textSecondary, fontSize: 12),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SupportPage()),
+                  ),
+                  child: const Text('Ayuda'),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 18),
           if (_recordatorios.isEmpty)

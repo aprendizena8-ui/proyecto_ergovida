@@ -54,3 +54,5 @@ replay_pid*
 db.properties
 
 backend/db.properties
+
+**/.env
