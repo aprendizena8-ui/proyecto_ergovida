@@ -9,32 +9,36 @@ class ApiClient {
   static int currentUserId = 0;
   static String currentUserEmail = '';
 
-  // URL base dinámica según plataforma
+    // URL base dinámica según plataforma
   static String get baseUrl {
+    // 1. Si hay una URL configurada por variable de entorno, se usa esa.
     const configurada = String.fromEnvironment('API_BASE_URL');
     if (configurada.trim().isNotEmpty) {
       final normalizada = configurada.trim().replaceAll(RegExp(r'/+$'), '');
       return normalizada.endsWith('/api') ? normalizada : '$normalizada/api';
     }
 
+    // 2. URL por defecto para producción (Render)
+    const urlRender = 'https://proyecto-ergovida-backend.onrender.com/api';
+
+    // Forzamos a Windows a usar Render para probar el backend en la nube
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      return urlRender; 
+    }
+
     if (kIsWeb) {
-      // Web (Chrome, Edge) → localhost funciona
-      return 'http://localhost:8080/api';
+      return urlRender;
     }
-    try {
-      if (Platform.isAndroid) {
-        // Emulador Android → 10.0.2.2 apunta a la PC
-        return 'http://10.0.2.2:8080/api';
-      }
-      if (Platform.isIOS) {
-        // Emulador iOS → localhost funciona
-        return 'http://localhost:8080/api';
-      }
-    } catch (_) {
-      // Plataformas sin dart:io (web) ya se manejaron arriba
+    
+    // 4. Para Android/iOS, usa Render directamente (o localhost si estás en emulador)
+    if (Platform.isAndroid) {
+      return 'http://10.0.2.2:8080/api'; // Emulador Android
     }
-    // Windows, macOS, Linux → localhost
-    return 'http://localhost:8080/api';
+    if (Platform.isIOS) {
+      return 'http://localhost:8080/api'; // Emulador iOS
+    }
+
+    return urlRender; // Por defecto, usa Render
   }
 
   // Headers comunes
