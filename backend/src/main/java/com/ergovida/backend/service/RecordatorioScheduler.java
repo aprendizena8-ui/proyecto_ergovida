@@ -61,7 +61,7 @@ public class RecordatorioScheduler {
         this.alertaErrorService = alertaErrorService;
     }
 
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 * * * * *", zone = "America/Bogota")
     public void enviarRecordatoriosPendientes() {
         LocalDateTime ahora = LocalDateTime.now();
         LocalDate hoy = ahora.toLocalDate();
