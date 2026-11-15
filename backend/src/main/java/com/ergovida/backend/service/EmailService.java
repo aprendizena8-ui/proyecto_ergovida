@@ -3,220 +3,144 @@ package com.ergovida.backend.service;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import com.ergovida.backend.model.SolicitudAyuda;
 
 @Service
 public class EmailService {
 
-    private final JavaMailSender mailSender;
-    private final String remitente;
+    private final RestTemplate restTemplate = new RestTemplate();
 
-    public EmailService(
-            JavaMailSender mailSender,
-            @Value("${spring.mail.username:}") String remitente) {
-        this.mailSender = mailSender;
-        this.remitente = remitente;
+    @Value("${brevo.api.key:}")
+    private String apiKey;
+
+    @Value("${brevo.sender.email:ergovida.sena@gmail.com}")
+    private String senderEmail;
+
+    @Value("${brevo.sender.name:ErgoVida}")
+    private String senderName;
+
+    private void enviarPorBrevo(String destinatario, String asunto, String textoPlano) {
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new IllegalStateException("Falta la API Key de Brevo (BREVO_API_KEY).");
+        }
+
+        String url = "https://api.brevo.com/v3/smtp/email";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("api-key", apiKey);
+
+        String htmlContent = "<p>" + textoPlano.replace("\n", "<br>") + "</p>";
+
+        String body = """
+            {
+                "sender": {"name": "%s", "email": "%s"},
+                "to": [{"email": "%s"}],
+                "subject": "%s",
+                "htmlContent": "%s"
+            }
+            """.formatted(senderName, senderEmail, destinatario, asunto, htmlContent.replace("\"", "\\\""));
+
+        HttpEntity<String> request = new HttpEntity<>(body, headers);
+        restTemplate.postForObject(url, request, String.class);
     }
 
     public void enviarCodigoVerificacion(String destinatario, String codigo) {
-        SimpleMailMessage mensaje = new SimpleMailMessage();
-        if (remitente != null && !remitente.isBlank()) {
-            mensaje.setFrom(remitente);
-        }
-        mensaje.setTo(destinatario);
-        mensaje.setSubject("ErgoVida - Código de verificación");
-        mensaje.setText(
-            "¡Hola!\n\n" +
+        String texto = "¡Hola!\n\n" +
             "Tu código de verificación es: " + codigo + "\n\n" +
             "Ingrésalo en la app para continuar.\n" +
             "El código vence en 15 minutos.\n\n" +
-            "Equipo ErgoVida"
-        );
-        mailSender.send(mensaje);
+            "Equipo ErgoVida";
+        enviarPorBrevo(destinatario, "ErgoVida - Código de verificación", texto);
     }
 
-    public void enviarRecordatorioPausa(
-            String destinatario,
-            String nombre,
-            LocalTime hora) {
+    public void enviarRecordatorioPausa(String destinatario, String nombre, LocalTime hora) {
+        String saludo = nombre == null || nombre.isBlank() ? "¡Hola!" : "¡Hola, " + nombre.trim() + "!";
+        String horaAmPm = hora.format(DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH));
 
-        String saludo = nombre == null || nombre.isBlank()
-                ? "¡Hola!"
-                : "¡Hola, " + nombre.trim() + "!";
-
-        String horaAmPm = hora.format(
-                DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH));
-
-        SimpleMailMessage mensaje = new SimpleMailMessage();
-        if (remitente != null && !remitente.isBlank()) {
-            mensaje.setFrom(remitente);
-        }
-        mensaje.setTo(destinatario);
-        mensaje.setSubject("ErgoVida - Tu recordatorio diario de pausa activa");
-        mensaje.setText(
-            saludo + "\n\n" +
+        String texto = saludo + "\n\n" +
             "Este es tu recordatorio diario de las " + horaAmPm + ".\n\n" +
             "Es momento de tu pausa activa: levántate, estira el cuerpo " +
             "y descansa la vista unos minutos.\n" +
             "Puedes abrir ErgoVida y realizar uno de tus ejercicios guiados.\n\n" +
             "Recibirás este correo todos los días a las " + horaAmPm + ".\n\n" +
-            "Equipo ErgoVida"
-        );
-        mailSender.send(mensaje);
+            "Equipo ErgoVida";
+        enviarPorBrevo(destinatario, "ErgoVida - Tu recordatorio diario de pausa activa", texto);
     }
 
-    public void enviarRecordatorioGlobal(
-            String destinatario,
-            String nombre,
-            String mensajeRecordatorio,
-            LocalTime hora) {
+    public void enviarRecordatorioGlobal(String destinatario, String nombre, String mensajeRecordatorio, LocalTime hora) {
+        String saludo = nombre == null || nombre.isBlank() ? "¡Hola!" : "¡Hola, " + nombre.trim() + "!";
+        String horaAmPm = hora.format(DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH));
 
-        String saludo = nombre == null || nombre.isBlank()
-                ? "¡Hola!"
-                : "¡Hola, " + nombre.trim() + "!";
-
-        String horaAmPm = hora.format(
-                DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH));
-
-        SimpleMailMessage mensaje = new SimpleMailMessage();
-        if (remitente != null && !remitente.isBlank()) {
-            mensaje.setFrom(remitente);
-        }
-        mensaje.setTo(destinatario);
-        mensaje.setSubject("ErgoVida - Recordatorio de bienestar");
-        mensaje.setText(
-            saludo + "\n\n" +
+        String texto = saludo + "\n\n" +
             "Tienes un recordatorio de ErgoVida para las " + horaAmPm + ":\n\n" +
             mensajeRecordatorio + "\n\n" +
             "Recuerda realizar tu pausa activa y cuidar tu bienestar laboral.\n\n" +
-            "Equipo ErgoVida"
-        );
-        mailSender.send(mensaje);
+            "Equipo ErgoVida";
+        enviarPorBrevo(destinatario, "ErgoVida - Recordatorio de bienestar", texto);
     }
 
-    public void enviarCorreoPrueba(
-            List<String> destinatarios,
-            String solicitante) {
-
-        String fecha = LocalDateTime.now().format(
-                DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
-
-        enviar(
-                destinatarios,
-                "ErgoVida - Correo de prueba de alertas",
-                "Hola.\n\n" +
-                "Este es un correo de prueba enviado desde ErgoVida "
-                + "por " + valorSeguro(solicitante) + " el " + fecha + ".\n\n"
-                + "Si recibes este mensaje, la configuracion SMTP y los "
-                + "correos de administradores estan funcionando.\n\n"
-                + "Equipo ErgoVida");
-    }
-
-    public void enviarSolicitudAyuda(
-            SolicitudAyuda solicitud,
-            List<String> destinatarios) {
-
-        String fecha = LocalDateTime.now().format(
-                DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
-
-        enviar(
-                destinatarios,
-                "ErgoVida - Solicitud de ayuda: " + valorSeguro(solicitud.getAsunto()),
-                "Nueva solicitud de ayuda recibida.\n\n"
-                + "Asunto: " + valorSeguro(solicitud.getAsunto()) + "\n"
-                + "Descripcion:\n" + valorSeguro(solicitud.getDescripcion()) + "\n\n"
-                + "Enviada por: " + valorSeguro(solicitud.getNombre()) + "\n"
-                + "Correo: " + valorSeguro(solicitud.getCorreo()) + "\n"
-                + "Rol: " + valorSeguro(solicitud.getRol()) + "\n"
-                + "Fecha y hora: " + fecha + "\n"
-                + "Estado inicial: " + valorSeguro(solicitud.getEstado()) + "\n\n"
-                + "Puedes gestionar esta solicitud desde el panel administrador "
-                + "de ErgoVida.\n\n"
-                + "Equipo ErgoVida");
-    }
-
-    public void enviarAlertaError(
-            List<String> destinatarios,
-            String tipo,
-            String modulo,
-            String mensaje,
-            int veces) {
-
-        String fecha = LocalDateTime.now().format(
-                DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
-
-        enviar(
-                destinatarios,
-                "ErgoVida - ALERTA: error en " + valorSeguro(modulo),
-                "Se detecto un error en el servidor ErgoVida.\n\n"
-                + "Fecha y hora: " + fecha + "\n"
-                + "Tipo de error: " + valorSeguro(tipo) + "\n"
-                + "Modulo o ruta: " + valorSeguro(modulo) + "\n"
-                + "Mensaje: " + valorSeguro(mensaje) + "\n"
-                + "Veces detectado: " + veces + "\n\n"
-                + "Este correo se agrupa: el mismo error no volvera a "
-                + "notificarse antes del intervalo configurado.\n\n"
-                + "Equipo ErgoVida");
-    }
-
-    public void enviarFalloRecordatorios(
-            List<String> destinatarios,
-            String resumen,
-            int fallos) {
-
-        String fecha = LocalDateTime.now().format(
-                DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
-
-        enviar(
-                destinatarios,
-                "ErgoVida - ALERTA: fallo al enviar recordatorios",
-                "El scheduler de recordatorios reporto fallos.\n\n"
-                + "Fecha y hora: " + fecha + "\n"
-                + "Envios fallidos: " + fallos + "\n"
-                + "Detalle:\n" + valorSeguro(resumen) + "\n\n"
-                + "Revisa el historial en la tabla "
-                + "recordatorios_envios_historial.\n\n"
-                + "Equipo ErgoVida");
-    }
-
-    private void enviar(
-            List<String> destinatarios,
-            String asunto,
-            String texto) {
-
-        if (destinatarios == null || destinatarios.isEmpty()) {
-            throw new IllegalStateException(
-                    "No hay correos de administradores configurados.");
-        }
-
-        List<String> limpios = new ArrayList<>();
+    public void enviarCorreoPrueba(List<String> destinatarios, String solicitante) {
+        String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+        String texto = "Hola.\n\n" +
+            "Este es un correo de prueba enviado desde ErgoVida por " + valorSeguro(solicitante) + " el " + fecha + ".\n\n" +
+            "Si recibes este mensaje, la API de Brevo está funcionando.\n\n" +
+            "Equipo ErgoVida";
         for (String correo : destinatarios) {
-            if (correo != null && !correo.isBlank()) {
-                limpios.add(correo.trim());
-            }
+            enviarPorBrevo(correo, "ErgoVida - Correo de prueba", texto);
         }
-        if (limpios.isEmpty()) {
-            throw new IllegalStateException(
-                    "No hay correos de administradores configurados.");
-        }
+    }
 
-        SimpleMailMessage mensaje = new SimpleMailMessage();
-        if (remitente != null && !remitente.isBlank()) {
-            mensaje.setFrom(remitente);
+    public void enviarSolicitudAyuda(SolicitudAyuda solicitud, List<String> destinatarios) {
+        String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+        String texto = "Nueva solicitud de ayuda recibida.\n\n" +
+            "Asunto: " + valorSeguro(solicitud.getAsunto()) + "\n" +
+            "Descripcion:\n" + valorSeguro(solicitud.getDescripcion()) + "\n\n" +
+            "Enviada por: " + valorSeguro(solicitud.getNombre()) + "\n" +
+            "Correo: " + valorSeguro(solicitud.getCorreo()) + "\n" +
+            "Rol: " + valorSeguro(solicitud.getRol()) + "\n" +
+            "Fecha y hora: " + fecha + "\n" +
+            "Estado inicial: " + valorSeguro(solicitud.getEstado()) + "\n\n" +
+            "Equipo ErgoVida";
+        for (String correo : destinatarios) {
+            enviarPorBrevo(correo, "ErgoVida - Solicitud de ayuda: " + valorSeguro(solicitud.getAsunto()), texto);
         }
-        mensaje.setTo(limpios.toArray(String[]::new));
-        mensaje.setSubject(asunto);
-        mensaje.setText(texto);
-        mailSender.send(mensaje);
+    }
+
+    public void enviarAlertaError(List<String> destinatarios, String tipo, String modulo, String mensaje, int veces) {
+        String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+        String texto = "Se detecto un error en el servidor ErgoVida.\n\n" +
+            "Fecha y hora: " + fecha + "\n" +
+            "Tipo de error: " + valorSeguro(tipo) + "\n" +
+            "Modulo o ruta: " + valorSeguro(modulo) + "\n" +
+            "Mensaje: " + valorSeguro(mensaje) + "\n" +
+            "Veces detectado: " + veces + "\n\n" +
+            "Equipo ErgoVida";
+        for (String correo : destinatarios) {
+            enviarPorBrevo(correo, "ErgoVida - ALERTA: error en " + valorSeguro(modulo), texto);
+        }
+    }
+
+    public void enviarFalloRecordatorios(List<String> destinatarios, String resumen, int fallos) {
+        String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+        String texto = "El scheduler de recordatorios reporto fallos.\n\n" +
+            "Fecha y hora: " + fecha + "\n" +
+            "Envios fallidos: " + fallos + "\n" +
+            "Detalle:\n" + valorSeguro(resumen) + "\n\n" +
+            "Equipo ErgoVida";
+        for (String correo : destinatarios) {
+            enviarPorBrevo(correo, "ErgoVida - ALERTA: fallo al enviar recordatorios", texto);
+        }
     }
 
     private static String valorSeguro(String valor) {

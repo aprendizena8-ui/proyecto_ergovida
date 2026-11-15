@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -61,9 +62,11 @@ public class RecordatorioScheduler {
         this.alertaErrorService = alertaErrorService;
     }
 
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 * * * * *", zone = "America/Bogota")
     public void enviarRecordatoriosPendientes() {
-        LocalDateTime ahora = LocalDateTime.now();
+        // Forzamos explícitamente la zona horaria de Colombia
+        ZoneId zonaColombia = ZoneId.of("America/Bogota");
+        LocalDateTime ahora = LocalDateTime.now(zonaColombia);
         LocalDate hoy = ahora.toLocalDate();
         LocalTime horaActual = ahora.toLocalTime();
 
