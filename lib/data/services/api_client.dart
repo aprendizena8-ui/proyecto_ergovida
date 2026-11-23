@@ -21,15 +21,16 @@ class ApiClient {
     // 2. URL por defecto para producción (Render)
     const urlRender = 'https://proyecto-ergovida-backend.onrender.com/api';
 
+    // En web no se puede usar dart:io, por eso se resuelve antes de Platform.
+    if (kIsWeb) {
+      return urlRender;
+    }
+
     // Forzamos a Windows a usar Render para probar el backend en la nube
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       return urlRender; 
     }
 
-    if (kIsWeb) {
-      return urlRender;
-    }
-    
     // 4. Para Android/iOS, usa Render directamente (o localhost si estás en emulador)
     if (Platform.isAndroid) {
       return 'http://10.0.2.2:8080/api'; // Emulador Android

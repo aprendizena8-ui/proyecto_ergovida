@@ -35,6 +35,9 @@ class _AdminPageState extends State<AdminPage> {
       });
     }
 
+    await _refrescarSesion();
+    if (!mounted) return;
+
     final data = await _usuarioService.obtenerUsuarios();
     if (!mounted) return;
 
@@ -47,9 +50,19 @@ class _AdminPageState extends State<AdminPage> {
             ..sort((a, b) => a.id.compareTo(b.id));
       _cargando = false;
       if (data.isEmpty) {
-        _error = 'No se pudieron cargar los usuarios. Verifica el backend.';
+        _error =
+            UsuarioService.ultimoError ??
+            'No se pudieron cargar los usuarios. Verifica el backend.';
       }
     });
+  }
+
+  /// Refresca id, correo y rol desde el backend con la sesión guardada. Si la
+  /// sesión en memoria quedó desactualizada (por ejemplo, tras cambiar de
+  /// backend o de base de datos), esto evita enviar cabeceras inválidas.
+  Future<void> _refrescarSesion() async {
+    if (AuthService.usuarioCorreo.trim().isEmpty) return;
+    await AuthService.restoreSession();
   }
 
   int get _admins => _usuarios.where((u) => u.esAdmin).length;
@@ -64,7 +77,7 @@ class _AdminPageState extends State<AdminPage> {
     _mensaje(
       ok
           ? '${usuario.nombre} ahora es ${_etiquetaRol(nuevoRol)}'
-          : 'No se pudo cambiar el rol',
+          : UsuarioService.ultimoError ?? 'No se pudo cambiar el rol',
       ok: ok,
     );
     if (ok) _cargar();
@@ -91,7 +104,7 @@ class _AdminPageState extends State<AdminPage> {
     _mensaje(
       ok
           ? '${usuario.nombre} ${nuevoEstado ? 'habilitado' : 'deshabilitado'}'
-          : 'No se pudo actualizar el usuario',
+          : UsuarioService.ultimoError ?? 'No se pudo actualizar el usuario',
       ok: ok,
     );
     if (ok) _cargar();
@@ -129,7 +142,9 @@ class _AdminPageState extends State<AdminPage> {
 
     if (!mounted) return;
     _mensaje(
-      ok ? 'Usuario eliminado' : 'No se pudo eliminar el usuario',
+      ok
+          ? 'Usuario eliminado'
+          : UsuarioService.ultimoError ?? 'No se pudo eliminar el usuario',
       ok: ok,
     );
     if (ok) _cargar();

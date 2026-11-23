@@ -7,6 +7,7 @@ import '../../data/services/ejercicio_service.dart';
 import '../../data/services/pausa_service.dart';
 import '../../data/services/wellness_service.dart';
 import '../../widgets/design_system.dart';
+import '../../widgets/routine_avatar.dart';
 
 class GuidedPausePage extends StatefulWidget {
   final int usuarioId;
@@ -15,6 +16,8 @@ class GuidedPausePage extends StatefulWidget {
   final int? duracionMin;
   final String? descripcion;
   final String? categoria;
+  final RoutineAvatarKind? avatarKind;
+  final Color? avatarColor;
 
   const GuidedPausePage({
     super.key,
@@ -24,6 +27,8 @@ class GuidedPausePage extends StatefulWidget {
     this.duracionMin,
     this.descripcion,
     this.categoria,
+    this.avatarKind,
+    this.avatarColor,
   });
 
   @override
@@ -493,11 +498,7 @@ class _GuidedPausePageState extends State<GuidedPausePage>
       children: [
         Row(
           children: [
-            IconBadge(
-              icon: ejercicio.icono,
-              color: ejercicio.color,
-              size: 46,
-            ),
+            IconBadge(icon: ejercicio.icono, color: ejercicio.color, size: 46),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -538,7 +539,12 @@ class _GuidedPausePageState extends State<GuidedPausePage>
             ),
           ],
         ),
-        const SizedBox(height: 28),
+        if (widget.avatarKind != null) ...[
+          const SizedBox(height: 18),
+          _avatarGuia(),
+          const SizedBox(height: 22),
+        ] else
+          const SizedBox(height: 28),
         Center(
           child: SizedBox(
             width: 310,
@@ -582,10 +588,7 @@ class _GuidedPausePageState extends State<GuidedPausePage>
           ),
         ),
         const SizedBox(height: 18),
-        if (_terminado)
-          _completadoCard()
-        else
-          _controles(),
+        if (_terminado) _completadoCard() else _controles(),
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.all(16),
@@ -620,14 +623,110 @@ class _GuidedPausePageState extends State<GuidedPausePage>
     );
   }
 
+  Widget _avatarGuia() {
+    final kind = widget.avatarKind!;
+    final color = widget.avatarColor ?? AppPalette.teal;
+    final lineColor = Color.lerp(color, Colors.white, 0.38)!;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            color.withValues(alpha: 0.20),
+            Colors.white.withValues(alpha: 0.04),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 104,
+            height: 126,
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(4, 4, 4, 18),
+              child: RepaintBoundary(
+                child: RoutineAvatar(
+                  kind: kind,
+                  color: color,
+                  lineColor: lineColor,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'SIGUE AL AVATAR',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.58),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.8,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  kind.label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'El avatar repite el movimiento. Copia el ritmo y mantén una postura cómoda.',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.72),
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    AppPill(
+                      text: widget.categoria ?? 'Bienestar',
+                      color: AppPalette.teal,
+                      icon: Icons.category_rounded,
+                    ),
+                    AppPill(
+                      text: '$_minutosSesion min',
+                      color: AppPalette.blueBright,
+                      icon: Icons.schedule_rounded,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _controles() {
     return Column(
       children: [
         GradientButton(
           label: _corriendo ? 'Pausar' : 'Iniciar pausa',
-          icon: _corriendo
-              ? Icons.pause_rounded
-              : Icons.play_arrow_rounded,
+          icon: _corriendo ? Icons.pause_rounded : Icons.play_arrow_rounded,
           onPressed: _corriendo ? _pausar : _iniciar,
           gradient: const LinearGradient(
             colors: [AppPalette.blue, AppPalette.teal],

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/ejercicio_service.dart';
 import '../../main.dart';
+import 'exercise_camera_logic.dart';
+import 'exercise_camera_models.dart';
 import 'exercise_camera_page.dart';
 
 class ExercisesPage extends StatefulWidget {
@@ -24,6 +26,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
 
   int get _usuarioId => widget.usuarioId ?? AuthService.usuarioId;
   bool get _esAdmin => widget.esAdmin ?? AuthService.isAdmin;
+  bool get _puedeCrearEjercicios => _esAdmin || AuthService.isLiderSst;
 
   static const List<_EjercicioDef> _definiciones = [
     _EjercicioDef(
@@ -32,6 +35,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
       categoria: 'Cuello',
       icono: Icons.accessibility_new_rounded,
       color: brandBlue,
+      kind: ExerciseKind.neck,
       descripcion:
           'Libera la tensión del cuello con inclinaciones laterales suaves y controladas.',
       instrucciones:
@@ -43,6 +47,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
       categoria: 'Hombros',
       icono: Icons.fitness_center_rounded,
       color: brandNavy,
+      kind: ExerciseKind.shoulders,
       descripcion:
           'Activa la circulación de hombros y espalda alta con encogimientos y círculos.',
       instrucciones:
@@ -54,6 +59,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
       categoria: 'Vista',
       icono: Icons.visibility_rounded,
       color: brandTeal,
+      kind: ExerciseKind.visual,
       descripcion:
           'Reduce la fatiga visual alternando la mirada lejana con el descanso ocular.',
       instrucciones:
@@ -65,6 +71,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
       categoria: 'Muñecas',
       icono: Icons.pan_tool_rounded,
       color: brandCyan,
+      kind: ExerciseKind.wrists,
       descripcion:
           'Previene molestias por teclado y mouse movilizando tus muñecas.',
       instrucciones:
@@ -76,6 +83,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
       categoria: 'Brazos',
       icono: Icons.arrow_upward_rounded,
       color: brandBlue,
+      kind: ExerciseKind.armsUp,
       descripcion:
           'Moviliza hombros y brazos con elevaciones completas por encima de la cabeza.',
       instrucciones:
@@ -87,6 +95,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
       categoria: 'Brazos',
       icono: Icons.fitness_center_rounded,
       color: brandNavy,
+      kind: ExerciseKind.curls,
       descripcion:
           'Activa brazos y antebrazos con flexiones de codo controladas junto al cuerpo.',
       instrucciones:
@@ -98,6 +107,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
       categoria: 'Espalda',
       icono: Icons.open_in_full_rounded,
       color: brandTeal,
+      kind: ExerciseKind.chest,
       descripcion:
           'Contrarresta la postura encorvada abriendo el pecho y juntando los omóplatos.',
       instrucciones:
@@ -109,10 +119,155 @@ class _ExercisesPageState extends State<ExercisesPage> {
       categoria: 'Espalda',
       icono: Icons.swap_horiz_rounded,
       color: brandCyan,
+      kind: ExerciseKind.sideBend,
       descripcion:
           'Estira la espalda y los costados con inclinaciones laterales suaves del tronco.',
       instrucciones:
           'Inclina el tronco hacia un lado sin mover las caderas, mantén y cambia de lado.',
+    ),
+    _EjercicioDef(
+      nombre: 'Rotación de Cuello',
+      duracionMin: 2,
+      categoria: 'Cuello',
+      icono: Icons.screen_rotation_rounded,
+      color: brandBlue,
+      kind: ExerciseKind.neckRotation,
+      descripcion:
+          'Mejora la movilidad cervical girando la cabeza a cada lado sin mover los hombros.',
+      instrucciones:
+          'Gira la cabeza como mirando por encima del hombro, mantén y cambia de lado.',
+    ),
+    _EjercicioDef(
+      nombre: 'Flexión y Extensión de Cuello',
+      duracionMin: 2,
+      categoria: 'Cuello',
+      icono: Icons.swap_vert_rounded,
+      color: brandNavy,
+      kind: ExerciseKind.neckNod,
+      descripcion:
+          'Alivia la tensión cervical alternando la barbilla al pecho y la mirada al techo.',
+      instrucciones:
+          'Baja la barbilla sin encorvar la espalda, vuelve al centro y mira hacia arriba.',
+    ),
+    _EjercicioDef(
+      nombre: 'Círculos de Brazos',
+      duracionMin: 2,
+      categoria: 'Hombros',
+      icono: Icons.refresh_rounded,
+      color: brandTeal,
+      kind: ExerciseKind.armCircles,
+      descripcion:
+          'Activa hombros y espalda alta dibujando círculos amplios con los brazos extendidos.',
+      instrucciones:
+          'Abre los brazos a la altura de los hombros y dibuja círculos lentos en ambas direcciones.',
+    ),
+    _EjercicioDef(
+      nombre: 'Elevación Lateral de Brazos',
+      duracionMin: 2,
+      categoria: 'Hombros',
+      icono: Icons.open_with_rounded,
+      color: brandCyan,
+      kind: ExerciseKind.lateralRaise,
+      descripcion:
+          'Fortalece los hombros elevando los brazos hasta la altura de la línea del hombro.',
+      instrucciones:
+          'Sube ambos brazos hacia los lados hasta la altura de los hombros y baja con control.',
+    ),
+    _EjercicioDef(
+      nombre: 'Abrazo de Oso',
+      duracionMin: 2,
+      categoria: 'Espalda',
+      icono: Icons.accessibility_new_rounded,
+      color: brandBlue,
+      kind: ExerciseKind.selfHug,
+      descripcion:
+          'Estira la espalda alta cruzando los brazos frente al pecho como un abrazo.',
+      instrucciones:
+          'Cruza los brazos y lleva cada mano al hombro opuesto; mantén y abre lentamente.',
+    ),
+    _EjercicioDef(
+      nombre: 'Prensa de Palmas',
+      duracionMin: 2,
+      categoria: 'Pecho',
+      icono: Icons.front_hand_rounded,
+      color: brandNavy,
+      kind: ExerciseKind.prayerPress,
+      descripcion:
+          'Activa pecho y brazos presionando las palmas juntas frente al esternón.',
+      instrucciones:
+          'Junta las palmas, mantén los codos afuera y presiona suavemente sin subir los hombros.',
+    ),
+    _EjercicioDef(
+      nombre: 'Estiramiento Cruzado de Hombro',
+      duracionMin: 3,
+      categoria: 'Hombros',
+      icono: Icons.sync_alt_rounded,
+      color: brandTeal,
+      kind: ExerciseKind.crossShoulder,
+      descripcion:
+          'Libera la parte posterior del hombro llevando un brazo cruzado al pecho.',
+      instrucciones:
+          'Pasa un brazo frente al pecho, sujeta el codo con la otra mano y mantén; cambia de lado.',
+    ),
+    _EjercicioDef(
+      nombre: 'Postura de Cactus',
+      duracionMin: 3,
+      categoria: 'Espalda',
+      icono: Icons.accessibility_new_rounded,
+      color: brandCyan,
+      kind: ExerciseKind.goalpost,
+      descripcion:
+          'Corrige la postura con codos en cruz y antebrazos hacia arriba, juntando omóplatos.',
+      instrucciones:
+          'Levanta los codos a la altura de los hombros, manos arriba, y mantén la postura.',
+    ),
+    _EjercicioDef(
+      nombre: 'Encogimiento Alterno de Hombros',
+      duracionMin: 2,
+      categoria: 'Hombros',
+      icono: Icons.unfold_more_rounded,
+      color: brandNavy,
+      kind: ExerciseKind.alternatingShrug,
+      descripcion:
+          'Relaja cuello y hombros subiendo un hombro a la vez de forma controlada.',
+      instrucciones:
+          'Sube un hombro hacia la oreja, baja y sube el otro, alternando sin mover la cabeza.',
+    ),
+    _EjercicioDef(
+      nombre: 'Apertura de Dedos',
+      duracionMin: 2,
+      categoria: 'Manos',
+      icono: Icons.pan_tool_rounded,
+      color: brandTeal,
+      kind: ExerciseKind.fingerSpread,
+      descripcion:
+          'Estimula manos y antebrazos abriendo y cerrando los dedos por completo.',
+      instrucciones:
+          'Levanta las manos, abre bien los dedos y cierra en puño suave; repite.',
+    ),
+    _EjercicioDef(
+      nombre: 'Círculos de Antebrazos',
+      duracionMin: 2,
+      categoria: 'Codos',
+      icono: Icons.autorenew_rounded,
+      color: brandCyan,
+      kind: ExerciseKind.forearmCircles,
+      descripcion:
+          'Moviliza codos y muñecas dibujando círculos con los antebrazos junto al cuerpo.',
+      instrucciones:
+          'Mantén los codos pegados al costado y dibuja círculos con las manos.',
+    ),
+    _EjercicioDef(
+      nombre: 'Toques de Hombro Alternos',
+      duracionMin: 2,
+      categoria: 'Hombros',
+      icono: Icons.touch_app_rounded,
+      color: brandBlue,
+      kind: ExerciseKind.shoulderTaps,
+      descripcion:
+          'Mejora la coordinación y movilidad de hombros tocando el hombro opuesto.',
+      instrucciones:
+          'Toca el hombro contrario con una mano, vuelve y alterna con la otra.',
     ),
   ];
 
@@ -128,6 +283,12 @@ class _ExercisesPageState extends State<ExercisesPage> {
         _cargando = true;
         _sinConexion = false;
       });
+    }
+
+    // Refresca id y rol desde el backend para no crear el catálogo con una
+    // sesión obsoleta (mismo problema que se corrigió en el panel admin).
+    if (widget.usuarioId == null && AuthService.usuarioId > 0) {
+      await AuthService.restoreSession();
     }
 
     final registros = await _ejercicioService.obtenerEjercicios();
@@ -147,6 +308,14 @@ class _ExercisesPageState extends State<ExercisesPage> {
       var registro = porNombre.remove(def.nombre.toLowerCase());
 
       if (registro == null) {
+        // Solo los roles con permiso de escritura pueden dar de alta el
+        // catálogo. Para el resto mostramos el ejercicio en modo local para
+        // que pueda practicarlo aunque todavía no exista en la base de datos.
+        if (!_puedeCrearEjercicios) {
+          items.add(def.toItem(0));
+          continue;
+        }
+
         registro = await _ejercicioService.crearEjercicio({
           'nombre': def.nombre,
           'descripcion': def.descripcion,
@@ -171,21 +340,23 @@ class _ExercisesPageState extends State<ExercisesPage> {
     if (!mounted) return;
     setState(() {
       _ejercicios = items;
-      _sinConexion = registros.isEmpty && fallos == _definiciones.length;
+      _sinConexion =
+          registros.isEmpty && items.every((ejercicio) => ejercicio.id <= 0);
       _cargando = false;
     });
+
+    if (fallos > 0) {
+      final detalle = EjercicioService.ultimoError;
+      _mensaje(
+        detalle ?? 'No se pudieron registrar $fallos ejercicios en el servidor.',
+        ok: false,
+      );
+    }
   }
 
   Future<void> _iniciar(_EjercicioItem ejercicio) async {
     if (_usuarioId <= 0) {
       _mensaje('Inicia sesión para registrar tus pausas.', ok: false);
-      return;
-    }
-    if (ejercicio.id <= 0) {
-      _mensaje(
-        'Este ejercicio aún no está guardado en la base de datos. Reintenta.',
-        ok: false,
-      );
       return;
     }
 
@@ -196,6 +367,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
           nombre: ejercicio.nombre,
           duracion: ejercicio.duracion,
           icono: ejercicio.icono,
+          kind: ejercicio.kind,
           usuarioId: _usuarioId,
           ejercicioId: ejercicio.id,
         ),
@@ -681,6 +853,7 @@ class _EjercicioDef {
   final String categoria;
   final IconData icono;
   final Color color;
+  final ExerciseKind kind;
   final String descripcion;
   final String instrucciones;
 
@@ -690,6 +863,7 @@ class _EjercicioDef {
     required this.categoria,
     required this.icono,
     required this.color,
+    required this.kind,
     required this.descripcion,
     required this.instrucciones,
   });
@@ -703,6 +877,7 @@ class _EjercicioDef {
       categoria: categoria,
       icono: icono,
       color: color,
+      kind: kind,
       descripcion: descripcion,
       instrucciones: instrucciones,
     );
@@ -717,6 +892,7 @@ class _EjercicioItem {
   final String categoria;
   final IconData icono;
   final Color color;
+  final ExerciseKind kind;
   final String descripcion;
   final String instrucciones;
 
@@ -728,6 +904,7 @@ class _EjercicioItem {
     required this.categoria,
     required this.icono,
     required this.color,
+    required this.kind,
     required this.descripcion,
     required this.instrucciones,
   });
@@ -755,6 +932,7 @@ class _EjercicioItem {
       categoria: categoria,
       icono: def?.icono ?? _iconoPara(nombre),
       color: color,
+      kind: def?.kind ?? kindFor(nombre),
       descripcion: descripcion,
       instrucciones: def?.instrucciones ?? '',
     );

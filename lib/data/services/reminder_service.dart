@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/recordatorio_global_model.dart';
 import '../models/user_model.dart';
+import 'desktop_notification_service.dart';
 import 'horario_service.dart';
 import 'profile_preferences.dart';
 import 'recordatorio_global_service.dart';
@@ -31,6 +32,7 @@ class ReminderService {
   Future<void> _refreshChain = Future<void>.value();
 
   Future<void> start(UserModel usuario) async {
+    await DesktopNotificationService.instance.inicializar();
     _usuarioId = usuario.id;
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 15), (_) => _tick());
@@ -122,7 +124,7 @@ class ReminderService {
           final storageKey = 'reminder_shown_$usuarioId';
           if (prefs.getString(storageKey) != marca) {
             await prefs.setString(storageKey, marca);
-            _mostrarNotificacion(vencido);
+            await _mostrarNotificacion(vencido);
             return;
           }
         }
@@ -139,7 +141,7 @@ class ReminderService {
         final storageKey = 'global_reminder_shown_${usuarioId}_${global.id}';
         if (prefs.getString(storageKey) == marca) continue;
         await prefs.setString(storageKey, marca);
-        _mostrarNotificacionGlobal(global);
+        await _mostrarNotificacionGlobal(global);
         return;
       }
     } catch (error) {
@@ -147,73 +149,92 @@ class ReminderService {
     }
   }
 
-  void _mostrarNotificacionGlobal(RecordatorioGlobal recordatorio) {
+  Future<void> _mostrarNotificacionGlobal(
+    RecordatorioGlobal recordatorio,
+  ) async {
+    const titulo = 'ErgoVida - Recordatorio de bienestar';
+    final cuerpo = recordatorio.mensaje;
+
     final messenger = messengerKey.currentState;
-    if (messenger == null) return;
-
-    final token = ++_bannerToken;
-    messenger.hideCurrentMaterialBanner();
-    messenger.showMaterialBanner(
-      MaterialBanner(
-        backgroundColor: const Color(0xFFEAF6FF),
-        leading: const Icon(Icons.campaign_rounded, color: Color(0xFF1F7FC0)),
-        content: Text(
-          recordatorio.mensaje,
-          style: const TextStyle(color: Color(0xFF10243A)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              if (token == _bannerToken) {
-                messenger.hideCurrentMaterialBanner();
-              }
-            },
-            child: const Text('Entendido'),
+    if (messenger != null) {
+      final token = ++_bannerToken;
+      messenger.hideCurrentMaterialBanner();
+      messenger.showMaterialBanner(
+        MaterialBanner(
+          backgroundColor: const Color(0xFFEAF6FF),
+          leading: const Icon(Icons.campaign_rounded, color: Color(0xFF1F7FC0)),
+          content: Text(
+            cuerpo,
+            style: const TextStyle(color: Color(0xFF10243A)),
           ),
-        ],
-      ),
-    );
+          actions: [
+            TextButton(
+              onPressed: () {
+                if (token == _bannerToken) {
+                  messenger.hideCurrentMaterialBanner();
+                }
+              },
+              child: const Text('Entendido'),
+            ),
+          ],
+        ),
+      );
 
-    Timer(const Duration(seconds: 30), () {
-      if (token == _bannerToken) {
-        messenger.hideCurrentMaterialBanner();
-      }
-    });
+      Timer(const Duration(seconds: 30), () {
+        if (token == _bannerToken) {
+          messenger.hideCurrentMaterialBanner();
+        }
+      });
+    }
+
+    await DesktopNotificationService.instance.mostrar(
+      titulo: titulo,
+      cuerpo: cuerpo,
+    );
   }
 
-  void _mostrarNotificacion(_ReminderTime horario) {
+  Future<void> _mostrarNotificacion(_ReminderTime horario) async {
+    final cuerpo =
+        'Es momento de tu pausa activa de las ${horario.label}. '
+        'Estira el cuerpo y descansa la vista.';
+    const titulo = 'ErgoVida - Tu pausa activa';
+
     final messenger = messengerKey.currentState;
-    if (messenger == null) return;
-
-    final token = ++_bannerToken;
-    messenger.hideCurrentMaterialBanner();
-    messenger.showMaterialBanner(
-      MaterialBanner(
-        backgroundColor: const Color(0xFFEAF6FF),
-        leading: const Icon(Icons.alarm_rounded, color: Color(0xFF1F7FC0)),
-        content: Text(
-          'Es momento de tu pausa activa de las ${horario.label}. '
-          'Estira el cuerpo y descansa la vista.',
-          style: const TextStyle(color: Color(0xFF10243A)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              if (token == _bannerToken) {
-                messenger.hideCurrentMaterialBanner();
-              }
-            },
-            child: const Text('Entendido'),
+    if (messenger != null) {
+      final token = ++_bannerToken;
+      messenger.hideCurrentMaterialBanner();
+      messenger.showMaterialBanner(
+        MaterialBanner(
+          backgroundColor: const Color(0xFFEAF6FF),
+          leading: const Icon(Icons.alarm_rounded, color: Color(0xFF1F7FC0)),
+          content: Text(
+            cuerpo,
+            style: const TextStyle(color: Color(0xFF10243A)),
           ),
-        ],
-      ),
-    );
+          actions: [
+            TextButton(
+              onPressed: () {
+                if (token == _bannerToken) {
+                  messenger.hideCurrentMaterialBanner();
+                }
+              },
+              child: const Text('Entendido'),
+            ),
+          ],
+        ),
+      );
 
-    Timer(const Duration(seconds: 30), () {
-      if (token == _bannerToken) {
-        messenger.hideCurrentMaterialBanner();
-      }
-    });
+      Timer(const Duration(seconds: 30), () {
+        if (token == _bannerToken) {
+          messenger.hideCurrentMaterialBanner();
+        }
+      });
+    }
+
+    await DesktopNotificationService.instance.mostrar(
+      titulo: titulo,
+      cuerpo: cuerpo,
+    );
   }
 }
 

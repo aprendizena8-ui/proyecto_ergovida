@@ -91,6 +91,84 @@ const double trunkCenterDeg = 6; // ángulo para considerar que volvió al centr
 const double trunkHoldSec = 5; // segundos por lado
 const int trunkTargetSides = 6; // lados completados
 
+// Rotación de cuello (giro de la cabeza a cada lado)
+const double neckTurnStartRatio = 0.18; // desplazamiento nariz/hombro
+const double neckTurnCenterRatio = 0.08;
+const double neckTurnHoldSec = 4;
+const int neckTurnTargetSides = 4;
+const int neckTurnCalibrationFrames = 12;
+
+// Flexión y extensión de cuello (barbilla al pecho / mirada al techo)
+const double nodDownDelta = 0.10;
+const double nodUpDelta = 0.08;
+const double nodCenterDelta = 0.045;
+const double nodHoldSec = 2;
+const int nodTargetReps = 6;
+const int nodCalibrationFrames = 12;
+
+// Círculos de brazos
+const double armCircleSpreadMin = 1.35; // muñecas / ancho de hombros
+const double armCircleHeightTol = 0.70;
+const double armCircleMove = 0.06;
+const double armCircleTargetSec = 15;
+
+// Elevación lateral de brazos
+const double lateralDownMargin = 0.18;
+const double lateralUpMargin = 0.22;
+const double lateralSpreadMin = 1.25;
+const int lateralTargetReps = 8;
+
+// Abrazo de oso
+const double hugShoulderReach = 0.65;
+const double hugHeightTol = 0.55;
+const double hugHoldSec = 2;
+const int hugTargetReps = 6;
+
+// Prensa de palmas
+const double prayerHandsClose = 0.38;
+const double prayerHandsRelease = 0.75;
+const double prayerChestMin = 0.05;
+const double prayerChestMax = 0.85;
+const int prayerHoldSec = 3;
+const int prayerTargetReps = 6;
+
+// Estiramiento cruzado de hombro
+const double crossReach = 0.62;
+const double crossHeightTol = 0.45;
+const int crossHoldSec = 5;
+const int crossTargetSides = 4;
+
+// Postura de cactus (goalpost)
+const double goalpostElbowSpreadMin = 1.25;
+const double goalpostElbowHeightTol = 0.40;
+const double goalpostWristAbove = 0.35;
+const double goalpostWristAligned = 0.45;
+const int goalpostHoldSec = 4;
+const int goalpostTargetReps = 5;
+
+// Encogimiento alterno de hombros
+const double altShrugDelta = 0.10;
+const double altShrugRelease = 0.05;
+const int altShrugTargetReps = 10;
+const int altShrugCalibrationFrames = 15;
+
+// Apertura de dedos
+const double fingerOpenRatio = 0.145;
+const double fingerCloseRatio = 0.075;
+const int fingerTargetReps = 10;
+
+// Círculos de antebrazos
+const double forearmCircleMove = 0.05;
+const double forearmCircleTargetSec = 15;
+const double forearmCircleMinBend = 55;
+const double forearmCircleMaxBend = 135;
+
+// Toques de hombro alternos
+const double tapReach = 0.55;
+const double tapRelease = 0.95;
+const double tapHoldSec = 0.3;
+const int tapTargetReps = 12;
+
 // ============================================================
 //  Tipos auxiliares
 // ============================================================
@@ -104,6 +182,18 @@ enum ExerciseKind {
   curls,
   chest,
   sideBend,
+  neckRotation,
+  neckNod,
+  armCircles,
+  lateralRaise,
+  selfHug,
+  prayerPress,
+  crossShoulder,
+  goalpost,
+  alternatingShrug,
+  fingerSpread,
+  forearmCircles,
+  shoulderTaps,
   other,
 }
 
