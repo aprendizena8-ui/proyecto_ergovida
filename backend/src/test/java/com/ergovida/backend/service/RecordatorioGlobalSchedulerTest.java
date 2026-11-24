@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,8 @@ import com.ergovida.backend.repository.RecordatorioGlobalRepository;
 import com.ergovida.backend.repository.UserRepository;
 
 class RecordatorioGlobalSchedulerTest {
+
+    private static final ZoneId ZONA_BOGOTA = ZoneId.of("America/Bogota");
 
     private final RecordatorioGlobalRepository recordatorioRepository =
             mock(RecordatorioGlobalRepository.class);
@@ -43,7 +46,7 @@ class RecordatorioGlobalSchedulerTest {
 
     @Test
     void enviaElRecordatorioGlobalATodosLosUsuariosActivos() {
-        LocalTime hora = LocalTime.now().withSecond(0).withNano(0);
+        LocalTime hora = LocalTime.now(ZONA_BOGOTA).withSecond(0).withNano(0);
         RecordatorioGlobal recordatorio = recordatorio(hora, "1,2,3,4,5,6,7");
         User ana = usuario(1L, "Ana", "ana@example.com", true);
         User luis = usuario(2L, "Luis", "luis@example.com", true);
@@ -63,7 +66,7 @@ class RecordatorioGlobalSchedulerTest {
 
     @Test
     void omiteUsuariosInactivosOSinCorreo() {
-        LocalTime hora = LocalTime.now().withSecond(0).withNano(0);
+        LocalTime hora = LocalTime.now(ZONA_BOGOTA).withSecond(0).withNano(0);
         RecordatorioGlobal recordatorio = recordatorio(hora, "1,2,3,4,5,6,7");
         User inactivo = usuario(1L, "Ana", "ana@example.com", false);
         User sinCorreo = usuario(2L, "Luis", " ", true);
@@ -80,7 +83,7 @@ class RecordatorioGlobalSchedulerTest {
 
     @Test
     void noRepiteElEnvioDelMismoUsuarioElMismoDia() {
-        LocalTime hora = LocalTime.now().withSecond(0).withNano(0);
+        LocalTime hora = LocalTime.now(ZONA_BOGOTA).withSecond(0).withNano(0);
         RecordatorioGlobal recordatorio = recordatorio(hora, "1,2,3,4,5,6,7");
         User ana = usuario(1L, "Ana", "ana@example.com", true);
 
@@ -99,8 +102,8 @@ class RecordatorioGlobalSchedulerTest {
 
     @Test
     void omiteRecordatoriosQueNoAplicanHoy() {
-        LocalTime hora = LocalTime.now().withSecond(0).withNano(0);
-        int manana = LocalDate.now().getDayOfWeek().getValue() % 7 + 1;
+        LocalTime hora = LocalTime.now(ZONA_BOGOTA).withSecond(0).withNano(0);
+        int manana = LocalDate.now(ZONA_BOGOTA).getDayOfWeek().getValue() % 7 + 1;
         RecordatorioGlobal recordatorio = recordatorio(hora, String.valueOf(manana));
         User ana = usuario(1L, "Ana", "ana@example.com", true);
 

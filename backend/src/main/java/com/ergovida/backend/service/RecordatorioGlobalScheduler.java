@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -73,9 +74,9 @@ public class RecordatorioGlobalScheduler {
         this.alertaErrorService = alertaErrorService;
     }
 
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 * * * * *", zone = "America/Bogota")
     public void enviarRecordatoriosGlobales() {
-        LocalDateTime ahora = LocalDateTime.now();
+        LocalDateTime ahora = LocalDateTime.now(ZoneId.of("America/Bogota"));
         LocalDate hoy = ahora.toLocalDate();
         LocalTime horaActual = ahora.toLocalTime();
 
@@ -100,14 +101,17 @@ public class RecordatorioGlobalScheduler {
             }
 
             for (User usuario : usuarios) {
-                boolean correoHabilitado = puedeRecibirCorreo(usuario);
-                boolean pushHabilitado = puedeRecibirPush(usuario);
+                String canal = normalizarCanal(recordatorio.getCanal());
+                boolean enviarCorreo = !RecordatorioGlobal.CANAL_PUSH.equals(canal)
+                        && puedeRecibirCorreo(usuario);
+                boolean enviarPush = !RecordatorioGlobal.CANAL_CORREO.equals(canal)
+                        && puedeRecibirPush(usuario);
 
-                if (!correoHabilitado && !pushHabilitado) {
+                if (!enviarCorreo && !enviarPush) {
                     continue;
                 }
 
-                if (pushHabilitado
+                if (enviarPush
                         && entregaService != null
                         && !entregaService.pushYaEnviado(
                                 RecordatorioEnvioHistorial.TIPO_GLOBAL,
@@ -135,7 +139,7 @@ public class RecordatorioGlobalScheduler {
                     }
                 }
 
-                if (!correoHabilitado) {
+                if (!enviarCorreo) {
                     continue;
                 }
 
@@ -199,6 +203,13 @@ public class RecordatorioGlobalScheduler {
                     detalles.toString(),
                     fallos);
         }
+    }
+
+    private String normalizarCanal(String canal) {
+        if (canal == null || canal.isBlank()) {
+            return RecordatorioGlobal.CANAL_AMBOS;
+        }
+        return canal.trim().toUpperCase(java.util.Locale.ROOT);
     }
 
     private boolean puedeRecibirCorreo(User usuario) {

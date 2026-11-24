@@ -14,6 +14,10 @@ import jakarta.persistence.*;
 @Table(name = "recordatorios_globales")
 public class RecordatorioGlobal {
 
+    public static final String CANAL_AMBOS = "AMBOS";
+    public static final String CANAL_PUSH = "PUSH";
+    public static final String CANAL_CORREO = "CORREO";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -25,6 +29,10 @@ public class RecordatorioGlobal {
 
     @Column(length = 255)
     private String mensaje;
+
+    /** Canal de entrega: PUSH, CORREO o AMBOS. */
+    @Column(length = 10)
+    private String canal = CANAL_AMBOS;
 
     private Boolean activo = true;
 
@@ -67,6 +75,14 @@ public class RecordatorioGlobal {
 
     public void setMensaje(String mensaje) {
         this.mensaje = mensaje;
+    }
+
+    public String getCanal() {
+        return canal;
+    }
+
+    public void setCanal(String canal) {
+        this.canal = canal;
     }
 
     public Boolean getActivo() {

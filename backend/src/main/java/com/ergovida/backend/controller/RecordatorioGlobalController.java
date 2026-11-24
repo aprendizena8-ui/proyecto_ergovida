@@ -59,6 +59,7 @@ public class RecordatorioGlobalController {
         recordatorio.setHora(recordatorio.getHora().withSecond(0).withNano(0));
         recordatorio.setDiasSemana(normalizarDias(recordatorio.getDiasSemana()));
         recordatorio.setMensaje(recordatorio.getMensaje().trim());
+        recordatorio.setCanal(normalizarCanal(recordatorio.getCanal()));
         recordatorio.setActivo(recordatorio.getActivo() == null ? true : recordatorio.getActivo());
         recordatorio.setCreadoPor(lider.getId());
         recordatorio.setFechaCreacion(LocalDateTime.now());
@@ -86,10 +87,14 @@ public class RecordatorioGlobalController {
             if (cambios.getActivo() != null) {
                 recordatorio.setActivo(cambios.getActivo());
             }
+            if (cambios.getCanal() != null) {
+                recordatorio.setCanal(cambios.getCanal());
+            }
 
             validar(recordatorio);
             recordatorio.setDiasSemana(normalizarDias(recordatorio.getDiasSemana()));
             recordatorio.setMensaje(recordatorio.getMensaje().trim());
+            recordatorio.setCanal(normalizarCanal(recordatorio.getCanal()));
 
             return ResponseEntity.ok(repository.save(recordatorio));
         }).orElse(ResponseEntity.notFound().build());
@@ -130,6 +135,22 @@ public class RecordatorioGlobalController {
                     HttpStatus.BAD_REQUEST,
                     "Selecciona al menos un día de repetición.");
         }
+        normalizarCanal(recordatorio.getCanal());
+    }
+
+    private String normalizarCanal(String canal) {
+        if (canal == null || canal.isBlank()) {
+            return RecordatorioGlobal.CANAL_AMBOS;
+        }
+        String normalizado = canal.trim().toUpperCase(java.util.Locale.ROOT);
+        if (RecordatorioGlobal.CANAL_PUSH.equals(normalizado)
+                || RecordatorioGlobal.CANAL_CORREO.equals(normalizado)
+                || RecordatorioGlobal.CANAL_AMBOS.equals(normalizado)) {
+            return normalizado;
+        }
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "El canal debe ser PUSH, CORREO o AMBOS.");
     }
 
     private String normalizarDias(String dias) {
