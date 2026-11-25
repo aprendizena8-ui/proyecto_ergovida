@@ -2,6 +2,9 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:local_notifier/local_notifier.dart';
+import 'package:desktop_tray/desktop_tray.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'core/theme/app_theme.dart';
 import 'data/models/user_model.dart';
@@ -10,6 +13,133 @@ import 'data/services/auth_service.dart';
 import 'data/services/reminder_service.dart';
 import 'features/auth/login_page.dart';
 import 'features/home/home_page.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 1. Inicializar window_manager
+  await windowManager.ensureInitialized();
+
+  await windowManager.setPreventClose(true);
+
+  // 2. Configurar la ventana para que NO se cierre al presionar la X
+  WindowOptions windowOptions = const WindowOptions(
+    size: Size(1200, 800),
+    center: true,
+    title: 'ErgoVida',
+  );
+  windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.show();
+    await windowManager.focus();
+  });
+
+  // 3. Inicializar local_notifier (para las notificaciones nativas)
+  await localNotifier.setup(
+    appName: 'ErgoVida',
+    shortcutPolicy: ShortcutPolicy.requireCreate,
+  );
+
+  // 4. Inicializar el icono de la bandeja
+  try {
+    // 1. Poner el icono (acepta .ico, .png, etc.)
+    await desktopTray.setIcon('assets/tray_icon.ico');
+    // 2. Poner el tooltip
+    await desktopTray.setToolTip('ErgoVida - Bienestar laboral');
+
+    // Crear menú contextual
+    final menu = TrayMenu(items: [
+      TrayMenuItem(key: 'show', label: 'Abrir ErgoVida'),
+      TrayMenuItem.separator(),
+      TrayMenuItem(key: 'exit', label: 'Salir'),
+    ]);
+
+    await desktopTray.setContextMenu(menu);
+
+    // 4. Escuchar los clics
+    desktopTray.addListener(_TrayListener());
+
+  } catch (e) {
+    print('Error al inicializar bandeja: $e');
+  }
+
+  // 6. ¡IMPORTANTE! Interceptar el cierre de la ventana
+  windowManager.addListener(_WindowListener());
+
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    AppErrorService.reportar(
+      tipo: details.exception.runtimeType.toString(),
+      modulo: details.library ?? 'Flutter',
+      mensaje: details.exceptionAsString(),
+      stack: details.stack?.toString(),
+    );
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    AppErrorService.reportar(
+      tipo: error.runtimeType.toString(),
+      modulo: 'Plataforma',
+      mensaje: error.toString(),
+      stack: stack.toString(),
+    );
+    return false;
+  };
+
+  runApp(const MyApp());
+}
+
+// Listener para desktop_tray
+class _TrayListener with DesktopTrayListener {
+  @override
+  void onTrayIconMouseDown() {
+    // Al hacer clic en el icono, mostrar la ventana
+    windowManager.show();
+    windowManager.focus();
+  }
+
+  @override
+  void onTrayMenuItemClick(TrayMenuItem item) {
+    if (item.key == 'show') {
+      windowManager.show();
+      windowManager.focus();
+    } else if (item.key == 'exit') {
+      // Salir de verdad
+      desktopTray.destroy();
+      windowManager.destroy();
+    }
+  }
+}
+
+class _WindowListener with WindowListener {
+  @override
+  void onWindowClose() async {
+    // Cuando el usuario presiona la X, NO cerrar, solo ocultar
+    bool isPreventClose = await windowManager.isPreventClose();
+    if (isPreventClose) {
+      await windowManager.hide();
+      LocalNotification notification = LocalNotification(
+        title: 'ErgoVida sigue activo',
+        body: 'La aplicación se está ejecutando en la bandeja del sistema.',
+      );
+      notification.show();
+    }
+  }
+}
+
+void _mostrarNotificacionPrueba(String titulo, String cuerpo) {
+  LocalNotification notification = LocalNotification(
+    title: titulo,
+    body: cuerpo,
+  );
+  
+  // Opcional: manejar clics en la notificación
+  notification.onClick = () {
+    windowManager.show();
+    windowManager.focus();
+  };
+
+  notification.show();
+}
 
 final RouteObserver<PageRoute<dynamic>> appRouteObserver =
     RouteObserver<PageRoute<dynamic>>();
@@ -52,30 +182,6 @@ class AppThemeController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_themeKey, dark);
   }
-}
-
-void main() {
-  FlutterError.onError = (details) {
-    FlutterError.presentError(details);
-    AppErrorService.reportar(
-      tipo: details.exception.runtimeType.toString(),
-      modulo: details.library ?? 'Flutter',
-      mensaje: details.exceptionAsString(),
-      stack: details.stack?.toString(),
-    );
-  };
-
-  PlatformDispatcher.instance.onError = (error, stack) {
-    AppErrorService.reportar(
-      tipo: error.runtimeType.toString(),
-      modulo: 'Plataforma',
-      mensaje: error.toString(),
-      stack: stack.toString(),
-    );
-    return false;
-  };
-
-  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {

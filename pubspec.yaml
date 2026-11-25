@@ -50,7 +50,7 @@ dependencies:
   image_picker: ^1.2.4
   image: ^4.12.0
   local_notifier: ^0.1.6
-  tray_manager: ^0.5.3
+  desktop_tray: ^2026.6.25
   launch_at_startup: ^0.5.1
   window_manager: ^0.5.2
 
@@ -77,10 +77,11 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/
+      - assets/images/
     - assets/images/avatares/
     - assets/animations/
     - assets/models/
+    - assets/tray_icon.ico
 
   # To add assets to your application, add an assets section, like this:
   # assets:

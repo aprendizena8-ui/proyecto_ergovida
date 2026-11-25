@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:local_notifier/local_notifier.dart';
 
 import '../models/recordatorio_global_model.dart';
 import '../models/user_model.dart';
@@ -231,10 +232,11 @@ class ReminderService {
       });
     }
 
-    await DesktopNotificationService.instance.mostrar(
-      titulo: titulo,
-      cuerpo: cuerpo,
+    LocalNotification notification = LocalNotification(
+      title: titulo,
+      body: cuerpo,
     );
+    notification.show();
   }
 }
 

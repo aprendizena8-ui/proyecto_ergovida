@@ -28,15 +28,15 @@ class ApiClient {
 
     // Forzamos a Windows a usar Render para probar el backend en la nube
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      return urlRender; 
+      return urlRender;
     }
 
     // 4. Para Android/iOS, usa Render directamente (o localhost si estás en emulador)
     if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8080/api'; // Emulador Android
+      return urlRender;  // Emulador Android
     }
     if (Platform.isIOS) {
-      return 'http://localhost:8080/api'; // Emulador iOS
+      return urlRender; // Emulador iOS
     }
 
     return urlRender; // Por defecto, usa Render

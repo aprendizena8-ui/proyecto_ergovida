@@ -56,3 +56,6 @@ db.properties
 backend/db.properties
 
 **/.env
+
+# Windows SDK packages and generated files
+.winapp

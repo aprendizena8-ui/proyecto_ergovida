@@ -4,13 +4,13 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   camera_desktop
+  desktop_tray
   file_selector_windows
   firebase_core
   local_notifier
   permission_handler_windows
   pose_detection
   screen_retriever_windows
-  tray_manager
   window_manager
 )
 

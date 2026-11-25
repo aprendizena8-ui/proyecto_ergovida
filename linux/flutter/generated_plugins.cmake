@@ -4,11 +4,11 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   camera_desktop
+  desktop_tray
   file_selector_linux
   local_notifier
   pose_detection
   screen_retriever_linux
-  tray_manager
   window_manager
 )
 

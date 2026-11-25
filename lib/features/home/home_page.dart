@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:local_notifier/local_notifier.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/models/user_model.dart';
@@ -527,6 +528,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                     ),
                   ],
                 ),
+              ),
+
+              floatingActionButton: FloatingActionButton(
+                onPressed: () {
+                  LocalNotification notification = LocalNotification(
+                    title: 'ErgoVida - Prueba',
+                    body: '¡Notificación nativa de Windows funcionando!',
+                  );
+                  notification.show();
+                },
+                child: const Icon(Icons.notifications_active),
               ),
             );
           },
