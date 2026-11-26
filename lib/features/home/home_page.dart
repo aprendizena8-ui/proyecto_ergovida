@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:local_notifier/local_notifier.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/models/user_model.dart';
 import '../../data/services/auth_service.dart';
+import '../../data/services/desktop_notification_service.dart';
 import '../../data/services/ejercicio_service.dart';
 import '../../data/services/estadisticas_service.dart';
 import '../../data/services/pausa_service.dart';
@@ -532,11 +532,21 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
               floatingActionButton: FloatingActionButton(
                 onPressed: () {
-                  LocalNotification notification = LocalNotification(
-                    title: 'ErgoVida - Prueba',
-                    body: '¡Notificación nativa de Windows funcionando!',
-                  );
-                  notification.show();
+                  final service = DesktopNotificationService.instance;
+                  if (service.disponible) {
+                    service.mostrar(
+                      titulo: 'ErgoVida - Prueba',
+                      cuerpo: '¡Notificación nativa de Windows funcionando!',
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Las notificaciones nativas solo están disponibles en escritorio.',
+                        ),
+                      ),
+                    );
+                  }
                 },
                 child: const Icon(Icons.notifications_active),
               ),

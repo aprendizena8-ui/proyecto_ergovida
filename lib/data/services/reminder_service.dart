@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:local_notifier/local_notifier.dart';
 
 import '../models/recordatorio_global_model.dart';
 import '../models/user_model.dart';
@@ -232,11 +231,12 @@ class ReminderService {
       });
     }
 
-    LocalNotification notification = LocalNotification(
-      title: titulo,
-      body: cuerpo,
+    // En móvil no existe el plugin local_notifier: el servicio ya comprueba
+    // la plataforma y solo muestra la notificación en escritorio.
+    await DesktopNotificationService.instance.mostrar(
+      titulo: titulo,
+      cuerpo: cuerpo,
     );
-    notification.show();
   }
 }
 

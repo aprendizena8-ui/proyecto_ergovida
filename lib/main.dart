@@ -1,5 +1,7 @@
+import 'dart:io' show Platform;
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:local_notifier/local_notifier.dart';
@@ -17,53 +19,60 @@ import 'features/home/home_page.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Inicializar window_manager
-  await windowManager.ensureInitialized();
+  // window_manager, local_notifier y desktop_tray solo existen en escritorio.
+  // En móvil se omiten: llamarlos antes de runApp hacía que la app muriera
+  // con MissingPluginException y se viera una pantalla negra.
+  final bool esEscritorio =
+      !kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
 
-  await windowManager.setPreventClose(true);
+  if (esEscritorio) {
+    // 1. Inicializar window_manager
+    await windowManager.ensureInitialized();
 
-  // 2. Configurar la ventana para que NO se cierre al presionar la X
-  WindowOptions windowOptions = const WindowOptions(
-    size: Size(1200, 800),
-    center: true,
-    title: 'ErgoVida',
-  );
-  windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-    await windowManager.focus();
-  });
+    await windowManager.setPreventClose(true);
 
-  // 3. Inicializar local_notifier (para las notificaciones nativas)
-  await localNotifier.setup(
-    appName: 'ErgoVida',
-    shortcutPolicy: ShortcutPolicy.requireCreate,
-  );
+    // 2. Configurar la ventana para que NO se cierre al presionar la X
+    WindowOptions windowOptions = const WindowOptions(
+      size: Size(1200, 800),
+      center: true,
+      title: 'ErgoVida',
+    );
+    windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
 
-  // 4. Inicializar el icono de la bandeja
-  try {
-    // 1. Poner el icono (acepta .ico, .png, etc.)
-    await desktopTray.setIcon('assets/tray_icon.ico');
-    // 2. Poner el tooltip
-    await desktopTray.setToolTip('ErgoVida - Bienestar laboral');
+    // 3. Inicializar local_notifier (para las notificaciones nativas)
+    await localNotifier.setup(
+      appName: 'ErgoVida',
+      shortcutPolicy: ShortcutPolicy.requireCreate,
+    );
 
-    // Crear menú contextual
-    final menu = TrayMenu(items: [
-      TrayMenuItem(key: 'show', label: 'Abrir ErgoVida'),
-      TrayMenuItem.separator(),
-      TrayMenuItem(key: 'exit', label: 'Salir'),
-    ]);
+    // 4. Inicializar el icono de la bandeja
+    try {
+      // 1. Poner el icono (acepta .ico, .png, etc.)
+      await desktopTray.setIcon('assets/tray_icon.ico');
+      // 2. Poner el tooltip
+      await desktopTray.setToolTip('ErgoVida - Bienestar laboral');
 
-    await desktopTray.setContextMenu(menu);
+      // Crear menú contextual
+      final menu = TrayMenu(items: [
+        TrayMenuItem(key: 'show', label: 'Abrir ErgoVida'),
+        TrayMenuItem.separator(),
+        TrayMenuItem(key: 'exit', label: 'Salir'),
+      ]);
 
-    // 4. Escuchar los clics
-    desktopTray.addListener(_TrayListener());
+      await desktopTray.setContextMenu(menu);
 
-  } catch (e) {
-    print('Error al inicializar bandeja: $e');
+      // 4. Escuchar los clics
+      desktopTray.addListener(_TrayListener());
+    } catch (e) {
+      print('Error al inicializar bandeja: $e');
+    }
+
+    // 6. ¡IMPORTANTE! Interceptar el cierre de la ventana
+    windowManager.addListener(_WindowListener());
   }
-
-  // 6. ¡IMPORTANTE! Interceptar el cierre de la ventana
-  windowManager.addListener(_WindowListener());
 
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
