@@ -5,7 +5,7 @@
 // https://drive.google.com/uc?export=download&id=ID_DEL_ARCHIVO
 const URL_APK = 'https://drive.google.com/drive/folders/1FbnS1FyhcKu23kuCUeZ0rAPx8gpL5wuA?usp=sharing';
 // URL de la app desplegada en la web (reemplaza el dominio de ejemplo).
-const URL_WEB = 'https://ejemplo.com/ergovida-app/';
+const URL_WEB = 'https://github.com/aprendizena8-ui/proyecto_ergovida/releases/download/v1.0.0-desktop/tarea.msix';
 const SITE_URL = 'https://ejemplo.com/ergovida/'; // usado para el canonical
 /* ========================================================================= */
 
