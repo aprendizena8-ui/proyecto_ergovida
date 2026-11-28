@@ -22,7 +22,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 700));
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Rutinas recomendadas'), findsOneWidget);
+    expect(find.text('Rutinas adicionales (opcionales)'), findsOneWidget);
     expect(find.text('Rutina Oficina'), findsOneWidget);
 
     await tester.tap(find.text('Casa').first);

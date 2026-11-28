@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/ejercicio_service.dart';
 import '../../main.dart';
-import 'exercise_avatar.dart';
 import 'exercise_camera_logic.dart';
 import 'exercise_camera_models.dart';
 import 'exercise_camera_page.dart';
@@ -500,7 +499,8 @@ class _ExercisesPageState extends State<ExercisesPage> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'La cámara analiza tu postura y registra cada pausa en tu progreso.',
+                              'Los ejercicios con detección de movimiento cuentan para SST. '
+                              'El descanso visual y los genéricos solo suman a logros.',
                               style: TextStyle(color: textSecondary),
                             ),
                           ],
@@ -531,7 +531,18 @@ class _ExercisesPageState extends State<ExercisesPage> {
                     _avisoSinConexion(),
                   ],
                   const SizedBox(height: 22),
-                  ..._ejercicios.map((e) => _card(e, isDark)),
+                  ..._seccionEjercicios(
+                    'Cuentan para SST',
+                    'Ejercicios con detección de movimiento confirmada.',
+                    _ejercicios.where(_cuentaParaSst).toList(),
+                    isDark,
+                  ),
+                  ..._seccionEjercicios(
+                    'No cuentan para SST',
+                    'Descanso visual y ejercicios genéricos: solo suman a logros.',
+                    _ejercicios.where((e) => !_cuentaParaSst(e)).toList(),
+                    isDark,
+                  ),
                 ],
               ),
             ),
@@ -562,12 +573,66 @@ class _ExercisesPageState extends State<ExercisesPage> {
     );
   }
 
+  bool _cuentaParaSst(_EjercicioItem ejercicio) {
+    final kind = kindFor(ejercicio.nombre);
+    return kind != ExerciseKind.visual && kind != ExerciseKind.other;
+  }
+
+  List<Widget> _seccionEjercicios(
+    String titulo,
+    String descripcion,
+    List<_EjercicioItem> ejercicios,
+    bool isDark,
+  ) {
+    if (ejercicios.isEmpty) return const [];
+
+    final esSst = titulo == 'Cuentan para SST';
+    final color = esSst ? brandTeal : const Color(0xFFF59E0B);
+    final textPrimary = isDark ? Colors.white : brandNavy;
+    final textSecondary = isDark ? const Color(0xFFCBD5E1) : brandMuted;
+
+    return [
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            esSst ? Icons.verified_rounded : Icons.info_outline_rounded,
+            color: color,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  titulo,
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  descripcion,
+                  style: TextStyle(color: textSecondary, fontSize: 12.5),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      ...ejercicios.map((e) => _card(e, isDark)),
+      const SizedBox(height: 10),
+    ];
+  }
+
   Widget _card(_EjercicioItem ejercicio, bool isDark) {
     final card = isDark ? const Color(0xFF111C2E) : Colors.white;
     final border = isDark ? const Color(0xFF24364C) : const Color(0xFFDBEAF3);
-    final kind = kindFor(ejercicio.nombre);
-    final cuentaSst =
-        kind != ExerciseKind.visual && kind != ExerciseKind.other;
+    final cuentaSst = _cuentaParaSst(ejercicio);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -594,15 +659,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
               color: ejercicio.color.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(18),
             ),
-            // Los ejercicios con detección muestran su avatar animado; los
-            // visuales/genericos conservan el icono porque no hay movimiento
-            // que dibujar.
-            child: cuentaSst
-                ? Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: ExerciseAvatar(kind: kind),
-                  )
-                : Icon(ejercicio.icono, color: ejercicio.color, size: 29),
+            child: Icon(ejercicio.icono, color: ejercicio.color, size: 29),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -643,17 +700,10 @@ class _ExercisesPageState extends State<ExercisesPage> {
                     ),
                     _chip(
                       cuentaSst
-                          ? Icons.verified_rounded
+                          ? Icons.check_circle_outline_rounded
                           : Icons.info_outline_rounded,
-                      cuentaSst ? 'Cuenta para SST' : 'Solo suma a logros',
+                      cuentaSst ? 'Cuenta para SST' : 'No cuenta para SST',
                       cuentaSst ? brandTeal : const Color(0xFFF59E0B),
-                    ),
-                    _chip(
-                      cuentaSst
-                          ? Icons.priority_high_rounded
-                          : Icons.low_priority_rounded,
-                      cuentaSst ? 'Prioritario' : 'Opcional',
-                      cuentaSst ? brandBlue : const Color(0xFF7C3AED),
                     ),
                     if (ejercicio.id <= 0)
                       _chip(

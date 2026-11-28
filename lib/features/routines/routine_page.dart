@@ -707,7 +707,7 @@ class _RoutinePageState extends State<RoutinePage> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Rutinas recomendadas',
+                    'Rutinas adicionales (opcionales)',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 27,
