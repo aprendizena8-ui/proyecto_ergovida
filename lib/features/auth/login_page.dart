@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/theme/app_responsive.dart';
 import '../../data/services/auth_service.dart';
 import '../../main.dart';
 import '../../widgets/ergovida_logo.dart';
@@ -132,171 +133,132 @@ class _LoginPageState extends State<LoginPage> {
               context,
             ).copyWith(scrollbars: false),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.symmetric(
+                horizontal: AppResponsive.gutter(context),
+                vertical: 24,
+              ),
               child: Form(
                 key: _formKey,
-                child: Container(
-                  width: 460,
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: const Color(0xFFE2ECF5)),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x1A0E2238),
-                        blurRadius: 40,
-                        offset: Offset(0, 22),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const ErgoVidaLogo(width: 170, showText: true),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Bienvenido a ErgoVida',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: brandText,
-                          letterSpacing: -0.5,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 460),
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(
+                      AppResponsive.isMobile(context) ? 22 : 32,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: const Color(0xFFE2ECF5)),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x1A0E2238),
+                          blurRadius: 40,
+                          offset: Offset(0, 22),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Inicia sesión para continuar con tu bienestar laboral.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 15,
-                          height: 1.4,
-                          color: brandMuted,
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const ErgoVidaLogo(width: 170, showText: true),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Bienvenido a ErgoVida',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            color: brandText,
+                            letterSpacing: -0.5,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      TextFormField(
-                        controller: correoController,
-                        enabled: !cargando,
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        // 🔹 CORREGIDO AQUÍ
-                        onFieldSubmitted: (_) {
-                          FocusScope.of(
-                            context,
-                          ).requestFocus(passwordFocusNode);
-                        },
-                        decoration: const InputDecoration(
-                          labelText: 'Correo electrónico',
-                          prefixIcon: Icon(Icons.email_outlined),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Inicia sesión para continuar con tu bienestar laboral.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 15,
+                            height: 1.4,
+                            color: brandMuted,
+                          ),
                         ),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty)
-                            return 'El correo es obligatorio';
-                          if (!emailValido.hasMatch(v.trim()))
-                            return 'Ingresa un correo válido';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: passwordController,
-                        focusNode: passwordFocusNode,
-                        enabled: !cargando,
-                        obscureText: ocultarPassword,
-                        textInputAction: TextInputAction.done,
+                        const SizedBox(height: 24),
+                        TextFormField(
+                          controller: correoController,
+                          enabled: !cargando,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          // 🔹 CORREGIDO AQUÍ
+                          onFieldSubmitted: (_) {
+                            FocusScope.of(
+                              context,
+                            ).requestFocus(passwordFocusNode);
+                          },
+                          decoration: const InputDecoration(
+                            labelText: 'Correo electrónico',
+                            prefixIcon: Icon(Icons.email_outlined),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty)
+                              return 'El correo es obligatorio';
+                            if (!emailValido.hasMatch(v.trim()))
+                              return 'Ingresa un correo válido';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: passwordController,
+                          focusNode: passwordFocusNode,
+                          enabled: !cargando,
+                          obscureText: ocultarPassword,
+                          textInputAction: TextInputAction.done,
 
-                        onFieldSubmitted: (_) {
-                          if (!cargando) {
-                            iniciarSesion();
-                          }
-                        },
-                        decoration: InputDecoration(
-                          labelText: 'Contraseña',
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              ocultarPassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                            ),
-                            onPressed: cargando
-                                ? null
-                                : () => setState(
-                                    () => ocultarPassword = !ocultarPassword,
-                                  ),
-                          ),
-                        ),
-                        validator: (v) => (v == null || v.isEmpty)
-                            ? 'La contraseña es obligatoria'
-                            : null,
-                      ),
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: cargando
-                              ? null
-                              : () async {
-                                  final correoRecuperado =
-                                      await Navigator.push<String>(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const RecoverPasswordPage(),
-                                        ),
-                                      );
-                                  if (correoRecuperado != null && mounted) {
-                                    setState(() {
-                                      correoController.text = correoRecuperado;
-                                      passwordController.clear();
-                                    });
-                                    FocusScope.of(
-                                      context,
-                                    ).requestFocus(passwordFocusNode);
-                                  }
-                                },
-                          child: const Text(
-                            '¿Olvidaste tu contraseña?',
-                            style: TextStyle(
-                              color: brandBlue,
-                              fontWeight: FontWeight.w600,
+                          onFieldSubmitted: (_) {
+                            if (!cargando) {
+                              iniciarSesion();
+                            }
+                          },
+                          decoration: InputDecoration(
+                            labelText: 'Contraseña',
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                ocultarPassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: cargando
+                                  ? null
+                                  : () => setState(
+                                      () => ocultarPassword = !ocultarPassword,
+                                    ),
                             ),
                           ),
+                          validator: (v) => (v == null || v.isEmpty)
+                              ? 'La contraseña es obligatoria'
+                              : null,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      _BotonPrincipal(
-                        cargando: cargando,
-                        texto: 'Iniciar sesión',
-                        icono: Icons.login_rounded,
-                        onPressed: iniciarSesion,
-                      ),
-                      const SizedBox(height: 18),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            '¿No tienes cuenta?',
-                            style: TextStyle(fontSize: 15, color: brandMuted),
-                          ),
-                          TextButton(
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
                             onPressed: cargando
                                 ? null
                                 : () async {
-                                    final correoRegistrado =
+                                    final correoRecuperado =
                                         await Navigator.push<String>(
                                           context,
                                           MaterialPageRoute(
                                             builder: (context) =>
-                                                const RegisterPage(),
+                                                const RecoverPasswordPage(),
                                           ),
                                         );
-                                    if (correoRegistrado != null && mounted) {
+                                    if (correoRecuperado != null && mounted) {
                                       setState(() {
                                         correoController.text =
-                                            correoRegistrado;
+                                            correoRecuperado;
                                         passwordController.clear();
                                       });
                                       FocusScope.of(
@@ -305,17 +267,66 @@ class _LoginPageState extends State<LoginPage> {
                                     }
                                   },
                             child: const Text(
-                              'Regístrate',
+                              '¿Olvidaste tu contraseña?',
                               style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: brandNavy,
+                                color: brandBlue,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
-                        ],
-                      ),
-                    ],
+                        ),
+                        const SizedBox(height: 8),
+                        _BotonPrincipal(
+                          cargando: cargando,
+                          texto: 'Iniciar sesión',
+                          icono: Icons.login_rounded,
+                          onPressed: iniciarSesion,
+                        ),
+                        const SizedBox(height: 18),
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            const Text(
+                              '¿No tienes cuenta?',
+                              style: TextStyle(fontSize: 15, color: brandMuted),
+                            ),
+                            TextButton(
+                              onPressed: cargando
+                                  ? null
+                                  : () async {
+                                      final correoRegistrado =
+                                          await Navigator.push<String>(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const RegisterPage(),
+                                            ),
+                                          );
+                                      if (correoRegistrado != null && mounted) {
+                                        setState(() {
+                                          correoController.text =
+                                              correoRegistrado;
+                                          passwordController.clear();
+                                        });
+                                        FocusScope.of(
+                                          context,
+                                        ).requestFocus(passwordFocusNode);
+                                      }
+                                    },
+                              child: const Text(
+                                'Regístrate',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: brandNavy,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

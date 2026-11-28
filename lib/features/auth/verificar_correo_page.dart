@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../data/services/auth_service.dart';
 import '../../main.dart';
 
@@ -103,104 +104,112 @@ class _VerificarCorreoPageState extends State<VerificarCorreoPage> {
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Container(
-            width: 460,
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x1A0E2238),
-                  blurRadius: 30,
-                  offset: Offset(0, 15),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.mark_email_read_rounded,
-                  size: 80,
-                  color: brandBlue,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Verifica tu correo',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: brandText,
+          padding: EdgeInsets.symmetric(
+            horizontal: AppResponsive.gutter(context),
+            vertical: 24,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460),
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(
+                AppResponsive.isMobile(context) ? 22 : 32,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x1A0E2238),
+                    blurRadius: 30,
+                    offset: Offset(0, 15),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Hemos enviado un código de 6 dígitos a:\n${widget.correo}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 14, color: brandMuted),
-                ),
-                const SizedBox(height: 26),
-                TextField(
-                  controller: _codigoCtrl,
-                  keyboardType: TextInputType.number,
-                  maxLength: 6,
-                  textAlign: TextAlign.center,
-                  enabled: !_cargando,
-                  style: const TextStyle(
-                    fontSize: 32,
-                    letterSpacing: 8,
-                    fontWeight: FontWeight.bold,
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.mark_email_read_rounded,
+                    size: 80,
+                    color: brandBlue,
                   ),
-                  decoration: const InputDecoration(
-                    counterText: '',
-                    hintText: '000000',
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Verifica tu correo',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: brandText,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _cargando ? null : _verificar,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: brandBlue,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Hemos enviado un código de 6 dígitos a:\n${widget.correo}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 14, color: brandMuted),
+                  ),
+                  const SizedBox(height: 26),
+                  TextField(
+                    controller: _codigoCtrl,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    textAlign: TextAlign.center,
+                    enabled: !_cargando,
+                    style: const TextStyle(
+                      fontSize: 32,
+                      letterSpacing: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    decoration: const InputDecoration(
+                      counterText: '',
+                      hintText: '000000',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _cargando ? null : _verificar,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: brandBlue,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                      child: _cargando
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              'Verificar código',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: _reenviando || _cargando ? null : _reenviar,
+                    child: Text(
+                      _reenviando ? 'Reenviando...' : 'Reenviar código',
+                      style: const TextStyle(
+                        color: brandNavy,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    child: _cargando
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Text(
-                            'Verificar código',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: _reenviando || _cargando ? null : _reenviar,
-                  child: Text(
-                    _reenviando ? 'Reenviando...' : 'Reenviar código',
-                    style: const TextStyle(
-                      color: brandNavy,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

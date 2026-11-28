@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/activity_types.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/user_model.dart';
 import '../../data/services/auth_service.dart';
@@ -468,10 +469,10 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           ),
                           SliverPadding(
                             padding: EdgeInsets.fromLTRB(
-                              wide ? 34 : 18,
+                              wide ? 34 : AppResponsive.gutter(context),
                               10,
-                              wide ? 34 : 18,
-                              40,
+                              wide ? 34 : AppResponsive.gutter(context),
+                              wide ? 40 : 100,
                             ),
                             sliver: SliverList(
                               delegate: SliverChildListDelegate([
@@ -532,26 +533,76 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ),
               ),
 
-              floatingActionButton: FloatingActionButton(
-                onPressed: () {
-                  final service = DesktopNotificationService.instance;
-                  if (service.disponible) {
-                    service.mostrar(
-                      titulo: 'ErgoVida - Prueba',
-                      cuerpo: '¡Notificación nativa de Windows funcionando!',
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Las notificaciones nativas solo están disponibles en escritorio.',
+              // En escritorio se conserva el botón flotante de prueba de
+              // notificaciones; en móvil se sustituye por navegación inferior.
+              floatingActionButton: wide
+                  ? FloatingActionButton(
+                      onPressed: () {
+                        final service = DesktopNotificationService.instance;
+                        if (service.disponible) {
+                          service.mostrar(
+                            titulo: 'ErgoVida - Prueba',
+                            cuerpo:
+                                '¡Notificación nativa de Windows funcionando!',
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Las notificaciones nativas solo están disponibles en escritorio.',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      child: const Icon(Icons.notifications_active),
+                    )
+                  : null,
+              bottomNavigationBar: wide
+                  ? null
+                  : NavigationBar(
+                      selectedIndex: 0,
+                      labelBehavior:
+                          NavigationDestinationLabelBehavior.alwaysShow,
+                      onDestinationSelected: (index) {
+                        if (index == 1) {
+                          _abrir(ExercisesPage(usuarioId: _usuarioId));
+                        } else if (index == 2) {
+                          _abrir(const RoutinePage());
+                        } else if (index == 3) {
+                          _abrir(WellnessPage(usuarioId: _usuarioId));
+                        } else if (index == 4) {
+                          _abrirPerfil();
+                        }
+                      },
+                      destinations: const [
+                        NavigationDestination(
+                          icon: Icon(Icons.home_outlined),
+                          selectedIcon: Icon(Icons.home_rounded),
+                          label: 'Inicio',
                         ),
-                      ),
-                    );
-                  }
-                },
-                child: const Icon(Icons.notifications_active),
-              ),
+                        NavigationDestination(
+                          icon: Icon(Icons.fitness_center_outlined),
+                          selectedIcon: Icon(Icons.fitness_center_rounded),
+                          label: 'Ejercicios',
+                        ),
+                        NavigationDestination(
+                          icon: Icon(Icons.self_improvement_outlined),
+                          selectedIcon: Icon(Icons.self_improvement_rounded),
+                          label: 'Rutinas',
+                        ),
+                        NavigationDestination(
+                          icon: Icon(Icons.spa_outlined),
+                          selectedIcon: Icon(Icons.spa_rounded),
+                          label: 'Bienestar',
+                        ),
+                        NavigationDestination(
+                          icon: Icon(Icons.person_outline_rounded),
+                          selectedIcon: Icon(Icons.person_rounded),
+                          label: 'Perfil',
+                        ),
+                      ],
+                    ),
             );
           },
         );
@@ -660,11 +711,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                       children: [
                         Row(
                           children: [
-                            AppPill(
-                              text: fecha.toUpperCase(),
-                              color: Colors.white,
-                              icon: Icons.calendar_today_rounded,
-                              outlined: true,
+                            Flexible(
+                              child: AppPill(
+                                text: fecha.toUpperCase(),
+                                color: Colors.white,
+                                icon: Icons.calendar_today_rounded,
+                                outlined: true,
+                              ),
                             ),
                           ],
                         ),
@@ -740,13 +793,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                 ],
               ),
               const SizedBox(height: 22),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  SizedBox(
-                    width: 190,
-                    child: GradientButton(
+              if (compact)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    GradientButton(
                       label: 'Iniciar pausa',
                       icon: Icons.play_arrow_rounded,
                       padding: const EdgeInsets.symmetric(
@@ -758,17 +809,45 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         colors: [AppPalette.teal, AppPalette.cyan],
                       ),
                     ),
-                  ),
-                  SizedBox(
-                    width: 190,
-                    child: _heroSecondaryButton(
+                    const SizedBox(height: 10),
+                    _heroSecondaryButton(
                       icon: Icons.spa_rounded,
                       label: 'Mi bienestar',
                       onTap: () => _abrir(WellnessPage(usuarioId: _usuarioId)),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                )
+              else
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    SizedBox(
+                      width: 190,
+                      child: GradientButton(
+                        label: 'Iniciar pausa',
+                        icon: Icons.play_arrow_rounded,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 15,
+                        ),
+                        onPressed: _abrirPausaGuiada,
+                        gradient: const LinearGradient(
+                          colors: [AppPalette.teal, AppPalette.cyan],
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 190,
+                      child: _heroSecondaryButton(
+                        icon: Icons.spa_rounded,
+                        label: 'Mi bienestar',
+                        onTap: () =>
+                            _abrir(WellnessPage(usuarioId: _usuarioId)),
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ],
@@ -1673,7 +1752,8 @@ class _Sidebar extends StatelessWidget {
     final nombre = usuario?.nombre ?? 'Invitado';
     final correo = usuario?.correo ?? 'Sin sesión';
     final rol = usuario?.rolEtiqueta ?? 'Usuario';
-    final rolEspecial = (usuario?.esAdmin ?? false) || (usuario?.esLiderSst ?? false);
+    final rolEspecial =
+        (usuario?.esAdmin ?? false) || (usuario?.esLiderSst ?? false);
 
     return Container(
       padding: const EdgeInsets.all(14),

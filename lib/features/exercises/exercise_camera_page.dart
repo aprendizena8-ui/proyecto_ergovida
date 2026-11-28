@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:pose_detection/pose_detection.dart';
 import '../../core/constants/activity_types.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../data/services/ejercicio_service.dart';
 import 'exercise_avatar.dart';
 import 'exercise_camera_models.dart';
@@ -443,7 +444,8 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       if (size <= 0) continue;
 
       final center = Offset(
-        pose.boundingBox.center.x / (pose.imageWidth == 0 ? 1 : pose.imageWidth),
+        pose.boundingBox.center.x /
+            (pose.imageWidth == 0 ? 1 : pose.imageWidth),
         pose.boundingBox.center.y /
             (pose.imageHeight == 0 ? 1 : pose.imageHeight),
       );
@@ -1495,7 +1497,10 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     if (_nodNeedCenter) {
       if (rel.abs() < nodCenterDelta) {
         _nodNeedCenter = false;
-        _setFeedback('Muy bien. Ahora haz el movimiento contrario', Colors.green);
+        _setFeedback(
+          'Muy bien. Ahora haz el movimiento contrario',
+          Colors.green,
+        );
       } else {
         _setFeedback('Vuelve a la posición neutral', Colors.orange);
       }
@@ -1763,7 +1768,10 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     if (!pressing) {
       _prayerHolding = false;
       _prayerHold = 0;
-      _setFeedback('Mantén las palmas juntas mientras presionas', Colors.orange);
+      _setFeedback(
+        'Mantén las palmas juntas mientras presionas',
+        Colors.orange,
+      );
       return;
     }
 
@@ -1924,7 +1932,10 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     if (!open) {
       _goalpostHolding = false;
       _goalpostHold = 0;
-      _setFeedback('No bajes los codos: mantén la L con los brazos', Colors.orange);
+      _setFeedback(
+        'No bajes los codos: mantén la L con los brazos',
+        Colors.orange,
+      );
       return;
     }
 
@@ -2074,7 +2085,10 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     if (!_handsOpen) {
       if (spread >= fingerOpenRatio) {
         _handsOpen = true;
-        _setFeedback('Ahora cierra las manos formando un puño suave', Colors.green);
+        _setFeedback(
+          'Ahora cierra las manos formando un puño suave',
+          Colors.green,
+        );
       } else {
         _setFeedback('Abre bien los dedos y sepáralos', Colors.orange);
       }
@@ -2123,8 +2137,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       (a) => a >= forearmCircleMinBend && a <= forearmCircleMaxBend,
     );
     final shY = (ls.y + rs.y) / 2;
-    final closeToBody =
-        (lw.y > shY - sw * 0.2) && (rw.y > shY - sw * 0.2);
+    final closeToBody = (lw.y > shY - sw * 0.2) && (rw.y > shY - sw * 0.2);
 
     _progressLabel =
         'Círculos: ${_motionSeconds.floor()} / ${forearmCircleTargetSec.toInt()} s';
@@ -2178,11 +2191,9 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     if (sw <= 0) return;
     final shY = (ls.y + rs.y) / 2;
     final leftTap =
-        _dist(lw, rs) <= sw * tapReach &&
-        (lw.y - shY).abs() <= sw * 0.5;
+        _dist(lw, rs) <= sw * tapReach && (lw.y - shY).abs() <= sw * 0.5;
     final rightTap =
-        _dist(rw, ls) <= sw * tapReach &&
-        (rw.y - shY).abs() <= sw * 0.5;
+        _dist(rw, ls) <= sw * tapReach && (rw.y - shY).abs() <= sw * 0.5;
     final side = leftTap && !rightTap
         ? 1
         : rightTap && !leftTap
@@ -2835,55 +2846,77 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
             ),
           ),
 
-          // Controles (compactos para que no se corten)
+          // Controles adaptados al ancho: en móvil los botones se vuelven
+          // compactos (e incluso solo icono) para no empujar el reloj.
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: EdgeInsets.symmetric(
+              horizontal: AppResponsive.gutter(context),
+              vertical: 10,
+            ),
             color: Colors.black87,
-            child: Row(
-              children: [
-                Text(
-                  _formattedTime,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 520;
+                final soloIcono = constraints.maxWidth < 380;
+                final estiloBoton = ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 12 : 24,
+                    vertical: 12,
                   ),
-                ),
-                const Spacer(),
-                ElevatedButton.icon(
-                  onPressed: _isRunning || _guardando ? null : _startTimer,
-                  icon: const Icon(Icons.play_arrow),
-                  label: Text(_finished ? "Repetir" : "Iniciar"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
+                  minimumSize: Size(soloIcono ? 46 : 0, 46),
+                  visualDensity: compact ? VisualDensity.compact : null,
+                );
+                final estiloFinalizar = estiloBoton.copyWith(
+                  backgroundColor: WidgetStatePropertyAll<Color>(Colors.red),
+                );
+
+                return Row(
+                  children: [
+                    Text(
+                      _formattedTime,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: compact ? 24 : 32,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: _guardando
-                      ? null
-                      : _isRunning
-                      ? () {
-                          _finish(timeUp: false, manual: true);
-                        }
-                      : () => Navigator.pop(context),
-                  icon: const Icon(Icons.stop),
-                  label: const Text("Finalizar"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
+                    const Spacer(),
+                    Tooltip(
+                      message: 'Iniciar ejercicio',
+                      child: ElevatedButton.icon(
+                        onPressed: _isRunning || _guardando
+                            ? null
+                            : _startTimer,
+                        icon: const Icon(Icons.play_arrow),
+                        label: soloIcono
+                            ? const SizedBox.shrink()
+                            : Text(_finished ? "Repetir" : "Iniciar"),
+                        style: estiloBoton,
+                      ),
                     ),
-                  ),
-                ),
-              ],
+                    SizedBox(width: compact ? 8 : 12),
+                    Tooltip(
+                      message: 'Finalizar ejercicio',
+                      child: ElevatedButton.icon(
+                        onPressed: _guardando
+                            ? null
+                            : _isRunning
+                            ? () {
+                                _finish(timeUp: false, manual: true);
+                              }
+                            : () => Navigator.pop(context),
+                        icon: const Icon(Icons.stop),
+                        label: soloIcono
+                            ? const SizedBox.shrink()
+                            : const Text("Finalizar"),
+                        style: estiloFinalizar,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ],

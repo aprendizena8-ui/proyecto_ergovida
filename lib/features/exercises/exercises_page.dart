@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_responsive.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/ejercicio_service.dart';
 import '../../main.dart';
@@ -348,7 +349,8 @@ class _ExercisesPageState extends State<ExercisesPage> {
     if (fallos > 0) {
       final detalle = EjercicioService.ultimoError;
       _mensaje(
-        detalle ?? 'No se pudieron registrar $fallos ejercicios en el servidor.',
+        detalle ??
+            'No se pudieron registrar $fallos ejercicios en el servidor.',
         ok: false,
       );
     }
@@ -479,7 +481,12 @@ class _ExercisesPageState extends State<ExercisesPage> {
               onRefresh: _cargar,
               color: brandBlue,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
+                padding: EdgeInsets.fromLTRB(
+                  AppResponsive.gutter(context),
+                  8,
+                  AppResponsive.gutter(context),
+                  30,
+                ),
                 children: [
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -633,10 +640,11 @@ class _ExercisesPageState extends State<ExercisesPage> {
     final card = isDark ? const Color(0xFF111C2E) : Colors.white;
     final border = isDark ? const Color(0xFF24364C) : const Color(0xFFDBEAF3);
     final cuentaSst = _cuentaParaSst(ejercicio);
+    final compact = AppResponsive.isCompact(context);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(compact ? 14 : 18),
       decoration: BoxDecoration(
         color: card,
         borderRadius: BorderRadius.circular(22),
@@ -661,7 +669,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
             ),
             child: Icon(ejercicio.icono, color: ejercicio.color, size: 29),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: compact ? 12 : 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -670,7 +678,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
                   ejercicio.nombre,
                   style: TextStyle(
                     color: isDark ? Colors.white : brandText,
-                    fontSize: 18,
+                    fontSize: compact ? 16 : 18,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -721,15 +729,16 @@ class _ExercisesPageState extends State<ExercisesPage> {
             children: [
               FilledButton.icon(
                 onPressed: () => _iniciar(ejercicio),
-                icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                icon: Icon(Icons.play_arrow_rounded, size: compact ? 18 : 20),
                 label: const Text('Iniciar'),
                 style: FilledButton.styleFrom(
                   backgroundColor: brandBlue,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 10 : 16,
                     vertical: 12,
                   ),
+                  visualDensity: compact ? VisualDensity.compact : null,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -841,13 +850,47 @@ class _EjercicioFormDialogState extends State<_EjercicioFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final duracionField = TextFormField(
+      controller: _duracion,
+      keyboardType: TextInputType.number,
+      decoration: const InputDecoration(labelText: 'Duración (min)'),
+      validator: (v) {
+        final n = int.tryParse(v?.trim() ?? '');
+        if (n == null || n < 4 || n > 30) {
+          return 'Entre 4 y 30 minutos';
+        }
+        return null;
+      },
+    );
+    final categoriaField = TextFormField(
+      controller: _categoria,
+      decoration: const InputDecoration(labelText: 'Categoría'),
+    );
+    final campos = AppResponsive.isCompact(context)
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              duracionField,
+              const SizedBox(height: 12),
+              categoriaField,
+            ],
+          )
+        : Row(
+            children: [
+              Expanded(child: duracionField),
+              const SizedBox(width: 12),
+              Expanded(child: categoriaField),
+            ],
+          );
+
     return AlertDialog(
       title: Text(
         widget.ejercicio == null ? 'Nuevo ejercicio' : 'Editar ejercicio',
         style: const TextStyle(fontWeight: FontWeight.w800),
       ),
-      content: SizedBox(
-        width: 420,
+      content: Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(maxWidth: 420),
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
@@ -867,35 +910,7 @@ class _EjercicioFormDialogState extends State<_EjercicioFormDialog> {
                   decoration: const InputDecoration(labelText: 'Descripción'),
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _duracion,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Duración (min)',
-                        ),
-                        validator: (v) {
-                          final n = int.tryParse(v?.trim() ?? '');
-                          if (n == null || n < 4 || n > 30) {
-                            return 'Entre 4 y 30 minutos';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _categoria,
-                        decoration: const InputDecoration(
-                          labelText: 'Categoría',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                campos,
               ],
             ),
           ),

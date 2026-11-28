@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/constants/activity_types.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/services/auth_service.dart';
 import '../../widgets/design_system.dart';
@@ -93,7 +94,8 @@ class _RoutinePageState extends State<RoutinePage> {
       pasos: [
         RoutinePaso(
           nombre: 'Acomoda tu puesto',
-          detalle: 'Pantalla a la altura de los ojos, hombros atrás y pies apoyados.',
+          detalle:
+              'Pantalla a la altura de los ojos, hombros atrás y pies apoyados.',
           segundos: 120,
           kind: RoutineAvatarKind.officePosture,
         ),
@@ -105,7 +107,8 @@ class _RoutinePageState extends State<RoutinePage> {
         ),
         RoutinePaso(
           nombre: 'Círculos de brazos',
-          detalle: 'Dibuja círculos amplios y lentos hacia delante y hacia atrás.',
+          detalle:
+              'Dibuja círculos amplios y lentos hacia delante y hacia atrás.',
           segundos: 120,
           kind: RoutineAvatarKind.armCircles,
         ),
@@ -136,7 +139,8 @@ class _RoutinePageState extends State<RoutinePage> {
       pasos: [
         RoutinePaso(
           nombre: 'Pierna extendida',
-          detalle: 'Siéntate al borde de la silla y estira una pierna con el talón apoyado.',
+          detalle:
+              'Siéntate al borde de la silla y estira una pierna con el talón apoyado.',
           segundos: 120,
           kind: RoutineAvatarKind.seatedStretch,
         ),
@@ -290,19 +294,22 @@ class _RoutinePageState extends State<RoutinePage> {
         ),
         RoutinePaso(
           nombre: 'Postura del niño',
-          detalle: 'Rodillas flexionadas, glúteos sobre los talones y brazos extendidos.',
+          detalle:
+              'Rodillas flexionadas, glúteos sobre los talones y brazos extendidos.',
           segundos: 120,
           kind: RoutineAvatarKind.childPose,
         ),
         RoutinePaso(
           nombre: 'Cuello sin tensión',
-          detalle: 'Oreja hacia el hombro, hombros relajados y respiración calmada.',
+          detalle:
+              'Oreja hacia el hombro, hombros relajados y respiración calmada.',
           segundos: 120,
           kind: RoutineAvatarKind.neckStretch,
         ),
         RoutinePaso(
           nombre: 'Cierre en flexión',
-          detalle: 'Inclina el tronco hacia delante y deja caer brazos y cabeza.',
+          detalle:
+              'Inclina el tronco hacia delante y deja caer brazos y cabeza.',
           segundos: 150,
           kind: RoutineAvatarKind.forwardFold,
         ),
@@ -620,7 +627,12 @@ class _RoutinePageState extends State<RoutinePage> {
                 title: const Text('Rutinas'),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                padding: EdgeInsets.fromLTRB(
+                  AppResponsive.gutter(context),
+                  8,
+                  AppResponsive.gutter(context),
+                  0,
+                ),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     _hero(),
@@ -631,7 +643,12 @@ class _RoutinePageState extends State<RoutinePage> {
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 36),
+                padding: EdgeInsets.fromLTRB(
+                  AppResponsive.gutter(context),
+                  0,
+                  AppResponsive.gutter(context),
+                  36,
+                ),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
                     final entry = entries[index];
@@ -756,7 +773,7 @@ class _RoutinePageState extends State<RoutinePage> {
                 ],
               );
 
-              if (constraints.maxWidth < 300) {
+              if (constraints.maxWidth < 460) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1100,11 +1117,7 @@ class _RoutinePageState extends State<RoutinePage> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.list_alt_rounded,
-                    size: 16,
-                    color: rutina.color,
-                  ),
+                  Icon(Icons.list_alt_rounded, size: 16, color: rutina.color),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(

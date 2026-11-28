@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_responsive.dart';
 import 'verificar_correo_page.dart';
 import 'change_password_page.dart';
 import '../../data/services/auth_service.dart';
@@ -90,85 +91,93 @@ class _RecoverPasswordPageState extends State<RecoverPasswordPage> {
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Container(
-            width: 460,
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x1A0E2238),
-                  blurRadius: 40,
-                  offset: Offset(0, 22),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.lock_reset_rounded,
-                  size: 80,
-                  color: brandBlue,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  '¿Olvidaste tu contraseña?',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: brandText,
+          padding: EdgeInsets.symmetric(
+            horizontal: AppResponsive.gutter(context),
+            vertical: 24,
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460),
+            child: Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(
+                AppResponsive.isMobile(context) ? 22 : 32,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x1A0E2238),
+                    blurRadius: 40,
+                    offset: Offset(0, 22),
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Ingresa tu correo y te enviaremos un código para restablecerla.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 15, color: brandMuted),
-                ),
-                const SizedBox(height: 26),
-                TextField(
-                  controller: correoController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Correo electrónico',
-                    prefixIcon: Icon(Icons.email_outlined),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.lock_reset_rounded,
+                    size: 80,
+                    color: brandBlue,
                   ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: cargando ? null : _enviarEnlace,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: brandBlue,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '¿Olvidaste tu contraseña?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: brandText,
                     ),
-                    child: cargando
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.4,
-                            ),
-                          )
-                        : const Text(
-                            'Enviar código',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Ingresa tu correo y te enviaremos un código para restablecerla.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 15, color: brandMuted),
+                  ),
+                  const SizedBox(height: 26),
+                  TextField(
+                    controller: correoController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Correo electrónico',
+                      prefixIcon: Icon(Icons.email_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: cargando ? null : _enviarEnlace,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: brandBlue,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                      child: cargando
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.4,
+                              ),
+                            )
+                          : const Text(
+                              'Enviar código',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

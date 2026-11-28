@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../data/services/auth_service.dart';
 import '../../widgets/ergovida_logo.dart';
 import 'verificar_correo_page.dart';
@@ -131,140 +132,149 @@ class _RegisterPageState extends State<RegisterPage> {
               context,
             ).copyWith(scrollbars: false),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.symmetric(
+                horizontal: AppResponsive.gutter(context),
+                vertical: 24,
+              ),
               child: Form(
                 key: _formKey,
-                child: Container(
-                  width: 500,
-                  padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(28),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x1A0E2238),
-                        blurRadius: 24,
-                        offset: Offset(0, 18),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const ErgoVidaLogo(width: 170),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Crear cuenta',
-                        style: TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          color: brandText,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(
+                      AppResponsive.isMobile(context) ? 20 : 28,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x1A0E2238),
+                          blurRadius: 24,
+                          offset: Offset(0, 18),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      TextFormField(
-                        controller: nombreController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nombre completo',
-                          prefixIcon: Icon(Icons.person_outline),
-                        ),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty)
-                            return 'El nombre es obligatorio';
-                          if (!nombreValido.hasMatch(v.trim()))
-                            return 'Solo se permiten letras y espacios';
-                          if (v.trim().length < 3) return 'Mínimo 3 caracteres';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 18),
-                      TextFormField(
-                        controller: correoController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
-                          labelText: 'Correo electrónico',
-                          prefixIcon: Icon(Icons.email_outlined),
-                        ),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty)
-                            return 'El correo es obligatorio';
-                          if (!emailValido.hasMatch(v.trim()))
-                            return 'Ingresa un correo válido';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 18),
-                      TextFormField(
-                        controller: passwordController,
-                        obscureText: ocultarPassword,
-                        decoration: InputDecoration(
-                          labelText: 'Contraseña',
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              ocultarPassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                            ),
-                            onPressed: () => setState(
-                              () => ocultarPassword = !ocultarPassword,
-                            ),
-                          ),
-                        ),
-                        validator: (v) {
-                          if (v == null || v.isEmpty)
-                            return 'La contraseña es obligatoria';
-                          if (v.length < 8) return 'Mínimo 8 caracteres';
-                          if (!RegExp(r'[A-Z]').hasMatch(v))
-                            return 'Falta una mayúscula';
-                          if (!RegExp(r'[0-9]').hasMatch(v))
-                            return 'Falta un número';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 28),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: cargando ? null : registrarUsuario,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: brandBlue,
-                            padding: const EdgeInsets.symmetric(vertical: 18),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                          ),
-                          child: cargando
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2.4,
-                                  ),
-                                )
-                              : const Text(
-                                  'Registrarse',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text(
-                          'Ya tengo una cuenta',
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const ErgoVidaLogo(width: 170),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'Crear cuenta',
                           style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: brandNavy,
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            color: brandText,
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 24),
+                        TextFormField(
+                          controller: nombreController,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre completo',
+                            prefixIcon: Icon(Icons.person_outline),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty)
+                              return 'El nombre es obligatorio';
+                            if (!nombreValido.hasMatch(v.trim()))
+                              return 'Solo se permiten letras y espacios';
+                            if (v.trim().length < 3)
+                              return 'Mínimo 3 caracteres';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 18),
+                        TextFormField(
+                          controller: correoController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            labelText: 'Correo electrónico',
+                            prefixIcon: Icon(Icons.email_outlined),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty)
+                              return 'El correo es obligatorio';
+                            if (!emailValido.hasMatch(v.trim()))
+                              return 'Ingresa un correo válido';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 18),
+                        TextFormField(
+                          controller: passwordController,
+                          obscureText: ocultarPassword,
+                          decoration: InputDecoration(
+                            labelText: 'Contraseña',
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                ocultarPassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                              onPressed: () => setState(
+                                () => ocultarPassword = !ocultarPassword,
+                              ),
+                            ),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.isEmpty)
+                              return 'La contraseña es obligatoria';
+                            if (v.length < 8) return 'Mínimo 8 caracteres';
+                            if (!RegExp(r'[A-Z]').hasMatch(v))
+                              return 'Falta una mayúscula';
+                            if (!RegExp(r'[0-9]').hasMatch(v))
+                              return 'Falta un número';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 28),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: cargando ? null : registrarUsuario,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: brandBlue,
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                            ),
+                            child: cargando
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.4,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Registrarse',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text(
+                            'Ya tengo una cuenta',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: brandNavy,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

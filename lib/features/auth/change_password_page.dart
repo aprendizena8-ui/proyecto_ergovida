@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../main.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -91,80 +92,93 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.symmetric(
+            horizontal: AppResponsive.gutter(context),
+            vertical: 24,
+          ),
           child: Form(
             key: _formKey,
-            child: Container(
-              width: 460,
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x1A0E2238),
-                    blurRadius: 30,
-                    offset: Offset(0, 15),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.lock_reset_rounded,
-                    size: 80,
-                    color: brandBlue,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Crea una nueva contraseña',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 24),
-                  TextFormField(
-                    controller: passwordCtrl,
-                    obscureText: ocultar,
-                    decoration: InputDecoration(
-                      labelText: 'Nueva contraseña',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          ocultar
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                        ),
-                        onPressed: () => setState(() => ocultar = !ocultar),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(
+                  AppResponsive.isMobile(context) ? 22 : 32,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x1A0E2238),
+                      blurRadius: 30,
+                      offset: Offset(0, 15),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.lock_reset_rounded,
+                      size: 80,
+                      color: brandBlue,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Crea una nueva contraseña',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                    validator: (v) {
-                      if (v == null || v.length < 8)
-                        return 'Mínimo 8 caracteres';
-                      if (!RegExp(r'[A-Z]').hasMatch(v))
-                        return 'Falta una mayúscula';
-                      if (!RegExp(r'[0-9]').hasMatch(v))
-                        return 'Falta un número';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: cargando ? null : _cambiarPassword,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: brandBlue,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
+                    const SizedBox(height: 24),
+                    TextFormField(
+                      controller: passwordCtrl,
+                      obscureText: ocultar,
+                      decoration: InputDecoration(
+                        labelText: 'Nueva contraseña',
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            ocultar
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                          ),
+                          onPressed: () => setState(() => ocultar = !ocultar),
                         ),
                       ),
-                      child: cargando
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('Actualizar contraseña'),
+                      validator: (v) {
+                        if (v == null || v.length < 8)
+                          return 'Mínimo 8 caracteres';
+                        if (!RegExp(r'[A-Z]').hasMatch(v))
+                          return 'Falta una mayúscula';
+                        if (!RegExp(r'[0-9]').hasMatch(v))
+                          return 'Falta un número';
+                        return null;
+                      },
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: cargando ? null : _cambiarPassword,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: brandBlue,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                        child: cargando
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text('Actualizar contraseña'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

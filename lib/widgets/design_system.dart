@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../core/theme/app_responsive.dart';
 import '../core/theme/app_theme.dart';
 
 class AppSurface extends StatelessWidget {
   final Widget child;
-  final EdgeInsetsGeometry padding;
+  final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
   final Color? color;
   final Gradient? gradient;
@@ -17,7 +18,7 @@ class AppSurface extends StatelessWidget {
   const AppSurface({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(22),
+    this.padding,
     this.margin,
     this.color,
     this.gradient,
@@ -33,9 +34,11 @@ class AppSurface extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = color ?? (isDark ? AppPalette.darkSurface : Colors.white);
     final borderColor = isDark ? AppPalette.darkBorder : AppPalette.border;
+    final effectivePadding =
+        padding ?? EdgeInsets.all(AppResponsive.cardPadding(context));
 
     Widget body = Container(
-      padding: padding,
+      padding: effectivePadding,
       decoration: BoxDecoration(
         color: gradient == null ? surface : null,
         gradient: gradient,
@@ -82,7 +85,7 @@ class AppSurface extends StatelessWidget {
             gradient: gradient,
             borderRadius: BorderRadius.circular(radius - 1.2),
           ),
-          child: Padding(padding: padding, child: child),
+          child: Padding(padding: effectivePadding, child: child),
         ),
       );
     }
@@ -148,7 +151,7 @@ class SectionHeader extends StatelessWidget {
               ],
             ),
           ),
-          ?trailing,
+          if (trailing != null) Flexible(child: trailing!),
         ],
       ),
     );
@@ -251,7 +254,7 @@ class GradientButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final Gradient gradient;
   final bool expanded;
-  final EdgeInsetsGeometry padding;
+  final EdgeInsetsGeometry? padding;
   final double radius;
 
   const GradientButton({
@@ -263,13 +266,19 @@ class GradientButton extends StatelessWidget {
       colors: [AppPalette.blue, AppPalette.teal],
     ),
     this.expanded = true,
-    this.padding = const EdgeInsets.symmetric(horizontal: 24, vertical: 17),
+    this.padding,
     this.radius = 16,
   });
 
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null;
+    final effectivePadding =
+        padding ??
+        EdgeInsets.symmetric(
+          horizontal: AppResponsive.isMobile(context) ? 18 : 24,
+          vertical: AppResponsive.isMobile(context) ? 15 : 17,
+        );
     final button = Opacity(
       opacity: enabled ? 1 : 0.55,
       child: DecoratedBox(
@@ -284,7 +293,7 @@ class GradientButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(radius),
             onTap: onPressed,
             child: Padding(
-              padding: padding,
+              padding: effectivePadding,
               child: Row(
                 mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -361,9 +370,7 @@ class StatTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: textTheme.labelMedium?.copyWith(
-                      color: isDark
-                          ? AppPalette.darkMuted
-                          : AppPalette.muted,
+                      color: isDark ? AppPalette.darkMuted : AppPalette.muted,
                     ),
                   ),
                 ),

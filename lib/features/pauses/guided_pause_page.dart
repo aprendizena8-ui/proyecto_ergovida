@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../core/constants/activity_types.dart';
+import '../../core/theme/app_responsive.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/services/ejercicio_service.dart';
 import '../../data/services/pausa_service.dart';
@@ -329,14 +330,15 @@ class _GuidedPausePageState extends State<GuidedPausePage>
   }
 
   Widget _vistaSeleccion() {
+    final gutter = AppResponsive.gutter(context);
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
+      padding: EdgeInsets.fromLTRB(gutter, 8, gutter, 30),
       children: [
-        const Text(
+        Text(
           'Elige tu pausa',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 30,
+            fontSize: AppResponsive.isCompact(context) ? 26 : 30,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.8,
           ),
@@ -357,6 +359,48 @@ class _GuidedPausePageState extends State<GuidedPausePage>
           if (i != _ejercicios.length - 1) const SizedBox(height: 12),
         ],
       ],
+    );
+  }
+
+  Widget _minutosYComenzar(_PauseExercise ejercicio) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 460;
+        final chips = Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final minutos in const [1, 2, 3, 5])
+              _chipMinuto(ejercicio, minutos),
+          ],
+        );
+        final boton = FilledButton.icon(
+          onPressed: () => _seleccionar(ejercicio),
+          icon: const Icon(Icons.play_arrow_rounded, size: 20),
+          label: const Text('Comenzar'),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppPalette.blue,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(13),
+            ),
+          ),
+        );
+
+        if (compact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [chips, const SizedBox(height: 12), boton],
+          );
+        }
+        return Row(
+          children: [
+            Flexible(child: chips),
+            boton,
+          ],
+        );
+      },
     );
   }
 
@@ -421,32 +465,7 @@ class _GuidedPausePageState extends State<GuidedPausePage>
             ),
           ],
           const SizedBox(height: 14),
-          Row(
-            children: [
-              for (final minutos in const [1, 2, 3, 5])
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: _chipMinuto(ejercicio, minutos),
-                ),
-              const Spacer(),
-              FilledButton.icon(
-                onPressed: () => _seleccionar(ejercicio),
-                icon: const Icon(Icons.play_arrow_rounded, size: 20),
-                label: const Text('Comenzar'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppPalette.blue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 11,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                ),
-              ),
-            ],
-          ),
+          _minutosYComenzar(ejercicio),
         ],
       ),
     );
@@ -520,8 +539,9 @@ class _GuidedPausePageState extends State<GuidedPausePage>
       ],
     );
 
+    final gutter = AppResponsive.gutter(context);
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 30),
+      padding: EdgeInsets.fromLTRB(gutter, 6, gutter, 30),
       children: [
         Row(
           children: [
@@ -575,45 +595,54 @@ class _GuidedPausePageState extends State<GuidedPausePage>
         ] else
           const SizedBox(height: 28),
         Center(
-          child: SizedBox(
-            width: 310,
-            height: 310,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                ScaleTransition(
-                  scale: Tween<double>(begin: 0.9, end: 1.06).animate(
-                    CurvedAnimation(
-                      parent: _breathController,
-                      curve: Curves.easeInOut,
-                    ),
-                  ),
-                  child: Container(
-                    width: 260,
-                    height: 260,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          AppPalette.teal.withValues(alpha: 0.24),
-                          AppPalette.blue.withValues(alpha: 0.08),
-                          Colors.transparent,
-                        ],
-                        stops: const [0.0, 0.62, 1.0],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final size = (constraints.maxWidth - 8)
+                  .clamp(200.0, 310.0)
+                  .toDouble();
+              final glowSize = size * 0.84;
+              final ringSize = size * 0.77;
+              return SizedBox(
+                width: size,
+                height: size,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    ScaleTransition(
+                      scale: Tween<double>(begin: 0.9, end: 1.06).animate(
+                        CurvedAnimation(
+                          parent: _breathController,
+                          curve: Curves.easeInOut,
+                        ),
+                      ),
+                      child: Container(
+                        width: glowSize,
+                        height: glowSize,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              AppPalette.teal.withValues(alpha: 0.24),
+                              AppPalette.blue.withValues(alpha: 0.08),
+                              Colors.transparent,
+                            ],
+                            stops: const [0.0, 0.62, 1.0],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    ProgressRing(
+                      value: _progreso,
+                      size: ringSize,
+                      strokeWidth: size < 260 ? 9 : 12,
+                      color: _terminado ? AppPalette.teal : AppPalette.cyan,
+                      trackColor: Colors.white.withValues(alpha: 0.1),
+                      center: center,
+                    ),
+                  ],
                 ),
-                ProgressRing(
-                  value: _progreso,
-                  size: 238,
-                  strokeWidth: 12,
-                  color: _terminado ? AppPalette.teal : AppPalette.cyan,
-                  trackColor: Colors.white.withValues(alpha: 0.1),
-                  center: center,
-                ),
-              ],
-            ),
+              );
+            },
           ),
         ),
         const SizedBox(height: 18),
@@ -681,6 +710,9 @@ class _GuidedPausePageState extends State<GuidedPausePage>
     final paso = _pasoSeleccionado;
     final color = widget.avatarColor ?? AppPalette.teal;
     final lineColor = Color.lerp(color, Colors.white, 0.38)!;
+    final compact = AppResponsive.isCompact(context);
+    final avatarWidth = compact ? 72.0 : 104.0;
+    final avatarHeight = avatarWidth * 126 / 104;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -699,8 +731,8 @@ class _GuidedPausePageState extends State<GuidedPausePage>
       child: Row(
         children: [
           Container(
-            width: 104,
-            height: 126,
+            width: avatarWidth,
+            height: avatarHeight,
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(18),
@@ -813,9 +845,7 @@ class _GuidedPausePageState extends State<GuidedPausePage>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  completado
-                      ? Icons.check_rounded
-                      : Icons.play_arrow_rounded,
+                  completado ? Icons.check_rounded : Icons.play_arrow_rounded,
                   size: 12,
                   color: activo || completado
                       ? AppPalette.teal
