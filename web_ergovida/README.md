@@ -1,6 +1,6 @@
 # ErgoVida — página informativa (landing del QR)
 
-Sitio estático sin frameworks ni compilación: `index.html`, `styles.css`, `app.js` y `assets/`. No incluye instalables pesados: el botón móvil abre el APK alojado en Google Drive y el botón de escritorio abre la app desplegada en la web.
+Sitio estático sin frameworks ni compilación: `index.html`, `styles.css`, `app.js` y `assets/`. Diseño profesional mobile first con ilustraciones locales de bienestar laboral, ergonomía y prevención en SST. No incluye instalables pesados: el botón móvil abre el APK alojado en Google Drive y el botón de escritorio abre la app desplegada en la web.
 
 ## 1. Configura los dos enlaces
 
@@ -21,10 +21,12 @@ Ya hay un APK compilado en `descargas/ErgoVida-v1.0.0-release.apk` (**153,4 MB**
 4. Copia solo el ID (`ABC123xyz`) y pégalo en `URL_APK` reemplazando `TU_ID_DEL_APK`.
 5. Prueba el enlace en un celular Android: debe descargar el `.apk`, no abrir un visor. Si Drive muestra una advertencia de escaneo, pulsa **Descargar de todas formas**.
 
+> Nota: actualmente `URL_APK` apunta a una carpeta compartida de Drive. Funciona para abrir el archivo, pero para descarga directa es mejor usar el enlace del archivo (`/file/d/ID/view`). La página muestra un aviso amarillo mientras detecte una carpeta.
+
 ### App en la web
 Reemplaza `URL_WEB` por la URL donde despliegues la app (por ejemplo `https://ergovida-app.netlify.app`). El botón de escritorio abre esa página; no hay ZIP ni instalador.
 
-Mientras queden valores de ejemplo, aparece un aviso amarillo arriba. Al reemplazarlos, el aviso desaparece solo.
+Mientras queden valores de ejemplo o el enlace apunte a una carpeta de Drive, aparece un aviso amarillo arriba. Al corregirlos, el aviso desaparece solo.
 
 ### Open Graph / WhatsApp
 WhatsApp no ejecuta JavaScript, así que edita también en `index.html`:
@@ -32,8 +34,15 @@ WhatsApp no ejecuta JavaScript, así que edita también en `index.html`:
 - `og:image` y `twitter:image` → URL absoluta de `assets/images/og-image.png`.
 
 ### Contenido editable
-- Capturas de ejemplo: `assets/images/captura-01.png`, `captura-02.png`, `captura-03.png` (720×1280). Sobrescríbelas conservando los nombres.
+- Fotos de relleno (bloques de bienestar/SST):
+  - `assets/images/imagen-personastrabajando1.png` — hero y sección de seguridad y salud en el trabajo.
+  - `assets/images/imagen-personastrabajando2.png` — sección de beneficios.
+- Capturas reales de la app (galería “Así se ve ErgoVida”):
+  - `assets/images/imagen-menuprincipal.jpg` — menú principal.
+  - `assets/images/imagen-ejerciciospausasactivas.jpg` — ejercicios y pausas activas.
+  - `assets/images/imagen-estadisticasmovil.jpg` — estadísticas y seguimiento.
 - Correo y créditos: sección `#contacto` de `index.html`.
+- Textos de salud y seguridad: secciones `#beneficios`, `#seguridad` y `#faq` de `index.html`.
 - Colores: variables al inicio de `styles.css` (paleta tomada de `lib/core/theme/app_theme.dart`).
 
 ## 2. Publicar la landing (Netlify, gratis)
@@ -63,7 +72,7 @@ WhatsApp no ejecuta JavaScript, así que edita también en `index.html`:
 ## 4. Verificación
 
 - `node --check app.js` → sintaxis OK.
-- Probado en Chrome headless a 390×844 (celular) y 1440×900 (escritorio): sin scroll horizontal, ambos botones visibles, detección Android/iOS/desktop correcta e imágenes cargadas.
+- Probado en Chrome headless a 393×851 (Android), 390×844 (iPhone) y 1440×900 (escritorio): sin scroll horizontal, ambos botones visibles, detección correcta, imágenes cargadas y acordeón FAQ funcional.
 - Con `F12 → Device toolbar` (Ctrl+Shift+M) puedes repetir la prueba con iPhone 12 / Pixel 5 y Desktop.
 
 ## Archivos
@@ -74,6 +83,10 @@ WhatsApp no ejecuta JavaScript, así que edita también en `index.html`:
 | `app.js` | **Enlaces de Drive y de la app web** + detección de dispositivo |
 | `styles.css` | Diseño mobile first y paleta ErgoVida |
 | `assets/images/logo_ergovida.jpg` | Copia del logo oficial |
-| `assets/images/captura-0X.png` | Capturas de ejemplo reemplazables |
+| `assets/images/imagen-personastrabajando1.png` | Foto principal de bienestar laboral |
+| `assets/images/imagen-personastrabajando2.png` | Foto de personas trabajando en beneficios |
+| `assets/images/imagen-menuprincipal.jpg` | Captura real del menú principal |
+| `assets/images/imagen-ejerciciospausasactivas.jpg` | Captura real de ejercicios/pausas activas |
+| `assets/images/imagen-estadisticasmovil.jpg` | Captura real de estadísticas |
 | `assets/images/og-image.png` | Vista previa al compartir (1200×630) |
 | `netlify.toml` | Configuración de publicación en Netlify |
