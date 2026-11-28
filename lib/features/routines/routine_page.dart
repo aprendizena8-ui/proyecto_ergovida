@@ -1026,6 +1026,16 @@ class _RoutinePageState extends State<RoutinePage> {
                 color: AppPalette.muted,
                 icon: Icons.category_rounded,
               ),
+              const AppPill(
+                text: 'Opcional · no suma a SST',
+                color: AppPalette.warning,
+                icon: Icons.info_outline_rounded,
+              ),
+              const AppPill(
+                text: 'Suma a logros',
+                color: AppPalette.teal,
+                icon: Icons.emoji_events_outlined,
+              ),
             ],
           ),
           const SizedBox(height: 12),

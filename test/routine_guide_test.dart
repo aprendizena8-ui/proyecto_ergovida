@@ -32,6 +32,8 @@ void main() {
     expect(find.text('Rutina Casa'), findsOneWidget);
     expect(find.text('Rutina Oficina'), findsNothing);
     expect(find.byType(RoutineAvatar), findsWidgets);
+    expect(find.text('Opcional · no suma a SST'), findsWidgets);
+    expect(find.text('Suma a logros'), findsWidgets);
 
     await tester.pumpWidget(const SizedBox.shrink());
   });

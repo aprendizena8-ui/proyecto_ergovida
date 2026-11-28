@@ -35,6 +35,18 @@ void main() {
     expect(kindFor('Inclinación Lateral de Tronco'), ExerciseKind.sideBend);
   });
 
+  test('solo los ejercicios con movimiento detectado cuentan para SST', () {
+    bool cuenta(String nombre) {
+      final kind = kindFor(nombre);
+      return kind != ExerciseKind.visual && kind != ExerciseKind.other;
+    }
+
+    expect(cuenta('Elevación de Brazos'), isTrue);
+    expect(cuenta('Estiramiento de Cuello'), isTrue);
+    expect(cuenta('Descanso Visual'), isFalse);
+    expect(cuenta('Ejercicio sin tipo conocido'), isFalse);
+  });
+
   test('cada tipo nuevo tiene instrucciones y consejo', () {
     for (final kind in [
       ExerciseKind.neckRotation,

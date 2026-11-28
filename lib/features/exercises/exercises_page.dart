@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/ejercicio_service.dart';
 import '../../main.dart';
+import 'exercise_avatar.dart';
 import 'exercise_camera_logic.dart';
 import 'exercise_camera_models.dart';
 import 'exercise_camera_page.dart';
@@ -564,6 +565,9 @@ class _ExercisesPageState extends State<ExercisesPage> {
   Widget _card(_EjercicioItem ejercicio, bool isDark) {
     final card = isDark ? const Color(0xFF111C2E) : Colors.white;
     final border = isDark ? const Color(0xFF24364C) : const Color(0xFFDBEAF3);
+    final kind = kindFor(ejercicio.nombre);
+    final cuentaSst =
+        kind != ExerciseKind.visual && kind != ExerciseKind.other;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -590,7 +594,15 @@ class _ExercisesPageState extends State<ExercisesPage> {
               color: ejercicio.color.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(18),
             ),
-            child: Icon(ejercicio.icono, color: ejercicio.color, size: 29),
+            // Los ejercicios con detección muestran su avatar animado; los
+            // visuales/genericos conservan el icono porque no hay movimiento
+            // que dibujar.
+            child: cuentaSst
+                ? Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: ExerciseAvatar(kind: kind),
+                  )
+                : Icon(ejercicio.icono, color: ejercicio.color, size: 29),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -628,6 +640,20 @@ class _ExercisesPageState extends State<ExercisesPage> {
                       Icons.category_rounded,
                       ejercicio.categoria,
                       brandTeal,
+                    ),
+                    _chip(
+                      cuentaSst
+                          ? Icons.verified_rounded
+                          : Icons.info_outline_rounded,
+                      cuentaSst ? 'Cuenta para SST' : 'Solo suma a logros',
+                      cuentaSst ? brandTeal : const Color(0xFFF59E0B),
+                    ),
+                    _chip(
+                      cuentaSst
+                          ? Icons.priority_high_rounded
+                          : Icons.low_priority_rounded,
+                      cuentaSst ? 'Prioritario' : 'Opcional',
+                      cuentaSst ? brandBlue : const Color(0xFF7C3AED),
                     ),
                     if (ejercicio.id <= 0)
                       _chip(
