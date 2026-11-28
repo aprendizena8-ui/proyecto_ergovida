@@ -15,6 +15,7 @@ import com.ergovida.backend.model.User;
 import com.ergovida.backend.repository.EstadisticaRepository;
 import com.ergovida.backend.repository.PausaRealizadaRepository;
 import com.ergovida.backend.repository.UserRepository;
+import com.ergovida.backend.service.ConteoActividadService;
 import com.ergovida.backend.service.RoleService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,16 +28,19 @@ public class LiderController {
     private final UserRepository userRepository;
     private final PausaRealizadaRepository pausaRepository;
     private final EstadisticaRepository estadisticaRepository;
+    private final ConteoActividadService conteoActividad;
     private final RoleGuard roleGuard;
 
     public LiderController(
             UserRepository userRepository,
             PausaRealizadaRepository pausaRepository,
             EstadisticaRepository estadisticaRepository,
+            ConteoActividadService conteoActividad,
             RoleGuard roleGuard) {
         this.userRepository = userRepository;
         this.pausaRepository = pausaRepository;
         this.estadisticaRepository = estadisticaRepository;
+        this.conteoActividad = conteoActividad;
         this.roleGuard = roleGuard;
     }
 
@@ -51,18 +55,14 @@ public class LiderController {
             List<PausaRealizada> pausas = pausaRepository.findByUsuarioId(usuario.getId());
             List<Estadistica> estadisticas = estadisticaRepository.findByUsuarioId(usuario.getId());
 
-            long pausasRegistradas = pausas.size();
-            long pausasCompletadas = pausas.stream()
-                    .filter(pausa -> Boolean.TRUE.equals(pausa.getCompletada()))
-                    .count();
-
-            int pausasEnEstadisticas = 0;
-            LocalDateTime ultimaActividad = null;
+            // Solo los ejercicios con detección confirmada cuentan para SST.
+            // Las rutinas se informan aparte y jamás se suman a este total.
+            long ejerciciosDetectados = conteoActividad.ejerciciosDetectados(pausas);
+            long rutinasAdicionales = conteoActividad.rutinasAdicionales(pausas);
+            LocalDateTime ultimaActividad =
+                    conteoActividad.ultimaActividadDetectada(pausas);
 
             for (Estadistica estadistica : estadisticas) {
-                if (estadistica.getPausasRealizadas() != null) {
-                    pausasEnEstadisticas += estadistica.getPausasRealizadas();
-                }
                 if (estadistica.getFecha() != null) {
                     LocalDateTime fecha = estadistica.getFecha().atStartOfDay();
                     if (ultimaActividad == null || fecha.isAfter(ultimaActividad)) {
@@ -71,25 +71,15 @@ public class LiderController {
                 }
             }
 
-            for (PausaRealizada pausa : pausas) {
-                if (pausa.getFecha() != null
-                        && (ultimaActividad == null || pausa.getFecha().isAfter(ultimaActividad))) {
-                    ultimaActividad = pausa.getFecha();
-                }
-            }
-
-            long ejerciciosRealizados = Math.max(
-                    pausasRegistradas,
-                    Math.max(pausasCompletadas, pausasEnEstadisticas));
-
             resultado.add(new UsuarioEstadisticaDTO(
                     usuario.getId(),
                     usuario.getNombre(),
                     usuario.getCorreo(),
                     usuario.getRol(),
                     usuario.getActivo(),
-                    ejerciciosRealizados,
-                    ejerciciosRealizados > 0,
+                    ejerciciosDetectados,
+                    ejerciciosDetectados > 0,
+                    rutinasAdicionales,
                     ultimaActividad));
         }
 

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ergovida.backend.config.RoleGuard;
 import com.ergovida.backend.dto.RankingEntry;
+import com.ergovida.backend.model.TiposActividad;
 import com.ergovida.backend.model.User;
 import com.ergovida.backend.repository.PausaRealizadaRepository;
 import com.ergovida.backend.repository.UserRepository;
@@ -44,7 +45,9 @@ public class RankingController {
         Map<Long, User> usuarios = userRepository.findAll().stream()
                 .collect(Collectors.toMap(User::getId, Function.identity()));
 
-        return pausaRepository.contarPausasPorUsuario().stream()
+        return pausaRepository
+                .contarEjerciciosDetectadosPorUsuario(TiposActividad.EJERCICIO_DETECTADO)
+                .stream()
                 .map(fila -> {
                     Long usuarioId = ((Number) fila[0]).longValue();
                     Long total = ((Number) fila[1]).longValue();

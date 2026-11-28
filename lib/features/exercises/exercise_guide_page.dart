@@ -27,8 +27,11 @@ class _ExerciseGuidePageState extends State<ExerciseGuidePage> {
   @override
   void initState() {
     super.initState();
-    // Convertir "2 min" → 120 segundos
-    totalSeconds = int.parse(widget.duracion.split(" ")[0]) * 60;
+    // Convertir "4 min" → 240 segundos, con un mínimo de 4 minutos para que
+    // el usuario tenga tiempo de completar el ejercicio con calma.
+    final minutos =
+        int.tryParse(widget.duracion.split(RegExp(r'\s+')).first) ?? 4;
+    totalSeconds = minutos.clamp(4, 30) * 60;
     remainingSeconds = totalSeconds;
   }
 
@@ -182,7 +185,7 @@ class _ExerciseGuidePageState extends State<ExerciseGuidePage> {
             ),
             const SizedBox(height: 8),
             Text(
-              "Duración: ${widget.duracion}",
+              "Duración: ${totalSeconds ~/ 60} min",
               style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
             const SizedBox(height: 30),

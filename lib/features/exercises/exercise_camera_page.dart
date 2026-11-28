@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:pose_detection/pose_detection.dart';
+import '../../core/constants/activity_types.dart';
 import '../../data/services/ejercicio_service.dart';
 import 'exercise_avatar.dart';
 import 'exercise_camera_models.dart';
@@ -14,17 +15,6 @@ import 'pose_detector_provider.dart';
 // ============================================================
 //  Página
 // ============================================================
-
-// // Cache global del PoseDetector (se crea una sola vez)
-// PoseDetector? _globalPoseDetector;
-
-// Future<PoseDetector> _getPoseDetector() async {
-//   if (_globalPoseDetector != null) return _globalPoseDetector!;
-//   _globalPoseDetector = useHeavyModel
-//       ? await PoseDetector.create(landmarkModel: PoseLandmarkModel.heavy)
-//       : await PoseDetector.create();
-//   return _globalPoseDetector!;
-// }
 
 class ExerciseCameraPage extends StatefulWidget {
   final String nombre;
@@ -70,6 +60,9 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   final Map<PoseLandmarkType, BodyPoint> _pts = {};
   Size? _imageSize;
   bool _personVisible = false;
+  int _poseHits = 0;
+  int _poseMisses = 0;
+  Offset? _trackedCenter;
   DateTime? _lastFrame;
   double _clock = 0;
 
@@ -187,13 +180,16 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   bool _tapNeedRelease = false;
 
   DateTime? _lastDetection;
-  // Más muestras cuando el ejercicio está activo; menos en espera para ahorrar CPU.
+  // Más muestras cuando el ejercicio está activo; menos en espera para ahorrar
+  // CPU. El guard de [_isDetecting] evita acumular frames sin procesar.
   Duration get _detectionInterval => _isRunning
-      ? const Duration(milliseconds: 80) // ~12 FPS corriendo
-      : const Duration(milliseconds: 120); // ~8 FPS en espera
+      ? const Duration(milliseconds: 45) // hasta ~20 FPS corriendo
+      : const Duration(milliseconds: 90); // ~11 FPS en espera
 
   // En Windows la vista previa va en espejo, pero los frames del stream no.
-  bool get _mirrorOverlay => Platform.isWindows;
+  // En móvil depende del fabricante, así que el usuario puede corregirlo.
+  late bool _mirrorOverlay;
+  bool _showSkeleton = true;
 
   /// El avatar solo tiene sentido en ejercicios cuya cámara identifica el
   /// movimiento. El descanso visual y los ejercicios genéricos no lo usan.
@@ -203,8 +199,13 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   @override
   void initState() {
     super.initState();
+    _mirrorOverlay = Platform.isWindows;
     _kind = widget.kind ?? kindFor(widget.nombre);
-    _totalSeconds = int.parse(widget.duracion.split(" ")[0]) * 60;
+    final minutos =
+        int.tryParse(widget.duracion.split(RegExp(r'\s+')).first) ?? 4;
+    // Ningún ejercicio dura menos de 4 minutos: los tiempos sembrados
+    // originalmente eran demasiado cortos para completar el movimiento.
+    _totalSeconds = minutos.clamp(4, 30) * 60;
     _remainingSeconds = _totalSeconds;
     if (_kind == ExerciseKind.visual) {
       _feedback = "Presiona Iniciar: te guiaremos para descansar la vista";
@@ -300,7 +301,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     // Si el ejercicio ya terminó, no proceses más
     if (_finished || _yaGuardado) return;
 
-    // Limitar a ~10 FPS para no saturar la CPU
+    // Limitar la frecuencia de análisis para no saturar la CPU
     final ahora = DateTime.now();
     if (_lastDetection != null &&
         ahora.difference(_lastDetection!) < _detectionInterval) {
@@ -334,23 +335,48 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       final raw = _lastFrame == null
           ? 0.0
           : now.difference(_lastFrame!).inMilliseconds / 1000.0;
-      final dt = raw > 0.5 ? 0.5 : raw;
+      final dt = raw > 0.3 ? 0.3 : raw;
       _lastFrame = now;
 
-      if (poses.isEmpty) {
-        _personVisible = false;
-        _pts.clear();
-        if (!_finished) {
+      // Un frame aislado sin persona no debe borrar el esqueleto: el modelo
+      // duda cuando la persona se mueve rápido o hay poca luz. Confirmamos
+      // varias detecciones seguidas antes de mostrarlo u ocultarlo.
+      final conLandmarks = poses.where((p) => p.hasLandmarks).toList();
+      if (conLandmarks.isEmpty) {
+        _poseMisses++;
+        _poseHits = 0;
+        if (_poseMisses >= poseLostFrames && _personVisible) {
+          _personVisible = false;
+          _pts.clear();
+          _trackedCenter = null;
+          if (!_finished) {
+            _setFeedback(
+              'No te detecto. Colócate frente a la cámara',
+              Colors.orange,
+            );
+          }
+          setState(() {});
+        } else if (poses.isNotEmpty && !_finished) {
           _setFeedback(
-            'No te detecto. Colócate frente a la cámara',
+            'Te veo, pero no distingo bien tu postura. Acércate un poco o mejora la luz',
             Colors.orange,
           );
+          if (_isRunning) setState(() {});
+        } else if (_poseMisses == 2 && !_finished && !_personVisible) {
+          _setFeedback(
+            'Buscando tu cuerpo: aléjate un poco del encuadre y busca buena luz',
+            Colors.orange,
+          );
+          setState(() {});
         }
-        setState(() {});
         return;
       }
 
-      final pose = _bestPose(poses);
+      _poseMisses = 0;
+      _poseHits++;
+      if (!_personVisible && _poseHits < poseConfirmFrames) return;
+
+      final pose = _bestPose(conLandmarks);
       // El tamaño real del frame analizado es la fuente de verdad para
       // normalizar los landmarks y ajustar el aspecto del overlay.
       if (pose.imageWidth > 0 && pose.imageHeight > 0) {
@@ -358,18 +384,6 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
           pose.imageWidth.toDouble(),
           pose.imageHeight.toDouble(),
         );
-      }
-      if (!pose.hasLandmarks) {
-        _personVisible = false;
-        _pts.clear();
-        if (!_finished) {
-          _setFeedback(
-            'Te veo, pero no distingo bien tu postura. Acércate un poco o mejora la luz',
-            Colors.orange,
-          );
-        }
-        setState(() {});
-        return;
       }
 
       _clock += dt;
@@ -379,11 +393,11 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
         _updatePoints(pose, imageSize);
       }
 
-      // Si el ejercicio NO está corriendo y ya está "positioned",
-      //    no hacemos setState cada frame (ahorra CPU)
-      // Evaluar posición UNA sola vez por frame
+      // Evaluar posición UNA sola vez por frame. Si no está corriendo y la
+      // posición no cambió, evitamos reconstruir la interfaz.
       final positioned = _isPositioned();
-      final hayQueActualizar = _isRunning || positioned != _lastPositioned;
+      final cambioDePosicion = positioned != _lastPositioned;
+      final hayQueActualizar = _isRunning || cambioDePosicion;
       _lastPositioned = positioned;
       _evaluate(dt);
 
@@ -417,17 +431,39 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
     );
   }
 
-  /// Si hay varias personas en cámara, seguimos a la más grande.
+  /// Elige a la persona principal. Además del tamaño, premia la continuidad
+  /// con el frame anterior para que el esqueleto no «salte» de una persona a
+  /// otra cuando dos cuerpos se acercan o se cruzan.
   Pose _bestPose(List<Pose> poses) {
     var best = poses.first;
-    var bestArea = _poseArea(best);
-    for (final pose in poses.skip(1)) {
-      final area = _poseArea(pose);
-      if (area > bestArea) {
+    var bestScore = -1.0;
+
+    for (final pose in poses) {
+      final size = math.sqrt(_poseArea(pose));
+      if (size <= 0) continue;
+
+      final center = Offset(
+        pose.boundingBox.center.x / (pose.imageWidth == 0 ? 1 : pose.imageWidth),
+        pose.boundingBox.center.y /
+            (pose.imageHeight == 0 ? 1 : pose.imageHeight),
+      );
+      var score = size;
+      final last = _trackedCenter;
+      if (last != null) {
+        final distance = (center - last).distance;
+        score /= 1.0 + distance * 14;
+      }
+      if (score > bestScore) {
+        bestScore = score;
         best = pose;
-        bestArea = area;
       }
     }
+
+    _trackedCenter = Offset(
+      best.boundingBox.center.x / (best.imageWidth == 0 ? 1 : best.imageWidth),
+      best.boundingBox.center.y /
+          (best.imageHeight == 0 ? 1 : best.imageHeight),
+    );
     return best;
   }
 
@@ -444,7 +480,7 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       }
       final n = normalizedPoint(lm, imageSize);
       final prev = _pts[t];
-      if (prev == null || prev.v < minVis || lm.visibility < minVis) {
+      if (prev == null) {
         _pts[t] = BodyPoint(n.dx, n.dy, lm.visibility);
         continue;
       }
@@ -465,7 +501,11 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
             0.0,
             1.0,
           );
-      final alpha = smoothMin + (smoothMax - smoothMin) * t01;
+      var alpha = smoothMin + (smoothMax - smoothMin) * t01;
+      // Si el modelo duda de este punto (o del anterior), damos más peso a la
+      // medición nueva: así no se queda "pegado" un miembro poco visible.
+      final confidence = math.min(lm.visibility, prev.v).clamp(0.0, 1.0);
+      alpha = (alpha * (0.65 + 0.35 * confidence)).clamp(0.0, 1.0);
 
       _pts[t] = BodyPoint(
         prev.x + dx * alpha,
@@ -557,12 +597,15 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
 
     final ls = _p(PoseLandmarkType.leftShoulder);
     final rs = _p(PoseLandmarkType.rightShoulder);
-    final head = _headLine();
-    if (ls == null || rs == null || head == null) return false;
+    if (ls == null || rs == null) return false;
 
-    // Los hombros deben verse claramente más anchos que la cabeza.
-    final torsoOk = _dist(ls, rs) >= _dist(head[0], head[1]) * 1.25;
-    if (!torsoOk) return false;
+    // Si se ven orejas u ojos, comprobamos que los hombros sean más anchos
+    // que la cabeza. Si no, no bloqueamos: con la nariz y los hombros ya se
+    // puede medir el movimiento (personas sentadas muy cerca de la cámara).
+    final head = _headLine();
+    if (head != null && _dist(ls, rs) < _dist(head[0], head[1]) * 1.1) {
+      return false;
+    }
 
     switch (_kind) {
       case ExerciseKind.neckRotation:
@@ -2414,11 +2457,18 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
       setState(() => _feedback = 'Guardando tu progreso...');
     }
 
+    // Solo los movimientos con detección confirmada cuentan para SST.
+    // Los ejercicios visuales/genericos se guardan como actividad adicional.
+    final tipo = _showsAvatar
+        ? ActivityTypes.detectedExercise
+        : ActivityTypes.additionalRoutine;
+
     final guardado = await _ejercicioService
         .registrarPausa(
           usuarioId: widget.usuarioId,
           ejercicioId: widget.ejercicioId,
           completada: completada,
+          tipo: tipo,
         )
         .timeout(const Duration(seconds: 5), onTimeout: () => false);
 
@@ -2479,6 +2529,50 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
   //  Interfaz
   // ------------------------------------------------------------
 
+  Widget _overlayButton({
+    required IconData icon,
+    required String label,
+    required bool active,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: active ? 0.55 : 0.35),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: active ? 0.40 : 0.18),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 14,
+                color: active ? Colors.tealAccent : Colors.white70,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  color: active ? Colors.white : Colors.white70,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildCameraArea() {
     if (!(_isCameraReady && _cameraController != null)) {
       return const Center(
@@ -2500,9 +2594,39 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
           fit: StackFit.expand,
           children: [
             CameraPreview(_cameraController!),
-            if (_personVisible && _pts.isNotEmpty && frameSize != null)
+            if (_showSkeleton &&
+                _personVisible &&
+                _pts.isNotEmpty &&
+                frameSize != null)
               CustomPaint(
                 painter: PosePainter(_pts, frameSize, _mirrorOverlay),
+              ),
+            if (_kind != ExerciseKind.visual)
+              Positioned(
+                top: 10,
+                left: 10,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _overlayButton(
+                      icon: _showSkeleton
+                          ? Icons.visibility_rounded
+                          : Icons.visibility_off_rounded,
+                      label: _showSkeleton ? 'Ocultar guía' : 'Ver guía',
+                      active: _showSkeleton,
+                      onTap: () =>
+                          setState(() => _showSkeleton = !_showSkeleton),
+                    ),
+                    const SizedBox(width: 8),
+                    _overlayButton(
+                      icon: Icons.flip_rounded,
+                      label: 'Espejo',
+                      active: _mirrorOverlay,
+                      onTap: () =>
+                          setState(() => _mirrorOverlay = !_mirrorOverlay),
+                    ),
+                  ],
+                ),
               ),
             if (_showsAvatar)
               Align(
@@ -2510,8 +2634,8 @@ class _ExerciseCameraPageState extends State<ExerciseCameraPage> {
                 child: Padding(
                   padding: const EdgeInsets.all(10),
                   child: Container(
-                    width: 132,
-                    height: 196,
+                    width: 148,
+                    height: 214,
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.30),
                       borderRadius: BorderRadius.circular(16),

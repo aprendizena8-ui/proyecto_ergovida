@@ -21,6 +21,10 @@ public class PausaRealizada {
 
     private Boolean completada;
 
+    /** Tipo explícito de actividad: ejercicio_detectado o rutina_adicional. */
+    @Column(name = "tipo", length = 32)
+    private String tipo = TiposActividad.EJERCICIO_DETECTADO;
+
     public PausaRealizada() {}
 
     public Long getId() { return id; }
@@ -37,4 +41,7 @@ public class PausaRealizada {
 
     public Boolean getCompletada() { return completada; }
     public void setCompletada(Boolean completada) { this.completada = completada; }
+
+    public String getTipo() { return tipo; }
+    public void setTipo(String tipo) { this.tipo = TiposActividad.normalizar(tipo); }
 }

@@ -1,3 +1,4 @@
+import '../../core/constants/activity_types.dart';
 import 'api_client.dart';
 
 class PausaService {
@@ -26,14 +27,17 @@ class PausaService {
   // POST: Registrar pausa
   Future<bool> registrarPausa({
     required int usuarioId,
-    required int ejercicioId,
+    int? ejercicioId,
     required bool completada,
+    String tipo = ActivityTypes.detectedExercise,
   }) async {
     try {
       await ApiClient.post('/pausas-realizadas', {
         'usuarioId': usuarioId,
-        'ejercicioId': ejercicioId,
+        // Las rutinas no tienen ejercicio de catálogo; el backend normaliza 0.
+        'ejercicioId': ejercicioId ?? 0,
         'completada': completada,
+        'tipo': ActivityTypes.normalize(tipo),
       });
       return true;
     } catch (e) {

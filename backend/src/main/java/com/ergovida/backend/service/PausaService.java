@@ -27,22 +27,45 @@ public class PausaService {
 
     @Transactional
     public PausaRealizada registrar(PausaRequest req) {
-        if (req.usuarioId() == null || req.ejercicioId() == null)
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "usuarioId y ejercicioId son obligatorios");
+        if (req.usuarioId() == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "usuarioId es obligatorio");
         if (!userRepo.existsById(req.usuarioId()))
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no existe");
-        Ejercicio ej = ejercicioRepo.findById(req.ejercicioId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ejercicio no existe"));
+
+        String tipo = TiposActividad.normalizar(req.tipo());
+        boolean esRutina = TiposActividad.esRutina(tipo);
+        Long ejercicioId = req.ejercicioId();
+
+        // Las rutinas no tienen un ejercicio del catálogo asociado. Los
+        // clientes antiguos envían 0; lo normalizamos a null para no inventar
+        // una referencia huérfana.
+        if (ejercicioId != null && ejercicioId <= 0) {
+            ejercicioId = null;
+        }
+
+        Ejercicio ej = null;
+        if (!esRutina) {
+            if (ejercicioId == null)
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "ejercicioId es obligatorio para un ejercicio detectado");
+            ej = ejercicioRepo.findById(ejercicioId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ejercicio no existe"));
+        }
 
         boolean completada = Boolean.TRUE.equals(req.completada());
         PausaRealizada p = new PausaRealizada();
         p.setUsuarioId(req.usuarioId());
-        p.setEjercicioId(req.ejercicioId());
+        p.setEjercicioId(ejercicioId);
         p.setFecha(LocalDateTime.now());
         p.setCompletada(completada);
+        p.setTipo(tipo);
         p = pausaRepo.save(p);
 
-        if (completada) {
+        // Las estadísticas son el seguimiento SST: solo las alimenta un
+        // ejercicio detectado confirmado. Las rutinas cuentan para logros,
+        // que se calculan desde /pausas-realizadas en la app.
+        if (completada && !esRutina) {
             Estadistica e = estadisticaRepo.findByUsuarioIdAndFecha(req.usuarioId(), LocalDate.now())
                     .orElseGet(() -> {
                         Estadistica n = new Estadistica();

@@ -24,3 +24,17 @@ plugins {
 }
 
 include(":app")
+
+// CameraX 1.6 declara concurrent-futures, pero con Gradle 9.x el módulo de
+// cámara no lo tiene en su classpath de compilación. Se añade a todos los
+// módulos Android antes de evaluarlos para evitar el error de javac.
+gradle.beforeProject(object : org.gradle.api.Action<org.gradle.api.Project> {
+    override fun execute(project: org.gradle.api.Project) {
+        project.pluginManager.withPlugin("com.android.library") {
+            project.dependencies.add(
+                "implementation",
+                "androidx.concurrent:concurrent-futures:1.1.0",
+            )
+        }
+    }
+})

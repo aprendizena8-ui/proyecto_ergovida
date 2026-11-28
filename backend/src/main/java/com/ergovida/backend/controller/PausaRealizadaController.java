@@ -64,7 +64,8 @@ public class PausaRealizadaController {
         PausaRequest seguro = new PausaRequest(
                 usuarioId,
                 req.ejercicioId(),
-                req.completada());
+                req.completada(),
+                req.tipo());
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(pausaService.registrar(seguro));

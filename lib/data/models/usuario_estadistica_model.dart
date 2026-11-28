@@ -6,6 +6,7 @@ class UsuarioEstadistica {
   final bool activo;
   final int ejerciciosRealizados;
   final bool completo;
+  final int rutinasAdicionales;
   final DateTime? ultimaActividad;
 
   const UsuarioEstadistica({
@@ -16,6 +17,7 @@ class UsuarioEstadistica {
     required this.activo,
     required this.ejerciciosRealizados,
     required this.completo,
+    this.rutinasAdicionales = 0,
     this.ultimaActividad,
   });
 
@@ -28,6 +30,7 @@ class UsuarioEstadistica {
       activo: json['activo'] == true,
       ejerciciosRealizados: _asInt(json['ejerciciosRealizados']),
       completo: json['completo'] == true,
+      rutinasAdicionales: _asInt(json['rutinasAdicionales']),
       ultimaActividad: _asDate(json['ultimaActividad']),
     );
   }

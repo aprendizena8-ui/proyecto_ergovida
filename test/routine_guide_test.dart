@@ -96,6 +96,94 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets('las tarjetas muestran la información de cada ejercicio', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(theme: AppTheme.lightTheme, home: const RoutinePage()),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Ver 5 ejercicios · 10 min'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Ver 5 ejercicios · 10 min'),
+      -300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.text('Ver 5 ejercicios · 10 min'));
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Acomoda tu puesto'), findsOneWidget);
+    expect(
+      find.text(
+        'Pantalla a la altura de los ojos, hombros atrás y pies apoyados.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('120 s'), findsWidgets);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('la sesión guiada avanza de ejercicio y muestra sus pasos', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: const GuidedPausePage(
+          nombre: 'Rutina de prueba',
+          duracionMin: 1,
+          categoria: 'Casa',
+          pasos: [
+            RoutinePaso(
+              nombre: 'Primer movimiento',
+              detalle: 'Haz el primer movimiento despacio.',
+              segundos: 1,
+              kind: RoutineAvatarKind.squat,
+            ),
+            RoutinePaso(
+              nombre: 'Segundo movimiento',
+              detalle: 'Continúa con el segundo movimiento.',
+              segundos: 59,
+              kind: RoutineAvatarKind.neckStretch,
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('PASO 1 DE 2'), findsOneWidget);
+    expect(find.text('Primer movimiento'), findsWidgets);
+    expect(find.text('Haz el primer movimiento despacio.'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Iniciar pausa'));
+    await tester.tap(find.text('Iniciar pausa'));
+    await tester.pump(const Duration(seconds: 2));
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('PASO 2 DE 2'), findsOneWidget);
+    expect(find.text('Segundo movimiento'), findsWidgets);
+    expect(find.text('Continúa con el segundo movimiento.'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('el avatar dibuja todos los movimientos', (tester) async {
     for (final kind in RoutineAvatarKind.values) {
       await tester.pumpWidget(

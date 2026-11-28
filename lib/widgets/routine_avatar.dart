@@ -210,7 +210,7 @@ class _RoutineAvatarPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (size.width <= 0 || size.height <= 0) return;
-    s = math.min(size.width / 124, size.height / 150);
+    s = math.min(size.width / 116, size.height / 136);
     if (s <= 0) return;
     cx = size.width / 2;
     gy = size.height - 8 * s;
@@ -589,21 +589,29 @@ class _RoutineAvatarPainter extends CustomPainter {
     final center = pt(Offset.zero - Offset(0, 70));
     canvas.drawCircle(
       center,
-      sc(58),
+      sc(64),
       Paint()
-        ..shader = ui.Gradient.radial(center, sc(58), [
-          color.withValues(alpha: 0.18),
-          color.withValues(alpha: 0.06),
+        ..shader = ui.Gradient.radial(center, sc(64), [
+          color.withValues(alpha: 0.24),
+          color.withValues(alpha: 0.08),
           color.withValues(alpha: 0),
-        ], [0, 0.6, 1]),
+        ], [0, 0.55, 1]),
     );
     canvas.drawCircle(
       center,
-      sc(46 + breathe * 2),
+      sc(52 + breathe * 2.5),
       Paint()
-        ..color = lineColor.withValues(alpha: 0.10)
+        ..color = lineColor.withValues(alpha: 0.16)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = sc(1.1),
+        ..strokeWidth = sc(1.2),
+    );
+    canvas.drawCircle(
+      center,
+      sc(38 - breathe * 1.5),
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.10)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = sc(0.8),
     );
   }
 
@@ -611,15 +619,23 @@ class _RoutineAvatarPainter extends CustomPainter {
     canvas.drawOval(
       Rect.fromCenter(
         center: pt(Offset(0, 1)),
-        width: sc(68),
-        height: sc(9),
+        width: sc(74),
+        height: sc(10),
       ),
       Paint()
-        ..color = AppPalette.navyDeep.withValues(alpha: 0.13)
-        ..maskFilter = ui.MaskFilter.blur(BlurStyle.normal, sc(3.5)),
+        ..color = AppPalette.navyDeep.withValues(alpha: 0.22)
+        ..maskFilter = ui.MaskFilter.blur(BlurStyle.normal, sc(4)),
     );
-    final left = pt(Offset(-52, 0));
-    final right = pt(Offset(52, 0));
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: pt(Offset(0, 1)),
+        width: sc(42),
+        height: sc(5),
+      ),
+      Paint()..color = AppPalette.navyDeep.withValues(alpha: 0.16),
+    );
+    final left = pt(Offset(-56, 0));
+    final right = pt(Offset(56, 0));
     canvas.drawLine(
       left,
       right,
@@ -728,24 +744,114 @@ class _RoutineAvatarPainter extends CustomPainter {
   }
 
   void _drawMotion(Canvas canvas, _Rig rig, double phase) {
+    final motionPaint = Paint()
+      ..color = color.withValues(alpha: 0.26)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = sc(1.7)
+      ..strokeCap = StrokeCap.round;
+
     void arc(Offset centerDesign, double radius, double start, double alpha) {
       canvas.drawArc(
         Rect.fromCircle(center: pt(centerDesign), radius: sc(radius)),
         phase * 0.6 + start,
-        1.3,
+        1.35,
         false,
         Paint()
           ..color = color.withValues(alpha: alpha)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = sc(1.5)
+          ..strokeWidth = sc(1.6)
           ..strokeCap = StrokeCap.round,
       );
     }
 
-    arc(rig.wrist, 8, 0.2, 0.20);
-    arc(rig.wristBack, 7, 2.6, 0.12);
-    arc(rig.ankle, 9, 1.5, 0.16);
-    arc(rig.ankleBack, 8, 3.4, 0.10);
+    void arrowArc(
+      Offset centerDesign,
+      double radius,
+      double start,
+      double sweep,
+      double alpha,
+    ) {
+      final center = pt(centerDesign);
+      final begin = start + phase * 0.35;
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: sc(radius)),
+        begin,
+        sweep,
+        false,
+        Paint()
+          ..color = color.withValues(alpha: alpha)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = sc(1.9)
+          ..strokeCap = StrokeCap.round,
+      );
+      final endAngle = begin + sweep;
+      final end =
+          center + Offset(math.cos(endAngle), math.sin(endAngle)) * sc(radius);
+      final tangent = endAngle + math.pi / 2;
+      for (final side in const [-0.55, 0.55]) {
+        canvas.drawLine(
+          end -
+              Offset(
+                math.cos(tangent + side),
+                math.sin(tangent + side),
+              ) *
+                  sc(4.5),
+          end,
+          Paint()
+            ..color = color.withValues(alpha: alpha)
+            ..strokeWidth = sc(1.9)
+            ..strokeCap = StrokeCap.round,
+        );
+      }
+    }
+
+    void verticalArrow(Offset centerDesign, double alpha) {
+      final center = pt(centerDesign);
+      final top = center + Offset(0, -sc(11));
+      final bottom = center + Offset(0, sc(11));
+      canvas.drawLine(top, bottom, motionPaint..color = color.withValues(alpha: alpha));
+      for (final end in [top, bottom]) {
+        final direction = end == top ? 1.0 : -1.0;
+        canvas.drawLine(
+          end + Offset(-sc(4), sc(4) * direction),
+          end,
+          motionPaint..color = color.withValues(alpha: alpha),
+        );
+        canvas.drawLine(
+          end + Offset(sc(4), sc(4) * direction),
+          end,
+          motionPaint..color = color.withValues(alpha: alpha),
+        );
+      }
+    }
+
+    switch (kind) {
+      case RoutineAvatarKind.armCircles:
+      case RoutineAvatarKind.torsoRotation:
+        arrowArc(rig.shoulder + const Offset(0, -8), 23, 0.35, 2.1, 0.32);
+        break;
+      case RoutineAvatarKind.squat:
+      case RoutineAvatarKind.bridge:
+        verticalArrow(rig.hip + const Offset(17, 0), 0.28);
+        break;
+      case RoutineAvatarKind.calfRaise:
+        verticalArrow(rig.ankle + const Offset(12, 0), 0.26);
+        break;
+      case RoutineAvatarKind.breathing:
+        arrowArc(rig.hip + const Offset(0, -14), 19, 0.7, 1.9, 0.24);
+        break;
+      case RoutineAvatarKind.sideBend:
+      case RoutineAvatarKind.neckStretch:
+        arrowArc(rig.head + const Offset(0, -6), 17, 0.5, 1.7, 0.26);
+        break;
+      default:
+        break;
+    }
+
+    arc(rig.wrist, 9, 0.2, 0.24);
+    arc(rig.wristBack, 8, 2.6, 0.16);
+    arc(rig.ankle, 10, 1.5, 0.20);
+    arc(rig.ankleBack, 9, 3.4, 0.14);
   }
 
   void _drawFigure(Canvas canvas, _Rig rig, double breathe) {
@@ -979,8 +1085,8 @@ class _RoutineAvatarPainter extends CustomPainter {
     );
 
     final sheen = Paint()
-      ..color = shine.withValues(alpha: 0.22 * alpha)
-      ..strokeWidth = sc(width * 0.18)
+      ..color = shine.withValues(alpha: 0.34 * alpha)
+      ..strokeWidth = sc(width * 0.20)
       ..strokeCap = StrokeCap.round;
     for (var i = 1; i < points.length; i++) {
       final a = points[i - 1];
@@ -1149,6 +1255,18 @@ class _RoutineAvatarPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round,
     );
 
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(shift, sc(0.4)), radius: r * 0.90),
+      math.pi * 1.08,
+      math.pi * 0.84,
+      false,
+      Paint()
+        ..color = accent.withValues(alpha: 0.85)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = sc(1.7)
+        ..strokeCap = StrokeCap.round,
+    );
+
     final eyePaint = Paint()..color = Color.lerp(outline, AppPalette.navyDeep, 0.25)!;
     for (final x in [-3.3, 3.3]) {
       canvas.drawOval(
@@ -1210,21 +1328,23 @@ class _RoutineAvatarPainter extends CustomPainter {
   }
 
   void _drawSparkles(Canvas canvas, double phase) {
+    final sparkle = Paint()
+      ..color = Color.lerp(lineColor, Colors.white, 0.45)!
+          .withValues(alpha: 0.22)
+      ..strokeWidth = sc(1)
+      ..strokeCap = StrokeCap.round;
+
     for (var i = 0; i < 3; i++) {
       final angle = phase * 0.7 + i * 2.1;
-      final radius = 44 + i * 8;
+      final radius = 46 + i * 9;
       final center = pt(Offset(
         math.cos(angle) * radius,
-        -72 + math.sin(angle) * radius * 0.52,
+        -74 + math.sin(angle) * radius * 0.5,
       ));
       final pulse = (math.sin(phase * 1.3 + i) + 1) / 2;
-      canvas.drawCircle(
-        center,
-        sc(0.7 + pulse * 0.9),
-        Paint()
-          ..color = Color.lerp(color, Colors.white, 0.4)!
-              .withValues(alpha: 0.08 + pulse * 0.20),
-      );
+      final size = sc(1.1 + pulse * 1.6);
+      canvas.drawLine(center + Offset(-size, 0), center + Offset(size, 0), sparkle);
+      canvas.drawLine(center + Offset(0, -size), center + Offset(0, size), sparkle);
     }
   }
 

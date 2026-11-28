@@ -31,7 +31,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
   static const List<_EjercicioDef> _definiciones = [
     _EjercicioDef(
       nombre: 'Estiramiento de Cuello',
-      duracionMin: 2,
+      duracionMin: 4,
       categoria: 'Cuello',
       icono: Icons.accessibility_new_rounded,
       color: brandBlue,
@@ -43,7 +43,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Movilidad de Hombros',
-      duracionMin: 3,
+      duracionMin: 5,
       categoria: 'Hombros',
       icono: Icons.fitness_center_rounded,
       color: brandNavy,
@@ -55,7 +55,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Descanso Visual',
-      duracionMin: 1,
+      duracionMin: 5,
       categoria: 'Vista',
       icono: Icons.visibility_rounded,
       color: brandTeal,
@@ -67,7 +67,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Movilidad de Muñecas',
-      duracionMin: 2,
+      duracionMin: 4,
       categoria: 'Muñecas',
       icono: Icons.pan_tool_rounded,
       color: brandCyan,
@@ -79,7 +79,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Elevación de Brazos',
-      duracionMin: 2,
+      duracionMin: 4,
       categoria: 'Brazos',
       icono: Icons.arrow_upward_rounded,
       color: brandBlue,
@@ -91,7 +91,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Flexión de Codos',
-      duracionMin: 2,
+      duracionMin: 4,
       categoria: 'Brazos',
       icono: Icons.fitness_center_rounded,
       color: brandNavy,
@@ -103,7 +103,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Apertura de Pecho',
-      duracionMin: 3,
+      duracionMin: 5,
       categoria: 'Espalda',
       icono: Icons.open_in_full_rounded,
       color: brandTeal,
@@ -115,7 +115,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Inclinación Lateral de Tronco',
-      duracionMin: 3,
+      duracionMin: 5,
       categoria: 'Espalda',
       icono: Icons.swap_horiz_rounded,
       color: brandCyan,
@@ -127,7 +127,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Rotación de Cuello',
-      duracionMin: 2,
+      duracionMin: 4,
       categoria: 'Cuello',
       icono: Icons.screen_rotation_rounded,
       color: brandBlue,
@@ -139,7 +139,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Flexión y Extensión de Cuello',
-      duracionMin: 2,
+      duracionMin: 4,
       categoria: 'Cuello',
       icono: Icons.swap_vert_rounded,
       color: brandNavy,
@@ -151,7 +151,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Círculos de Brazos',
-      duracionMin: 2,
+      duracionMin: 4,
       categoria: 'Hombros',
       icono: Icons.refresh_rounded,
       color: brandTeal,
@@ -163,7 +163,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Elevación Lateral de Brazos',
-      duracionMin: 2,
+      duracionMin: 4,
       categoria: 'Hombros',
       icono: Icons.open_with_rounded,
       color: brandCyan,
@@ -175,7 +175,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Abrazo de Oso',
-      duracionMin: 2,
+      duracionMin: 4,
       categoria: 'Espalda',
       icono: Icons.accessibility_new_rounded,
       color: brandBlue,
@@ -187,7 +187,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Prensa de Palmas',
-      duracionMin: 2,
+      duracionMin: 4,
       categoria: 'Pecho',
       icono: Icons.front_hand_rounded,
       color: brandNavy,
@@ -199,7 +199,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Estiramiento Cruzado de Hombro',
-      duracionMin: 3,
+      duracionMin: 5,
       categoria: 'Hombros',
       icono: Icons.sync_alt_rounded,
       color: brandTeal,
@@ -211,7 +211,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Postura de Cactus',
-      duracionMin: 3,
+      duracionMin: 5,
       categoria: 'Espalda',
       icono: Icons.accessibility_new_rounded,
       color: brandCyan,
@@ -223,7 +223,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Encogimiento Alterno de Hombros',
-      duracionMin: 2,
+      duracionMin: 4,
       categoria: 'Hombros',
       icono: Icons.unfold_more_rounded,
       color: brandNavy,
@@ -235,7 +235,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Apertura de Dedos',
-      duracionMin: 2,
+      duracionMin: 4,
       categoria: 'Manos',
       icono: Icons.pan_tool_rounded,
       color: brandTeal,
@@ -247,7 +247,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Círculos de Antebrazos',
-      duracionMin: 2,
+      duracionMin: 4,
       categoria: 'Codos',
       icono: Icons.autorenew_rounded,
       color: brandCyan,
@@ -259,7 +259,7 @@ class _ExercisesPageState extends State<ExercisesPage> {
     ),
     _EjercicioDef(
       nombre: 'Toques de Hombro Alternos',
-      duracionMin: 2,
+      duracionMin: 4,
       categoria: 'Hombros',
       icono: Icons.touch_app_rounded,
       color: brandBlue,
@@ -749,7 +749,7 @@ class _EjercicioFormDialogState extends State<_EjercicioFormDialog> {
     _nombre = TextEditingController(text: e?.nombre ?? '');
     _descripcion = TextEditingController(text: e?.descripcion ?? '');
     _duracion = TextEditingController(
-      text: e == null ? '2' : e.duracionMin.toString(),
+      text: e == null ? '4' : e.duracionMin.toString(),
     );
     _categoria = TextEditingController(text: e?.categoria ?? 'General');
   }
@@ -802,7 +802,9 @@ class _EjercicioFormDialogState extends State<_EjercicioFormDialog> {
                         ),
                         validator: (v) {
                           final n = int.tryParse(v?.trim() ?? '');
-                          if (n == null || n <= 0) return 'Minutos válidos';
+                          if (n == null || n < 4 || n > 30) {
+                            return 'Entre 4 y 30 minutos';
+                          }
                           return null;
                         },
                       ),
@@ -914,7 +916,13 @@ class _EjercicioItem {
     _EjercicioDef? def,
   }) {
     final nombre = (def?.nombre ?? data['nombre'] ?? 'Ejercicio').toString();
-    final minutos = _int(data['duracion']) ?? def?.duracionMin ?? 2;
+    var minutos = _int(data['duracion']) ?? def?.duracionMin ?? 3;
+    // Los ejercicios del catálogo ya sembrados en el backend tenían tiempos
+    // muy cortos (1-3 min). Respetamos valores personalizados más largos, pero
+    // nunca mostramos menos del nuevo mínimo recomendado.
+    if (def != null && minutos < def.duracionMin) {
+      minutos = def.duracionMin;
+    }
     final categoria = (def?.categoria ?? data['categoria'] ?? 'General')
         .toString();
     final color = def?.color ?? _colorPara(categoria);

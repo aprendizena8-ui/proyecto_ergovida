@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/constants/activity_types.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/services/estadisticas_service.dart';
 import '../../data/services/pausa_service.dart';
@@ -79,14 +80,20 @@ class _WellnessPageState extends State<WellnessPage> {
       if (key == hoyKey) pausasHoy += cantidad;
     }
 
-    final completadas = pausas
-        .where((p) => p is Map && p['completada'] == true)
-        .length;
+    // Logros: cuentan ejercicios detectados y rutinas adicionales. El
+    // seguimiento SST (stats) sigue sumando solo los primeros.
+    final conteos = ActivityCounts.fromPausas(pausas);
+    final completadas = conteos.paraLogros;
+    final totalActividades = conteos.paraLogros;
+    // Si no hay registros en /pausas-realizadas se conserva el total que
+    // viniera de /estadisticas para no perder progreso de versiones anteriores.
+    if (pausas.isNotEmpty) totalPausas = totalActividades;
 
-    if (totalPausas == 0 && pausas.isNotEmpty) {
-      totalPausas = pausas.length;
-      totalMinutos = pausas.length * 2;
-    }
+    final minutosLocales = bienestar.sessions.values.fold<int>(
+      0,
+      (suma, sesion) => suma + sesion.minutes,
+    );
+    if (minutosLocales > totalMinutos) totalMinutos = minutosLocales;
 
     for (final pausa in pausas.whereType<Map>()) {
       final fecha = _parseFecha(pausa['fecha']);
@@ -343,6 +350,7 @@ class _WellnessPageState extends State<WellnessPage> {
                             MaterialPageRoute(
                               builder: (_) => GuidedPausePage(
                                 usuarioId: widget.usuarioId,
+                                tipoActividad: ActivityTypes.additionalRoutine,
                               ),
                             ),
                           );
@@ -745,6 +753,15 @@ class _WellnessPageState extends State<WellnessPage> {
             trailing: AppPill(
               text: '${logros.where((l) => l.progreso >= 1).length}/${logros.length}',
               color: AppPalette.teal,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Aquí suman tanto los ejercicios con detección como las rutinas adicionales.',
+            style: TextStyle(
+              color: AppPalette.muted,
+              fontSize: 12,
+              height: 1.35,
             ),
           ),
           const SizedBox(height: 18),

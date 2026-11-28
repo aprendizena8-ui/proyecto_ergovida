@@ -3,11 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/constants/activity_types.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/services/auth_service.dart';
 import '../../widgets/design_system.dart';
 import '../../widgets/routine_avatar.dart';
 import '../pauses/guided_pause_page.dart';
+import 'routine_models.dart';
+
+export 'routine_models.dart';
 
 class RoutinePage extends StatefulWidget {
   const RoutinePage({super.key});
@@ -37,6 +41,7 @@ class _RoutinePageState extends State<RoutinePage> {
   static const String _prefsFavoritasBase = 'rutinas_favoritas';
 
   final Set<String> _favoritas = {};
+  final Set<String> _expandidas = {};
 
   String get _prefsFavoritasKey =>
       '${_prefsFavoritasBase}_${AuthService.usuarioId}';
@@ -85,6 +90,38 @@ class _RoutinePageState extends State<RoutinePage> {
       icono: Icons.laptop_mac_rounded,
       color: AppPalette.blue,
       kind: RoutineAvatarKind.officePosture,
+      pasos: [
+        RoutinePaso(
+          nombre: 'Acomoda tu puesto',
+          detalle: 'Pantalla a la altura de los ojos, hombros atrás y pies apoyados.',
+          segundos: 120,
+          kind: RoutineAvatarKind.officePosture,
+        ),
+        RoutinePaso(
+          nombre: 'Cuello suave',
+          detalle: 'Inclina la oreja hacia el hombro, sostén y cambia de lado.',
+          segundos: 120,
+          kind: RoutineAvatarKind.neckStretch,
+        ),
+        RoutinePaso(
+          nombre: 'Círculos de brazos',
+          detalle: 'Dibuja círculos amplios y lentos hacia delante y hacia atrás.',
+          segundos: 120,
+          kind: RoutineAvatarKind.armCircles,
+        ),
+        RoutinePaso(
+          nombre: 'Respiración consciente',
+          detalle: 'Inhala por la nariz y exhala largamente por la boca.',
+          segundos: 120,
+          kind: RoutineAvatarKind.breathing,
+        ),
+        RoutinePaso(
+          nombre: 'Piernas estiradas',
+          detalle: 'Extiende una pierna y flexiona el tronco desde la cadera.',
+          segundos: 120,
+          kind: RoutineAvatarKind.seatedStretch,
+        ),
+      ],
     ),
     RoutineItem(
       nombre: 'Rutina Casa',
@@ -96,6 +133,32 @@ class _RoutinePageState extends State<RoutinePage> {
       icono: Icons.home_rounded,
       color: AppPalette.teal,
       kind: RoutineAvatarKind.seatedStretch,
+      pasos: [
+        RoutinePaso(
+          nombre: 'Pierna extendida',
+          detalle: 'Siéntate al borde de la silla y estira una pierna con el talón apoyado.',
+          segundos: 120,
+          kind: RoutineAvatarKind.seatedStretch,
+        ),
+        RoutinePaso(
+          nombre: 'Gato-vaca en silla',
+          detalle: 'Alterna curvar la espalda y abrir el pecho de forma suave.',
+          segundos: 120,
+          kind: RoutineAvatarKind.catCow,
+        ),
+        RoutinePaso(
+          nombre: 'Talones arriba',
+          detalle: 'Eleva los talones, sostén un segundo y baja con control.',
+          segundos: 120,
+          kind: RoutineAvatarKind.calfRaise,
+        ),
+        RoutinePaso(
+          nombre: 'Respiración amplia',
+          detalle: 'Inhala inflando el abdomen y exhala sin prisa.',
+          segundos: 120,
+          kind: RoutineAvatarKind.breathing,
+        ),
+      ],
     ),
     RoutineItem(
       nombre: 'Cuello y hombros',
@@ -107,6 +170,26 @@ class _RoutinePageState extends State<RoutinePage> {
       icono: Icons.accessibility_new_rounded,
       color: AppPalette.cyan,
       kind: RoutineAvatarKind.neckStretch,
+      pasos: [
+        RoutinePaso(
+          nombre: 'Cuello lateral',
+          detalle: 'Oreja hacia el hombro, sin subir el hombro contrario.',
+          segundos: 120,
+          kind: RoutineAvatarKind.neckStretch,
+        ),
+        RoutinePaso(
+          nombre: 'Hombros en círculo',
+          detalle: 'Círculos amplios hacia atrás y luego hacia delante.',
+          segundos: 120,
+          kind: RoutineAvatarKind.armCircles,
+        ),
+        RoutinePaso(
+          nombre: 'Reajusta la postura',
+          detalle: 'Espalda larga, mentón suave y mirada al frente.',
+          segundos: 120,
+          kind: RoutineAvatarKind.officePosture,
+        ),
+      ],
     ),
     RoutineItem(
       nombre: 'Descanso visual',
@@ -118,6 +201,26 @@ class _RoutinePageState extends State<RoutinePage> {
       icono: Icons.visibility_rounded,
       color: AppPalette.blue,
       kind: RoutineAvatarKind.visualRest,
+      pasos: [
+        RoutinePaso(
+          nombre: 'Mirada lejana',
+          detalle: 'Mira un objeto a varios metros y parpadea con calma.',
+          segundos: 80,
+          kind: RoutineAvatarKind.visualRest,
+        ),
+        RoutinePaso(
+          nombre: 'Ojos cerrados',
+          detalle: 'Cierra los ojos y deja que la respiración se vuelva lenta.',
+          segundos: 60,
+          kind: RoutineAvatarKind.breathing,
+        ),
+        RoutinePaso(
+          nombre: 'Cuello descansado',
+          detalle: 'Inclina suavemente la cabeza a cada lado.',
+          segundos: 100,
+          kind: RoutineAvatarKind.neckStretch,
+        ),
+      ],
     ),
     RoutineItem(
       nombre: 'Activación matutina',
@@ -129,6 +232,44 @@ class _RoutinePageState extends State<RoutinePage> {
       icono: Icons.wb_sunny_rounded,
       color: Color(0xFFF59E0B),
       kind: RoutineAvatarKind.march,
+      pasos: [
+        RoutinePaso(
+          nombre: 'Marcha en el sitio',
+          detalle: 'Eleva las rodillas y balancea los brazos con ritmo cómodo.',
+          segundos: 120,
+          kind: RoutineAvatarKind.march,
+        ),
+        RoutinePaso(
+          nombre: 'Brazos despiertos',
+          detalle: 'Círculos amplios hacia delante y hacia atrás.',
+          segundos: 120,
+          kind: RoutineAvatarKind.armCircles,
+        ),
+        RoutinePaso(
+          nombre: 'Sentadilla suave',
+          detalle: 'Baja como si fueras a sentarte y empuja con los talones.',
+          segundos: 120,
+          kind: RoutineAvatarKind.squat,
+        ),
+        RoutinePaso(
+          nombre: 'Costados',
+          detalle: 'Inclina el tronco a un lado sin mover las caderas.',
+          segundos: 120,
+          kind: RoutineAvatarKind.sideBend,
+        ),
+        RoutinePaso(
+          nombre: 'Cadera móvil',
+          detalle: 'Balancea una pierna y luego la otra con control.',
+          segundos: 120,
+          kind: RoutineAvatarKind.legSwing,
+        ),
+        RoutinePaso(
+          nombre: 'Respiración final',
+          detalle: 'Inhala profundo y exhala largo para cerrar la activación.',
+          segundos: 120,
+          kind: RoutineAvatarKind.breathing,
+        ),
+      ],
     ),
     RoutineItem(
       nombre: 'Relajación nocturna',
@@ -140,6 +281,32 @@ class _RoutinePageState extends State<RoutinePage> {
       icono: Icons.nightlight_round,
       color: Color(0xFF7C3AED),
       kind: RoutineAvatarKind.breathing,
+      pasos: [
+        RoutinePaso(
+          nombre: 'Respiración lenta',
+          detalle: 'Inhala por la nariz y exhala por la boca sin hacer ruido.',
+          segundos: 150,
+          kind: RoutineAvatarKind.breathing,
+        ),
+        RoutinePaso(
+          nombre: 'Postura del niño',
+          detalle: 'Rodillas flexionadas, glúteos sobre los talones y brazos extendidos.',
+          segundos: 120,
+          kind: RoutineAvatarKind.childPose,
+        ),
+        RoutinePaso(
+          nombre: 'Cuello sin tensión',
+          detalle: 'Oreja hacia el hombro, hombros relajados y respiración calmada.',
+          segundos: 120,
+          kind: RoutineAvatarKind.neckStretch,
+        ),
+        RoutinePaso(
+          nombre: 'Cierre en flexión',
+          detalle: 'Inclina el tronco hacia delante y deja caer brazos y cabeza.',
+          segundos: 150,
+          kind: RoutineAvatarKind.forwardFold,
+        ),
+      ],
     ),
     RoutineItem(
       nombre: 'Sentadillas con silla',
@@ -396,6 +563,8 @@ class _RoutinePageState extends State<RoutinePage> {
           avatarKind: rutina.kind,
           avatarColor: rutina.color,
           descripcion: rutina.descripcion,
+          pasos: rutina.pasos,
+          tipoActividad: ActivityTypes.additionalRoutine,
         ),
       ),
     );
@@ -408,6 +577,14 @@ class _RoutinePageState extends State<RoutinePage> {
       }
     });
     _guardarFavoritas();
+  }
+
+  void _alternarDetalle(RoutineItem rutina) {
+    setState(() {
+      if (!_expandidas.remove(rutina.nombre)) {
+        _expandidas.add(rutina.nombre);
+      }
+    });
   }
 
   Future<void> _guardarFavoritas() async {
@@ -851,7 +1028,9 @@ class _RoutinePageState extends State<RoutinePage> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          _detalleRutina(rutina, isDark),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
@@ -884,6 +1063,149 @@ class _RoutinePageState extends State<RoutinePage> {
         ],
       ),
     );
+  }
+
+  Widget _detalleRutina(RoutineItem rutina, bool isDark) {
+    final abierto = _expandidas.contains(rutina.nombre);
+    final pasos = rutina.pasos;
+    final total = pasos.fold<int>(0, (sum, paso) => sum + paso.segundos);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.04)
+            : AppPalette.background.withValues(alpha: 0.65),
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(
+          color: isDark ? AppPalette.darkBorder : AppPalette.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            onTap: () => _alternarDetalle(rutina),
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.list_alt_rounded,
+                    size: 16,
+                    color: rutina.color,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      abierto
+                          ? 'Ocultar ejercicios'
+                          : 'Ver ${pasos.length} ${pasos.length == 1 ? 'ejercicio' : 'ejercicios'} · ${_minutosTexto(total)}',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : AppPalette.navy,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    abierto
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    size: 18,
+                    color: AppPalette.muted,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (abierto) ...[
+            const Divider(height: 1, thickness: 1),
+            for (var i = 0; i < pasos.length; i++)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 11,
+                      backgroundColor: rutina.color.withValues(alpha: 0.14),
+                      child: Text(
+                        '${i + 1}',
+                        style: TextStyle(
+                          color: rutina.color,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            pasos[i].nombre,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : AppPalette.navy,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            pasos[i].detalle,
+                            style: TextStyle(
+                              color: AppPalette.muted,
+                              fontSize: 11.5,
+                              height: 1.35,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.schedule_rounded,
+                                size: 11,
+                                color: rutina.color,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                pasos[i].duracionTexto,
+                                style: TextStyle(
+                                  color: rutina.color,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  pasos[i].kind.label,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AppPalette.muted,
+                                    fontSize: 10.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 10),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _minutosTexto(int segundos) {
+    return '${(segundos / 60).round()} min';
   }
 
   Widget _avatarPreview(RoutineItem rutina, bool isDark, Color lineColor) {
@@ -988,6 +1310,7 @@ class RoutineItem {
   final IconData icono;
   final Color color;
   final RoutineAvatarKind kind;
+  final List<RoutinePaso>? _pasosDefinidos;
 
   const RoutineItem({
     required this.nombre,
@@ -999,5 +1322,39 @@ class RoutineItem {
     required this.icono,
     required this.color,
     required this.kind,
-  });
+    List<RoutinePaso>? pasos,
+  }) : _pasosDefinidos = pasos;
+
+  /// Secuencia que se muestra en la tarjeta y se sigue en la sesión guiada.
+  /// Las rutinas con varios ejercicios definen sus pasos; el resto se reparte
+  /// en preparación, movimiento principal y cierre para no dejar huecos.
+  List<RoutinePaso> get pasos {
+    final definidos = _pasosDefinidos;
+    if (definidos != null && definidos.isNotEmpty) return definidos;
+
+    final total = minutos * 60;
+    final principal = RoutinePaso(
+      nombre: nombre,
+      detalle: descripcion,
+      segundos: total > 90 ? total - 60 : total,
+      kind: kind,
+    );
+    if (total <= 90) return [principal];
+
+    return [
+      const RoutinePaso(
+        nombre: 'Preparación',
+        detalle: 'Respira y colócate en una postura cómoda antes de empezar.',
+        segundos: 30,
+        kind: RoutineAvatarKind.breathing,
+      ),
+      principal,
+      const RoutinePaso(
+        nombre: 'Cierre y respiración',
+        detalle: 'Vuelve al centro y respira con calma para terminar.',
+        segundos: 30,
+        kind: RoutineAvatarKind.breathing,
+      ),
+    ];
+  }
 }

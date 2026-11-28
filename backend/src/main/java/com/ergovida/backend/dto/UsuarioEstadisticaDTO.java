@@ -11,6 +11,7 @@ public class UsuarioEstadisticaDTO {
     private Boolean activo;
     private Long ejerciciosRealizados;
     private Boolean completo;
+    private Long rutinasAdicionales;
     private LocalDateTime ultimaActividad;
 
     public UsuarioEstadisticaDTO(
@@ -22,6 +23,19 @@ public class UsuarioEstadisticaDTO {
             Long ejerciciosRealizados,
             Boolean completo,
             LocalDateTime ultimaActividad) {
+        this(id, nombre, correo, rol, activo, ejerciciosRealizados, completo, 0L, ultimaActividad);
+    }
+
+    public UsuarioEstadisticaDTO(
+            Long id,
+            String nombre,
+            String correo,
+            String rol,
+            Boolean activo,
+            Long ejerciciosRealizados,
+            Boolean completo,
+            Long rutinasAdicionales,
+            LocalDateTime ultimaActividad) {
         this.id = id;
         this.nombre = nombre;
         this.correo = correo;
@@ -29,6 +43,7 @@ public class UsuarioEstadisticaDTO {
         this.activo = activo;
         this.ejerciciosRealizados = ejerciciosRealizados;
         this.completo = completo;
+        this.rutinasAdicionales = rutinasAdicionales == null ? 0L : rutinasAdicionales;
         this.ultimaActividad = ultimaActividad;
     }
 
@@ -61,6 +76,10 @@ public class UsuarioEstadisticaDTO {
 
     public Boolean getCompleto() {
         return completo;
+    }
+
+    public Long getRutinasAdicionales() {
+        return rutinasAdicionales;
     }
 
     public LocalDateTime getUltimaActividad() {

@@ -7,6 +7,10 @@ import 'exercise_camera_models.dart';
 /// Cache global del PoseDetector (se crea una sola vez por sesión).
 PoseDetector? _globalPoseDetector;
 
+/// Inicialización en curso, para que dos pantallas abiertas a la vez no carguen
+/// los modelos dos veces ni intenten inicializar el mismo detector dos veces.
+Future<PoseDetector>? _inicializando;
+
 /// Carga el modelo desde los assets de la app y, si por alguna razón no se
 /// empaquetaron, recurre a los assets del paquete [pose_detection].
 Future<ByteData> _loadModelAsset(String name) async {
@@ -18,11 +22,7 @@ Future<ByteData> _loadModelAsset(String name) async {
   }
 }
 
-/// Obtiene el detector global. La primera vez tarda 1-2 seg,
-/// después es instantáneo.
-Future<PoseDetector> getPoseDetector() async {
-  if (_globalPoseDetector != null) return _globalPoseDetector!;
-
+Future<PoseDetector> _createDetector() async {
   final landmarkName = 'pose_landmark_${poseLandmarkModel.name}.tflite';
   final yoloData = await _loadModelAsset('yolov8n_float32.tflite');
   final landmarkData = await _loadModelAsset(landmarkName);
@@ -43,9 +43,25 @@ Future<PoseDetector> getPoseDetector() async {
     // Tolerante con cuerpos parcialmente fuera de cuadro, pero exigente con
     // la calidad global de los landmarks.
     detectorConf: poseDetectorConf,
+    detectorIou: 0.45,
     minLandmarkScore: poseMinLandmarkScore,
+    // XNNPACK permite analizar más frames por segundo con el mismo modelo,
+    // que es lo que hace que el seguimiento se sienta fluido.
+    performanceConfig: const PerformanceConfig.xnnpack(numThreads: 4),
   );
 
   _globalPoseDetector = detector;
   return detector;
+}
+
+/// Obtiene el detector global. La primera vez tarda 1-2 segundos,
+/// después es instantáneo. Las llamadas concurrentes comparten la misma
+/// inicialización.
+Future<PoseDetector> getPoseDetector() {
+  final listo = _globalPoseDetector;
+  if (listo != null) return Future.value(listo);
+
+  return _inicializando ??= _createDetector().whenComplete(() {
+    _inicializando = null;
+  });
 }

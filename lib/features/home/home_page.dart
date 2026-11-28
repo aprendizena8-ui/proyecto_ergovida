@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/constants/activity_types.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/user_model.dart';
 import '../../data/services/auth_service.dart';
@@ -240,6 +241,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           usuarioId: _usuarioId,
           nombre: nombre,
           ejercicioId: ejercicioId,
+          tipoActividad: ActivityTypes.additionalRoutine,
         ),
       ),
     );

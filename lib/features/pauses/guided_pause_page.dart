@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../core/constants/activity_types.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/services/ejercicio_service.dart';
 import '../../data/services/pausa_service.dart';
 import '../../data/services/wellness_service.dart';
 import '../../widgets/design_system.dart';
 import '../../widgets/routine_avatar.dart';
+import '../routines/routine_models.dart';
 
 class GuidedPausePage extends StatefulWidget {
   final int usuarioId;
@@ -18,6 +20,8 @@ class GuidedPausePage extends StatefulWidget {
   final String? categoria;
   final RoutineAvatarKind? avatarKind;
   final Color? avatarColor;
+  final List<RoutinePaso> pasos;
+  final String tipoActividad;
 
   const GuidedPausePage({
     super.key,
@@ -29,6 +33,8 @@ class GuidedPausePage extends StatefulWidget {
     this.categoria,
     this.avatarKind,
     this.avatarColor,
+    this.pasos = const [],
+    this.tipoActividad = ActivityTypes.detectedExercise,
   });
 
   @override
@@ -56,6 +62,23 @@ class _GuidedPausePageState extends State<GuidedPausePage>
 
   bool get _tienePreset =>
       widget.nombre != null && widget.nombre!.trim().isNotEmpty;
+
+  int get _pasoActual {
+    if (widget.pasos.isEmpty) return 0;
+    final transcurrido = _totalSegundos - _restantes;
+    var acumulado = 0;
+    for (var i = 0; i < widget.pasos.length; i++) {
+      acumulado += widget.pasos[i].segundos;
+      if (transcurrido < acumulado) return i;
+    }
+    return widget.pasos.length - 1;
+  }
+
+  RoutinePaso? get _pasoSeleccionado =>
+      widget.pasos.isEmpty ? null : widget.pasos[_pasoActual];
+
+  RoutineAvatarKind? get _avatarKind =>
+      _pasoSeleccionado?.kind ?? widget.avatarKind;
 
   @override
   void initState() {
@@ -223,13 +246,17 @@ class _GuidedPausePageState extends State<GuidedPausePage>
     if (mounted) setState(() => _registrando = true);
 
     if (widget.usuarioId > 0) {
-      if (ejercicio.id > 0) {
-        await _pausaService.registrarPausa(
-          usuarioId: widget.usuarioId,
-          ejercicioId: ejercicio.id,
-          completada: true,
-        );
-      }
+      // Si se eligió un ejercicio del catálogo es detección; si la sesión viene
+      // de una rutina o de una pausa libre, se guarda como adicional.
+      final esDetectado = ejercicio.id > 0;
+      await _pausaService.registrarPausa(
+        usuarioId: widget.usuarioId,
+        ejercicioId: esDetectado ? ejercicio.id : null,
+        completada: true,
+        tipo: esDetectado
+            ? ActivityTypes.detectedExercise
+            : widget.tipoActividad,
+      );
       await _wellnessService.recordSession(
         minutes: _minutosSesion,
         userId: widget.usuarioId,
@@ -539,10 +566,12 @@ class _GuidedPausePageState extends State<GuidedPausePage>
             ),
           ],
         ),
-        if (widget.avatarKind != null) ...[
+        if (_avatarKind != null) ...[
           const SizedBox(height: 18),
           _avatarGuia(),
-          const SizedBox(height: 22),
+          const SizedBox(height: 12),
+          if (widget.pasos.length > 1) _secuenciaPasos(),
+          const SizedBox(height: 18),
         ] else
           const SizedBox(height: 28),
         Center(
@@ -607,13 +636,37 @@ class _GuidedPausePageState extends State<GuidedPausePage>
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  _consejo(ejercicio),
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.72),
-                    fontSize: 12.5,
-                    height: 1.45,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'CÓMO HACERLO',
+                      style: TextStyle(
+                        color: AppPalette.teal,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.6,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      ejercicio.descripcion,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.82),
+                        fontSize: 12.5,
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Consejo: ${_consejo(ejercicio)}',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.58),
+                        fontSize: 11.5,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -624,7 +677,8 @@ class _GuidedPausePageState extends State<GuidedPausePage>
   }
 
   Widget _avatarGuia() {
-    final kind = widget.avatarKind!;
+    final kind = _avatarKind!;
+    final paso = _pasoSeleccionado;
     final color = widget.avatarColor ?? AppPalette.teal;
     final lineColor = Color.lerp(color, Colors.white, 0.38)!;
 
@@ -669,7 +723,9 @@ class _GuidedPausePageState extends State<GuidedPausePage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'SIGUE AL AVATAR',
+                  paso == null
+                      ? 'SIGUE AL AVATAR'
+                      : 'PASO ${_pasoActual + 1} DE ${widget.pasos.length}',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.58),
                     fontSize: 10,
@@ -679,7 +735,7 @@ class _GuidedPausePageState extends State<GuidedPausePage>
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  kind.label,
+                  paso?.nombre ?? kind.label,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 17,
@@ -689,7 +745,8 @@ class _GuidedPausePageState extends State<GuidedPausePage>
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'El avatar repite el movimiento. Copia el ritmo y mantén una postura cómoda.',
+                  paso?.detalle ??
+                      'El avatar repite el movimiento. Copia el ritmo y mantén una postura cómoda.',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.72),
                     fontSize: 12,
@@ -711,12 +768,72 @@ class _GuidedPausePageState extends State<GuidedPausePage>
                       color: AppPalette.blueBright,
                       icon: Icons.schedule_rounded,
                     ),
+                    if (paso != null)
+                      AppPill(
+                        text: paso.duracionTexto,
+                        color: AppPalette.cyan,
+                        icon: Icons.hourglass_top_rounded,
+                      ),
                   ],
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _secuenciaPasos() {
+    final actual = _pasoActual;
+    return SizedBox(
+      height: 34,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: widget.pasos.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final paso = widget.pasos[index];
+          final activo = index == actual;
+          final completado = index < actual;
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: activo
+                  ? AppPalette.teal.withValues(alpha: 0.22)
+                  : Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(AppRadii.pill),
+              border: Border.all(
+                color: activo
+                    ? AppPalette.teal.withValues(alpha: 0.65)
+                    : Colors.white.withValues(alpha: 0.10),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  completado
+                      ? Icons.check_rounded
+                      : Icons.play_arrow_rounded,
+                  size: 12,
+                  color: activo || completado
+                      ? AppPalette.teal
+                      : Colors.white54,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  paso.nombre,
+                  style: TextStyle(
+                    color: activo ? Colors.white : Colors.white70,
+                    fontSize: 11,
+                    fontWeight: activo ? FontWeight.w800 : FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

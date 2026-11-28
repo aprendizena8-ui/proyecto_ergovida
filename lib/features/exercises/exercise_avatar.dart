@@ -47,7 +47,7 @@ class _ExerciseAvatarState extends State<ExerciseAvatar>
             animation: _controller,
             builder: (context, _) {
               return Opacity(
-                opacity: 0.55,
+                opacity: 0.88,
                 child: CustomPaint(
                   size: size,
                   painter: ExerciseAvatarPainter(
@@ -85,8 +85,12 @@ class ExerciseAvatarPainter extends CustomPainter {
     final upperLeg = size.height * 0.20;
     final lowerLeg = size.height * 0.18;
 
-    final double pulse = (math.sin((t * 2 * math.pi) - math.pi / 2) + 1) / 2;
-    final double wave = math.sin(t * 2 * math.pi);
+    final phase = t * 2 * math.pi;
+    final wave = math.sin(phase);
+    final pulse = (1 - math.cos(phase)) / 2;
+    // Alternancia suave entre lados: 0 → 1 → 0, sin saltos bruscos.
+    final leftTurn = pulse * pulse * (3 - 2 * pulse);
+    final rightTurn = 1 - leftTurn;
 
     var headX = cx;
     var headYOffset = 0.0;
@@ -102,103 +106,117 @@ class ExerciseAvatarPainter extends CustomPainter {
     var rightWristInward = 0.0;
     var handSpin = 0.0;
     var handSpread = 0.0;
+    var leftHandOffset = Offset.zero;
+    var rightHandOffset = Offset.zero;
 
     switch (kind) {
       case ExerciseKind.neck:
-        headX = cx + wave * bodyWidth * 0.07;
-        headTilt = wave * 0.32;
+        headX = cx + wave * bodyWidth * 0.10;
+        headTilt = wave * 0.34;
         break;
       case ExerciseKind.shoulders:
-        leftShoulderLift = -pulse * size.height * 0.035;
+        leftShoulderLift = -pulse * size.height * 0.06;
         rightShoulderLift = leftShoulderLift;
         break;
       case ExerciseKind.wrists:
-        leftUpperAngle = 52;
-        rightUpperAngle = 52;
-        leftElbowBend = 88;
-        rightElbowBend = 88;
-        handSpin = t * math.pi * 4;
+        leftUpperAngle = 50;
+        rightUpperAngle = 50;
+        leftElbowBend = 85 + wave * 6;
+        rightElbowBend = 85 - wave * 6;
+        handSpin = phase * 2;
         break;
       case ExerciseKind.armsUp:
-        leftUpperAngle = 15 + pulse * 155;
+        leftUpperAngle = 12 + pulse * 158;
         rightUpperAngle = leftUpperAngle;
         leftElbowBend = 4;
         rightElbowBend = 4;
         break;
       case ExerciseKind.curls:
-        leftUpperAngle = 12;
-        rightUpperAngle = 12;
-        leftElbowBend = 10 + pulse * 150;
+        leftUpperAngle = 14;
+        rightUpperAngle = 14;
+        leftElbowBend = 8 + pulse * 145;
         rightElbowBend = leftElbowBend;
         break;
       case ExerciseKind.chest:
-        leftUpperAngle = 20 + pulse * 75;
+        leftUpperAngle = 12 + pulse * 82;
         rightUpperAngle = leftUpperAngle;
         leftElbowBend = 8;
         rightElbowBend = 8;
         break;
       case ExerciseKind.sideBend:
-        torsoShift = wave * bodyWidth * 0.09;
-        headX = cx + torsoShift * 1.25;
-        headTilt = wave * 0.10;
+        torsoShift = wave * bodyWidth * 0.11;
+        headX = cx + torsoShift * 1.4;
+        headTilt = wave * 0.12;
         break;
       case ExerciseKind.neckRotation:
-        headX = cx + torsoShift + wave * bodyWidth * 0.10;
-        headTilt = wave * 0.10;
+        headX = cx + wave * bodyWidth * 0.13;
+        headTilt = wave * 0.07;
         break;
       case ExerciseKind.neckNod:
-        headYOffset = wave * size.height * 0.035;
-        headTilt = wave * 0.04;
+        headYOffset = wave * size.height * 0.05;
+        headTilt = wave * 0.06;
         break;
       case ExerciseKind.armCircles:
-        leftUpperAngle = 85 + wave * 12;
-        rightUpperAngle = 85 - wave * 12;
-        leftElbowBend = 22 + pulse * 38;
-        rightElbowBend = 22 + (1 - pulse) * 38;
+        leftUpperAngle = 83 + wave * 15;
+        rightUpperAngle = 83 - wave * 15;
+        leftElbowBend = 12 + pulse * 40;
+        rightElbowBend = 12 + (1 - pulse) * 40;
+        final r = bodyWidth * 0.09;
+        leftHandOffset = Offset(
+          math.cos(phase) * r,
+          math.sin(phase) * r * 0.55,
+        );
+        rightHandOffset = Offset(
+          math.cos(phase + math.pi) * r,
+          math.sin(phase + math.pi) * r * 0.55,
+        );
         break;
       case ExerciseKind.lateralRaise:
-        leftUpperAngle = 12 + pulse * 80;
+        leftUpperAngle = 10 + pulse * 82;
         rightUpperAngle = leftUpperAngle;
         leftElbowBend = 6;
         rightElbowBend = 6;
         break;
       case ExerciseKind.selfHug:
-        leftUpperAngle = 55;
-        rightUpperAngle = 55;
-        leftElbowBend = 100;
-        rightElbowBend = 100;
-        leftWristInward = bodyWidth * 0.40 + pulse * bodyWidth * 0.03;
-        rightWristInward = leftWristInward;
+        leftUpperAngle = 48 + pulse * 10;
+        rightUpperAngle = 48 + pulse * 10;
+        leftElbowBend = 92;
+        rightElbowBend = 92;
+        // brazos abiertos → abrazo cruzado → brazos abiertos
+        final inward = bodyWidth * (0.10 + pulse * 0.38);
+        leftWristInward = inward;
+        rightWristInward = inward;
         break;
       case ExerciseKind.prayerPress:
-        leftUpperAngle = 55;
-        rightUpperAngle = 55;
+        leftUpperAngle = 48 + pulse * 10;
+        rightUpperAngle = 48 + pulse * 10;
         leftElbowBend = 95;
         rightElbowBend = 95;
-        leftWristInward = bodyWidth * 0.33 + pulse * bodyWidth * 0.02;
-        rightWristInward = leftWristInward;
+        final inward = bodyWidth * (0.12 + pulse * 0.24);
+        leftWristInward = inward;
+        rightWristInward = inward;
         break;
       case ExerciseKind.crossShoulder:
-        final crossLeft = wave >= 0;
-        if (crossLeft) {
-          leftUpperAngle = 55;
-          leftElbowBend = 105;
-          leftWristInward = bodyWidth * 0.52;
-        } else {
-          rightUpperAngle = 55;
-          rightElbowBend = 105;
-          rightWristInward = bodyWidth * 0.52;
-        }
+        leftUpperAngle = 12 + leftTurn * 48;
+        rightUpperAngle = 12 + rightTurn * 48;
+        leftElbowBend = 8 + leftTurn * 102;
+        rightElbowBend = 8 + rightTurn * 102;
+        leftWristInward = leftTurn * bodyWidth * 0.55;
+        rightWristInward = rightTurn * bodyWidth * 0.55;
         break;
       case ExerciseKind.goalpost:
-        leftUpperAngle = 90;
-        rightUpperAngle = 90;
-        leftElbowBend = 90;
-        rightElbowBend = 90;
+        // Antes era estático: ahora los codos suben y bajan y las muñecas
+        // dibujan un arco pequeño.
+        leftUpperAngle = 78 + pulse * 14;
+        rightUpperAngle = leftUpperAngle;
+        leftElbowBend = 68 + pulse * 26;
+        rightElbowBend = leftElbowBend;
+        leftShoulderLift = -pulse * size.height * 0.012;
+        rightShoulderLift = leftShoulderLift;
         break;
       case ExerciseKind.alternatingShrug:
-        leftShoulderLift = wave > 0 ? -wave * size.height * 0.04 : 0;
-        rightShoulderLift = wave < 0 ? wave * size.height * 0.04 : 0;
+        leftShoulderLift = -leftTurn * size.height * 0.06;
+        rightShoulderLift = -rightTurn * size.height * 0.06;
         break;
       case ExerciseKind.fingerSpread:
         leftUpperAngle = 55;
@@ -207,25 +225,30 @@ class ExerciseAvatarPainter extends CustomPainter {
         rightElbowBend = 90;
         leftWristInward = bodyWidth * 0.24;
         rightWristInward = bodyWidth * 0.24;
-        handSpread = 0.25 + pulse * 0.75;
+        handSpread = 0.15 + pulse * 0.85;
         break;
       case ExerciseKind.forearmCircles:
-        leftUpperAngle = 15 + wave * 8;
-        rightUpperAngle = 15 - wave * 8;
-        leftElbowBend = 75 + wave * 40;
-        rightElbowBend = 75 - wave * 40;
+        leftUpperAngle = 14 + wave * 8;
+        rightUpperAngle = 14 - wave * 8;
+        leftElbowBend = 72 + wave * 52;
+        rightElbowBend = 72 - wave * 52;
+        final r = bodyWidth * 0.05;
+        leftHandOffset = Offset(
+          math.cos(phase) * r,
+          math.sin(phase) * r,
+        );
+        rightHandOffset = Offset(
+          math.cos(phase + math.pi) * r,
+          math.sin(phase + math.pi) * r,
+        );
         break;
       case ExerciseKind.shoulderTaps:
-        final tapLeft = wave >= 0;
-        if (tapLeft) {
-          leftUpperAngle = 55;
-          leftElbowBend = 115;
-          leftWristInward = bodyWidth * 0.48;
-        } else {
-          rightUpperAngle = 55;
-          rightElbowBend = 115;
-          rightWristInward = bodyWidth * 0.48;
-        }
+        leftUpperAngle = 12 + leftTurn * 46;
+        rightUpperAngle = 12 + rightTurn * 46;
+        leftElbowBend = 8 + leftTurn * 115;
+        rightElbowBend = 8 + rightTurn * 115;
+        leftWristInward = leftTurn * bodyWidth * 0.52;
+        rightWristInward = rightTurn * bodyWidth * 0.52;
         break;
       case ExerciseKind.visual:
       case ExerciseKind.other:
@@ -234,11 +257,7 @@ class ExerciseAvatarPainter extends CustomPainter {
 
     final shoulderY = size.height * 0.31;
     final neckY = shoulderY - size.height * 0.045;
-    final headY =
-        neckY -
-        headRadius -
-        size.height * 0.015 +
-        headYOffset;
+    final headY = neckY - headRadius - size.height * 0.015 + headYOffset;
     final hipY = size.height * 0.61;
     final kneeY = hipY + upperLeg;
     final ankleY = math.min(size.height * 0.96, kneeY + lowerLeg);
@@ -278,26 +297,37 @@ class ExerciseAvatarPainter extends CustomPainter {
       upperLength: upperArm,
       lowerLength: foreArm,
     );
+    final leftWrist = leftArm.wrist + leftHandOffset;
+    final rightWrist = rightArm.wrist + rightHandOffset;
 
     final line = Paint()
-      ..color = Colors.white.withValues(alpha: 0.9)
+      ..color = Colors.white.withValues(alpha: 0.92)
       ..strokeWidth = math.max(2.5, size.width * 0.022)
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
     final glow = Paint()
-      ..color = Colors.lightBlueAccent.withValues(alpha: 0.28)
+      ..color = const Color(0xFF7DE9C6).withValues(alpha: 0.24)
       ..strokeWidth = math.max(8, size.width * 0.06)
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
-    final joint = Paint()..color = Colors.lightBlueAccent;
+    final joint = Paint()..color = const Color(0xFF7DE9C6);
     final headFill = Paint()
-      ..color = Colors.lightBlueAccent.withValues(alpha: 0.16)
+      ..color = const Color(0xFF7DE9C6).withValues(alpha: 0.18)
       ..style = PaintingStyle.fill;
 
     void bone(Offset a, Offset b) {
       canvas.drawLine(a, b, glow);
       canvas.drawLine(a, b, line);
     }
+
+    // Respaldo suave para que el avatar se lea sobre el video.
+    canvas.drawCircle(
+      Offset(cx, size.height * 0.48),
+      bodyWidth * 0.52,
+      Paint()
+        ..color = const Color(0xFF0B2B2A).withValues(alpha: 0.28)
+        ..style = PaintingStyle.fill,
+    );
 
     // Columna, hombros y caderas.
     bone(neck, hipCenter);
@@ -314,9 +344,9 @@ class ExerciseAvatarPainter extends CustomPainter {
 
     // Brazos.
     bone(leftShoulder, leftArm.elbow);
-    bone(leftArm.elbow, leftArm.wrist);
+    bone(leftArm.elbow, leftWrist);
     bone(rightShoulder, rightArm.elbow);
-    bone(rightArm.elbow, rightArm.wrist);
+    bone(rightArm.elbow, rightWrist);
 
     // Manos / rotación de muñecas / apertura de dedos.
     final handLength = bodyWidth * 0.075;
@@ -324,21 +354,21 @@ class ExerciseAvatarPainter extends CustomPainter {
       final leftAngle = handSpin;
       final rightAngle = handSpin + math.pi;
       bone(
-        leftArm.wrist,
-        leftArm.wrist +
+        leftWrist,
+        leftWrist +
             Offset(math.cos(leftAngle), math.sin(leftAngle)) * handLength,
       );
       bone(
-        rightArm.wrist,
-        rightArm.wrist +
+        rightWrist,
+        rightWrist +
             Offset(math.cos(rightAngle), math.sin(rightAngle)) * handLength,
       );
     } else if (kind == ExerciseKind.fingerSpread) {
-      _fingers(canvas, leftArm.wrist, handLength, handSpread, line);
-      _fingers(canvas, rightArm.wrist, handLength, handSpread, line);
+      _fingers(canvas, leftWrist, handLength, handSpread, line);
+      _fingers(canvas, rightWrist, handLength, handSpread, line);
     } else {
-      bone(leftArm.wrist, leftArm.wrist + const Offset(-2, 10));
-      bone(rightArm.wrist, rightArm.wrist + const Offset(2, 10));
+      bone(leftWrist, leftWrist + const Offset(-2, 10));
+      bone(rightWrist, rightWrist + const Offset(2, 10));
     }
 
     // Cabeza inclinada para el ejercicio de cuello.
@@ -360,8 +390,8 @@ class ExerciseAvatarPainter extends CustomPainter {
       rightShoulder,
       leftArm.elbow,
       rightArm.elbow,
-      leftArm.wrist,
-      rightArm.wrist,
+      leftWrist,
+      rightWrist,
       leftHip,
       rightHip,
       leftKnee,

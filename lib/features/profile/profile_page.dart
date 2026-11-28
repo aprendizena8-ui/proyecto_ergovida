@@ -17,6 +17,7 @@ import '../../data/services/usuario_service.dart';
 import '../../main.dart';
 import '../../widgets/avatar_badge.dart';
 import '../../widgets/user_avatar.dart';
+import '../../core/constants/activity_types.dart';
 import '../admin/admin_alertas_page.dart';
 import '../auth/login_page.dart';
 import '../settings/settings_page.dart';
@@ -52,11 +53,15 @@ class _ProfilePageState extends State<ProfilePage> {
   List<AlertaErrorAdmin> _alertasAdmin = const [];
   List<SolicitudAyudaAdmin> _solicitudesAdmin = const [];
 
-  int _totalPausas = 0;
+  static const int metaSemanalEjercicios = 8;
+
   int _pausasCompletadas = 0;
   int _minutos = 0;
-  int _pausasSemana = 0;
   int _racha = 0;
+  int _ejerciciosDetectados = 0;
+  int _rutinasAdicionales = 0;
+  int _ejerciciosSemana = 0;
+  int _rutinasSemana = 0;
 
   @override
   void initState() {
@@ -110,7 +115,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
     var totalPausas = 0;
     var totalMinutos = 0;
-    var pausasSemana = 0;
     final porDia = <String, int>{};
 
     final hoy = DateTime.now();
@@ -131,21 +135,28 @@ class _ProfilePageState extends State<ProfilePage> {
 
       final key = _keyOf(fecha);
       porDia[key] = (porDia[key] ?? 0) + cantidad;
+    }
 
+    final conteos = ActivityCounts.fromPausas(pausas);
+    final completadas = conteos.paraLogros;
+
+    var ejerciciosSemana = 0;
+    var rutinasSemana = 0;
+    for (final pausa in pausas.whereType<Map>()) {
+      if (pausa['completada'] != true) continue;
+      final fecha = _parseFecha(pausa['fecha']);
+      if (fecha == null) continue;
       final dia = DateTime(fecha.year, fecha.month, fecha.day);
-      if (!dia.isBefore(inicioSemana) && !dia.isAfter(finSemana)) {
-        pausasSemana += cantidad;
+      if (dia.isBefore(inicioSemana) || dia.isAfter(finSemana)) continue;
+      if (ActivityTypes.isRoutine(pausa['tipo'])) {
+        rutinasSemana++;
+      } else {
+        ejerciciosSemana++;
       }
     }
 
-    final completadas = pausas
-        .where((p) => p is Map && p['completada'] == true)
-        .length;
-
     if (totalPausas == 0 && pausas.isNotEmpty) {
-      totalPausas = pausas.length;
       totalMinutos = pausas.length * 2;
-      pausasSemana = pausas.length;
     }
 
     var racha = 0;
@@ -162,11 +173,13 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() {
       _perfil = perfil;
       _usuario = usuario;
-      _totalPausas = totalPausas;
       _pausasCompletadas = completadas;
       _minutos = totalMinutos;
-      _pausasSemana = pausasSemana;
       _racha = racha;
+      _ejerciciosDetectados = conteos.detectedCompleted;
+      _rutinasAdicionales = conteos.routinesCompleted;
+      _ejerciciosSemana = ejerciciosSemana;
+      _rutinasSemana = rutinasSemana;
       _cargando = false;
     });
   }
@@ -973,8 +986,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         Expanded(
                           child: _HeaderStat(
                             icon: Icons.self_improvement_rounded,
-                            value: '$_totalPausas',
-                            label: 'Pausas',
+                            value: '$_ejerciciosDetectados',
+                            label: 'Ejercicios SST',
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -1074,84 +1087,223 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildActividad(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textSecondary = isDark ? const Color(0xFFAFC1D4) : brandMuted;
-    final progreso = (_pausasSemana / 5).clamp(0.0, 1.0);
+    final semana = _ejerciciosSemana > metaSemanalEjercicios
+        ? metaSemanalEjercicios
+        : _ejerciciosSemana;
+    final progreso = semana / metaSemanalEjercicios;
+    final faltanSemana = metaSemanalEjercicios - semana;
+    final completoSst = _ejerciciosDetectados > 0;
+    final colorEstado = completoSst
+        ? const Color(0xFF15803D)
+        : const Color(0xFFCF3A3A);
 
-    return _SectionCard(
-      title: 'Tu actividad',
-      icon: Icons.insights_rounded,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
+        _SectionCard(
+          title: 'Ejercicios obligatorios',
+          icon: Icons.fitness_center_rounded,
           children: [
-            Expanded(
-              child: _MetricTile(
-                icon: Icons.check_circle_outline_rounded,
-                value: '$_pausasCompletadas',
-                label: 'Completadas',
+            _etiqueta(
+              icon: Icons.verified_rounded,
+              texto: 'Cuenta para tu seguimiento de SST',
+              color: brandTeal,
+              isDark: isDark,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Tu líder de SST solo revisa los ejercicios con detección de movimiento. Haz muchos de estos cada día.',
+              style: TextStyle(
+                color: textSecondary,
+                fontSize: 12.5,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _MetricTile(
+                    icon: Icons.check_circle_outline_rounded,
+                    value: '$_ejerciciosDetectados',
+                    label: 'Ejercicios SST',
+                    color: brandTeal,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _MetricTile(
+                    icon: Icons.timer_outlined,
+                    value: '$_minutos min',
+                    label: 'Tiempo activo',
+                    color: brandBlue,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _MetricTile(
+                    icon: Icons.local_fire_department_outlined,
+                    value: '$_racha',
+                    label: 'Días de racha',
+                    color: const Color(0xFFF59E0B),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Text(
+                  'Estado SST',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorEstado.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    completoSst ? 'Completo' : 'No completo',
+                    style: TextStyle(
+                      color: colorEstado,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (!completoSst)
+              Text(
+                'Te falta 1 ejercicio detectado para estar Completo.',
+                style: TextStyle(color: colorEstado, fontSize: 12),
+              ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Progreso semanal',
+                  style: TextStyle(
+                    color: textSecondary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                const Spacer(),
+                Flexible(
+                  child: Text(
+                    '$_ejerciciosSemana de $metaSemanalEjercicios hechos esta semana',
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      color: brandBlue,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(
+                value: progreso,
+                minHeight: 8,
+                backgroundColor: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : const Color(0xFFE3EEF6),
                 color: brandTeal,
               ),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _MetricTile(
-                icon: Icons.timer_outlined,
-                value: '$_minutos min',
-                label: 'Tiempo activo',
-                color: brandBlue,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _MetricTile(
-                icon: Icons.local_fire_department_outlined,
-                value: '$_racha',
-                label: 'Días de racha',
-                color: const Color(0xFFF59E0B),
-              ),
+            const SizedBox(height: 8),
+            Text(
+              faltanSemana == 0
+                  ? '¡Meta semanal cumplida! Sigue así para mantener tu racha.'
+                  : 'Te faltan $faltanSemana ejercicios para la meta semanal.',
+              style: TextStyle(color: textSecondary, fontSize: 12),
             ),
           ],
         ),
-        const SizedBox(height: 18),
-        Row(
+        const SizedBox(height: 16),
+        _SectionCard(
+          title: 'Rutinas adicionales (opcionales)',
+          icon: Icons.self_improvement_rounded,
           children: [
-            Text(
-              'Meta semanal',
-              style: TextStyle(
-                color: textSecondary,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
+            _etiqueta(
+              icon: Icons.emoji_events_outlined,
+              texto: 'Opcional: no cuenta para SST, pero sí para tus logros',
+              color: brandBlue,
+              isDark: isDark,
             ),
-            const Spacer(),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: _MetricTile(
+                    icon: Icons.play_circle_outline_rounded,
+                    value: '$_rutinasAdicionales',
+                    label: 'Rutinas totales',
+                    color: brandBlue,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _MetricTile(
+                    icon: Icons.calendar_today_outlined,
+                    value: '$_rutinasSemana',
+                    label: 'Esta semana',
+                    color: brandTeal,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             Text(
-              '$_pausasSemana / 5',
-              style: const TextStyle(
-                color: brandBlue,
-                fontWeight: FontWeight.w800,
-                fontSize: 13,
-              ),
+              'Tus logros suman $_pausasCompletadas actividades: $_ejerciciosDetectados ejercicios con detección y $_rutinasAdicionales rutinas adicionales.',
+              style: TextStyle(color: textSecondary, fontSize: 12, height: 1.4),
             ),
           ],
-        ),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(99),
-          child: LinearProgressIndicator(
-            value: progreso,
-            minHeight: 8,
-            backgroundColor: isDark
-                ? Colors.white.withValues(alpha: 0.08)
-                : const Color(0xFFE3EEF6),
-            color: brandTeal,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          progreso >= 1
-              ? '¡Meta cumplida! Sigue así para mantener tu racha.'
-              : 'Completa ${5 - _pausasSemana.clamp(0, 5)} pausas más para cumplir tu meta.',
-          style: TextStyle(color: textSecondary, fontSize: 12),
         ),
       ],
+    );
+  }
+
+  Widget _etiqueta({
+    required IconData icon,
+    required String texto,
+    required Color color,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.18 : 0.10),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              texto,
+              style: TextStyle(
+                color: color,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

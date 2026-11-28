@@ -278,7 +278,7 @@ class _LeaderPageState extends State<LeaderPage>
               const SizedBox(width: 12),
               Expanded(
                 child: _resumen(
-                  'Con ejercicios',
+                  'Completo',
                   '$completos',
                   Icons.check_circle_rounded,
                   const Color(0xFF15803D),
@@ -288,7 +288,7 @@ class _LeaderPageState extends State<LeaderPage>
               const SizedBox(width: 12),
               Expanded(
                 child: _resumen(
-                  'Pendientes',
+                  'No completo',
                   '$pendientes',
                   Icons.error_outline_rounded,
                   const Color(0xFFCF3A3A),
@@ -450,12 +450,20 @@ class _LeaderPageState extends State<LeaderPage>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${usuario.ejerciciosRealizados} ejercicios realizados',
+                  '${usuario.ejerciciosRealizados} ejercicios con detección',
                   style: TextStyle(
                     color: isDark ? const Color(0xFFCBD5E1) : brandMuted,
                     fontSize: 11,
                   ),
                 ),
+                if (usuario.rutinasAdicionales > 0)
+                  Text(
+                    '${usuario.rutinasAdicionales} rutinas adicionales (no suman a SST)',
+                    style: TextStyle(
+                      color: isDark ? const Color(0xFF9FB3C8) : brandMuted,
+                      fontSize: 10.5,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -467,7 +475,7 @@ class _LeaderPageState extends State<LeaderPage>
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
-              usuario.completo ? 'Completo' : 'Pendiente',
+              usuario.completo ? 'Completo' : 'No completo',
               style: TextStyle(
                 color: color,
                 fontSize: 10,
