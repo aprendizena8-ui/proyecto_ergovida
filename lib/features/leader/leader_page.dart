@@ -5,9 +5,12 @@ import '../../data/models/usuario_estadistica_model.dart';
 import '../../data/services/auth_service.dart';
 import '../../data/services/leader_service.dart';
 import '../../data/services/recordatorio_global_service.dart';
+import '../../data/services/sst_metas_service.dart';
 import '../../main.dart';
 import '../../widgets/design_system.dart';
 import '../support/support_page.dart';
+import 'sst_metas_dialog.dart';
+import 'user_stats_page.dart';
 
 class LeaderPage extends StatefulWidget {
   const LeaderPage({super.key});
@@ -25,6 +28,7 @@ class _LeaderPageState extends State<LeaderPage>
   late final TabController _tabController;
   List<UsuarioEstadistica> _usuarios = const [];
   List<RecordatorioGlobal> _recordatorios = const [];
+  SstMetasConfig _metas = const SstMetasConfig();
   bool _cargando = true;
   String? _error;
 
@@ -56,11 +60,13 @@ class _LeaderPageState extends State<LeaderPage>
       final resultados = await Future.wait([
         _leaderService.obtenerEstadisticasUsuarios(),
         _recordatorioService.obtenerTodos(),
+        SstMetasService.instance.cargar(),
       ]);
       if (!mounted) return;
       setState(() {
         _usuarios = resultados[0] as List<UsuarioEstadistica>;
         _recordatorios = resultados[1] as List<RecordatorioGlobal>;
+        _metas = resultados[2] as SstMetasConfig;
         _cargando = false;
       });
     } catch (e) {
@@ -143,6 +149,23 @@ class _LeaderPageState extends State<LeaderPage>
     } catch (_) {
       if (!mounted) return;
       _mensaje('No se pudo eliminar el recordatorio', ok: false);
+    }
+  }
+
+  Future<void> _abrirMetas() async {
+    final resultado = await showDialog<SstMetasConfig>(
+      context: context,
+      builder: (_) => SstMetasDialog(config: _metas),
+    );
+    if (resultado == null) return;
+    try {
+      await SstMetasService.instance.guardar(resultado);
+      if (!mounted) return;
+      setState(() => _metas = resultado);
+      _mensaje('Metas de pausas activas actualizadas');
+    } catch (_) {
+      if (!mounted) return;
+      _mensaje('No se pudieron guardar las metas', ok: false);
     }
   }
 
@@ -256,8 +279,30 @@ class _LeaderPageState extends State<LeaderPage>
           ),
           const SizedBox(height: 6),
           Text(
-            'Consulta quiénes han realizado ejercicios y su estado actual.',
+            'Consulta la gráfica semanal de cada usuario y personaliza '
+            'los rangos de pausas activas.',
             style: TextStyle(color: textSecondary),
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: _abrirMetas,
+              icon: const Icon(Icons.tune_rounded, size: 16),
+              label: Text('Metas: ${_metas.resumen}'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: brandBlue,
+                side: BorderSide(color: brandBlue.withValues(alpha: 0.4)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 9,
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
           ),
           if (_error != null) ...[
             const SizedBox(height: 14),
@@ -468,20 +513,53 @@ class _LeaderPageState extends State<LeaderPage>
             ),
           ),
           const SizedBox(width: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              usuario.completo ? 'Completo' : 'No completo',
-              style: TextStyle(
-                color: color,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  usuario.completo ? 'Completo' : 'No completo',
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => UserStatsPage(usuario: usuario),
+                  ),
+                ),
+                icon: const Icon(Icons.bar_chart_rounded, size: 15),
+                label: const Text('Ver estadísticas'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: brandBlue,
+                  side: BorderSide(color: brandBlue.withValues(alpha: 0.4)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  minimumSize: const Size(0, 34),
+                ),
+              ),
+            ],
           ),
         ],
       ),
